@@ -4,6 +4,7 @@ import { shipsModule } from "./ships/definition";
 import { earthquakesModule } from "./earthquakes/definition";
 import { wildfiresModule } from "./wildfires/definition";
 import { volcanoesModule } from "./volcanoes/definition";
+import { airQualityModule } from "./air-quality/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
@@ -13,6 +14,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   earthquakesModule,
   wildfiresModule,
   volcanoesModule,
+  airQualityModule,
 ];
 
-export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events"];
+export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events", "Environment"];

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     opensky_client_id: str = ""
     opensky_client_secret: str = ""
     aisstream_api_key: str = ""
+    openaq_api_key: str = ""
 
 
 settings = Settings()

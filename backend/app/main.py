@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import earthquakes, flights, health, map_config, satellites, ships, volcanoes, wildfires
+from app.routers import air_quality, earthquakes, flights, health, map_config, satellites, ships, volcanoes, wildfires
 
 
 @asynccontextmanager
@@ -32,3 +32,4 @@ app.include_router(ships.router, prefix="/api")
 app.include_router(earthquakes.router, prefix="/api")
 app.include_router(wildfires.router, prefix="/api")
 app.include_router(volcanoes.router, prefix="/api")
+app.include_router(air_quality.router, prefix="/api")
