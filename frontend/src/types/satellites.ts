@@ -32,7 +32,24 @@ export interface OrbitPoint {
   altitude: number;
 }
 
+export interface SatCatRecord {
+  objectType: string | null;
+  owner: string | null;
+  launchDate: string | null;
+  launchSite: string | null;
+  decayDate: string | null;
+  period: number | null;
+  apogee: number | null;
+  perigee: number | null;
+  rcs: number | null;
+}
+
+export interface SatelliteDetail {
+  satcat: SatCatRecord | null;
+}
+
 export interface SelectedSatellite {
   position: SatellitePosition;
   gp: GPRecord;
+  detail: SatelliteDetail | null;
 }

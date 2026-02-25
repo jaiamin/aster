@@ -1,7 +1,86 @@
 import { useState } from "react";
-import { Globe, ChevronLeft } from "lucide-react";
+import { Globe, ChevronLeft, ChevronDown } from "lucide-react";
 import { MODULE_REGISTRY } from "@/modules/registry";
 import { useModules } from "@/modules/module-context";
+import type { ModuleDefinition } from "@/types/modules";
+
+function ModuleRow({
+  def,
+  enabled,
+  onToggle,
+}: {
+  def: ModuleDefinition;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  const { icon: Icon, name, useCount, quickPicks } = def;
+  const { focusTarget } = useModules();
+  const count = useCount?.() ?? null;
+  const [expanded, setExpanded] = useState(false);
+  const hasQuickPicks = quickPicks && quickPicks.length > 0;
+
+  return (
+    <div>
+      <div className="flex items-center">
+        {/* Expand chevron */}
+        {hasQuickPicks ? (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex h-7 w-5 items-center justify-center text-muted/40 hover:text-muted transition-colors"
+          >
+            <ChevronDown
+              size={12}
+              className={`transition-transform ${expanded ? "" : "-rotate-90"}`}
+            />
+          </button>
+        ) : (
+          <div className="w-5" />
+        )}
+
+        {/* Module toggle */}
+        <button
+          onClick={onToggle}
+          className={`flex flex-1 items-center gap-3 rounded px-2 py-2 text-xs transition-colors ${
+            enabled
+              ? "text-accent"
+              : "text-muted hover:bg-panel-hover hover:text-foreground"
+          }`}
+        >
+          <Icon size={14} />
+          {name}
+          {count != null && (
+            <span className="text-[10px] tabular-nums text-muted/50">
+              {count.toLocaleString()}
+            </span>
+          )}
+          <div
+            className={`ml-auto h-3 w-3 rounded-sm border transition-colors ${
+              enabled
+                ? "border-accent bg-accent"
+                : "border-muted/40 bg-transparent"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Quick picks dropdown */}
+      {hasQuickPicks && expanded && (
+        <div className="ml-5 mb-1">
+          {quickPicks!.map((pick) => (
+            <button
+              key={pick.targetId}
+              onClick={() => focusTarget(def.id, pick.targetId)}
+              className="flex w-full items-center gap-2 rounded px-4 py-1.5 text-xs text-muted hover:bg-panel-hover hover:text-foreground transition-colors"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />
+              {pick.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
@@ -33,7 +112,7 @@ export function Sidebar() {
       {/* Modules flyout */}
       {modulesOpen && (
         <>
-          <div className="h-full w-52 border-r border-panel-border bg-panel">
+          <div className="h-full w-64 border-r border-panel-border bg-panel">
             <div className="flex h-12 items-center gap-2 px-4">
               <Globe size={18} className="text-muted" />
               <span className="text-[12px] font-medium tracking-widest text-muted">
@@ -49,30 +128,14 @@ export function Sidebar() {
             </div>
             <div className="h-px bg-panel-border" />
             <div className="p-2">
-              {MODULE_REGISTRY.map(({ id, name, icon: Icon }) => {
-                const enabled = enabledModules.has(id);
-                return (
-                  <button
-                    key={id}
-                    onClick={() => toggle(id)}
-                    className={`flex w-full items-center gap-3 rounded px-3 py-2 text-xs transition-colors ${
-                      enabled
-                        ? "text-accent"
-                        : "text-muted hover:bg-panel-hover hover:text-foreground"
-                    }`}
-                  >
-                    <Icon size={14} />
-                    {name}
-                    <div
-                      className={`ml-auto h-3 w-3 rounded-sm border transition-colors ${
-                        enabled
-                          ? "border-accent bg-accent"
-                          : "border-muted/40 bg-transparent"
-                      }`}
-                    />
-                  </button>
-                );
-              })}
+              {MODULE_REGISTRY.map((def) => (
+                <ModuleRow
+                  key={def.id}
+                  def={def}
+                  enabled={enabledModules.has(def.id)}
+                  onToggle={() => toggle(def.id)}
+                />
+              ))}
             </div>
           </div>
 

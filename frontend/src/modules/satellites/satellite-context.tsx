@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { GPRecord, SatellitePosition, SelectedSatellite } from "@/types/satellites";
+import type { GPRecord, SatelliteDetail, SatellitePosition, SelectedSatellite } from "@/types/satellites";
 
 interface SatelliteSelectionContextValue {
   selected: SelectedSatellite | null;
@@ -21,6 +21,7 @@ export function SatelliteSelectionProvider({
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gp, setGp] = useState<GPRecord | null>(null);
+  const [detail, setDetail] = useState<SatelliteDetail | null>(null);
   const [tracking, setTracking] = useState(true);
 
   const currentPosition = selectedId
@@ -30,20 +31,37 @@ export function SatelliteSelectionProvider({
   const select = useCallback((position: SatellitePosition, gpRecord: GPRecord) => {
     setSelectedId(position.id);
     setGp(gpRecord);
+    setDetail(null);
     setTracking(true);
   }, []);
 
   const deselect = useCallback(() => {
     setSelectedId(null);
     setGp(null);
+    setDetail(null);
     setTracking(true);
   }, []);
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);
 
+  // Fetch detail once on selection
+  useEffect(() => {
+    if (!selectedId || !gp) return;
+    const controller = new AbortController();
+
+    fetch(`/api/satellites/${selectedId}/detail`, {
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setDetail(data))
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, [selectedId]);
+
   const selected: SelectedSatellite | null =
-    currentPosition && gp ? { position: currentPosition, gp } : null;
+    currentPosition && gp ? { position: currentPosition, gp, detail } : null;
 
   // Auto-deselect if satellite disappears from positions
   const selectedRef = useRef(selectedId);
