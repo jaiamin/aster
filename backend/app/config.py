@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     opensky_token_url: str = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
     opensky_client_id: str = ""
     opensky_client_secret: str = ""
+    aisstream_api_key: str = ""
 
 
 settings = Settings()
