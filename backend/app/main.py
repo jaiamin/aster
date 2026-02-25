@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import flights, health, map_config, satellites, ships
+from app.routers import earthquakes, flights, health, map_config, satellites, ships
 
 
 @asynccontextmanager
@@ -29,3 +29,4 @@ app.include_router(map_config.router, prefix="/api")
 app.include_router(flights.router, prefix="/api")
 app.include_router(satellites.router, prefix="/api")
 app.include_router(ships.router, prefix="/api")
+app.include_router(earthquakes.router, prefix="/api")
