@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Satellite, LocateFixed, X } from "lucide-react";
+import { Satellite, LocateFixed, X, Video } from "lucide-react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useSatelliteSelection } from "./satellite-context";
 import { zoomForAltitude } from "./satellites-layer";
+
+const ISS_NORAD_ID = 25544;
+const ISS_LIVE_URL = "https://www.youtube.com/embed/aB1yRz0HhdY?autoplay=1&mute=1";
 
 // CelesTrak owner code → ISO 3166-1 alpha-2 (lowercase) for flag CDN
 const OWNER_TO_ISO: Record<string, string> = {
@@ -45,8 +48,11 @@ export function SatelliteDetailCard() {
   const { selected, tracking, deselect, resumeTracking } = useSatelliteSelection();
   const { current: mapRef } = useMap();
   const [imgError, setImgError] = useState(false);
+  const [showLiveFeed, setShowLiveFeed] = useState(false);
 
   if (!selected) return null;
+
+  const isISS = selected.gp.NORAD_CAT_ID === ISS_NORAD_ID;
 
   const { position, gp, detail } = selected;
   const satcat = detail?.satcat;
@@ -165,8 +171,38 @@ export function SatelliteDetailCard() {
               )}
             </div>
           </div>
+
+          {/* ISS Live Feed toggle */}
+          {isISS && (
+            <button
+              onClick={() => setShowLiveFeed((v) => !v)}
+              className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-[#ffb432]/10 text-[#ffb432] hover:bg-[#ffb432]/20"
+            >
+              <Video size={14} />
+              {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Live feed card */}
+      {isISS && showLiveFeed && (
+        <div className="mt-2 rounded-xl border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden animate-slide-in-right">
+          <div className="p-3 space-y-2">
+            <div className="text-[10px] uppercase tracking-widest text-muted/60">
+              ISS Live — Earth View
+            </div>
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-surface">
+              <iframe
+                src={ISS_LIVE_URL}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
