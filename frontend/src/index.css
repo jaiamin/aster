@@ -35,6 +35,32 @@ body {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes plane-drift {
+  0%, 100% { transform: translateX(-3px) translateY(1px); }
+  50% { transform: translateX(3px) translateY(-1px); }
+}
+
+.animate-plane-drift {
+  animation: plane-drift 4s ease-in-out infinite;
+}
+
+@keyframes dash-scroll {
+  to { stroke-dashoffset: -12; }
+}
+
+.animate-dash {
+  animation: dash-scroll 1s linear infinite;
+}
+
 .scanline::after {
   content: "";
   position: absolute;

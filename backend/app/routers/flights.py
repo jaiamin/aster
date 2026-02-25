@@ -107,3 +107,122 @@ async def get_flights():
     _cache = result
     _cache_time = now
     return result
+
+
+# --- Flight track endpoint ---
+
+_track_cache: dict[str, tuple[float, dict]] = {}
+TRACK_CACHE_TTL = 30.0
+
+
+@router.get("/flights/{icao24}/track")
+async def get_flight_track(icao24: str):
+    now = _time.monotonic()
+    cached = _track_cache.get(icao24)
+    if cached and (now - cached[0]) < TRACK_CACHE_TTL:
+        return cached[1]
+
+    url = f"{settings.opensky_base_url}/tracks/all"
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            token = await _get_token(client)
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
+            resp = await client.get(
+                url, params={"icao24": icao24, "time": 0}, headers=headers
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code, detail="OpenSky track error"
+            )
+        except httpx.RequestError:
+            raise HTTPException(status_code=502, detail="Failed to reach OpenSky API")
+
+    data = resp.json()
+    path = []
+    for wp in data.get("path") or []:
+        path.append(
+            {
+                "time": wp[0],
+                "latitude": wp[1],
+                "longitude": wp[2],
+                "altitude": wp[3],
+                "heading": wp[4],
+                "on_ground": wp[5],
+            }
+        )
+
+    result = {
+        "icao24": data.get("icao24"),
+        "callsign": (data.get("callsign") or "").strip(),
+        "startTime": data.get("startTime"),
+        "endTime": data.get("endTime"),
+        "path": path,
+    }
+    _track_cache[icao24] = (now, result)
+    return result
+
+
+# --- Flight detail endpoint (hexdb.io) ---
+
+HEXDB_BASE = "https://hexdb.io/api/v1"
+_detail_cache: dict[str, tuple[float, dict]] = {}
+DETAIL_CACHE_TTL = 300.0
+
+
+@router.get("/flights/{icao24}/detail")
+async def get_flight_detail(icao24: str, callsign: str = ""):
+    now = _time.monotonic()
+    cache_key = f"{icao24}:{callsign}"
+    cached = _detail_cache.get(cache_key)
+    if cached and (now - cached[0]) < DETAIL_CACHE_TTL:
+        return cached[1]
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        aircraft_resp = await client.get(f"{HEXDB_BASE}/aircraft/{icao24}")
+        route_resp = (
+            await client.get(f"{HEXDB_BASE}/route/icao/{callsign}")
+            if callsign
+            else None
+        )
+
+    aircraft = None
+    if aircraft_resp.status_code == 200:
+        a = aircraft_resp.json()
+        aircraft = {
+            "registration": a.get("Registration"),
+            "type": a.get("Type"),
+            "icaoType": a.get("ICAOTypeCode"),
+            "manufacturer": a.get("Manufacturer"),
+            "operator": a.get("RegisteredOwners"),
+        }
+
+    route = None
+    if route_resp and route_resp.status_code == 200:
+        r = route_resp.json()
+        origin_icao = (r.get("route") or "").split("-")[0].strip() if r.get("route") else None
+        dest_icao = (r.get("route") or "").split("-")[-1].strip() if r.get("route") else None
+
+        airports = {}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for key, code in [("origin", origin_icao), ("destination", dest_icao)]:
+                if not code:
+                    continue
+                resp = await client.get(f"{HEXDB_BASE}/airport/icao/{code}")
+                if resp.status_code == 200:
+                    ap = resp.json()
+                    airports[key] = {
+                        "icao": ap.get("icao"),
+                        "name": ap.get("airport"),
+                        "latitude": ap.get("latitude"),
+                        "longitude": ap.get("longitude"),
+                    }
+
+        route = {
+            "origin": airports.get("origin"),
+            "destination": airports.get("destination"),
+        }
+
+    result = {"aircraft": aircraft, "route": route}
+    _detail_cache[cache_key] = (now, result)
+    return result
