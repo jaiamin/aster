@@ -1,4 +1,8 @@
 import { flightsModule } from "./flights/definition";
+import { satellitesModule } from "./satellites/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
-export const MODULE_REGISTRY: ModuleDefinition[] = [flightsModule];
+export const MODULE_REGISTRY: ModuleDefinition[] = [
+  flightsModule,
+  satellitesModule,
+];

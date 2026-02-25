@@ -24,6 +24,6 @@ export const THEME = {
   buildings: "#1e2d42",
 } as const;
 
-export const MIN_ZOOM = 2.5;
+export const MIN_ZOOM = 0.0;
 
 export const GLOBE_TRANSITION_ZOOM = { start: 7, end: 12 } as const;

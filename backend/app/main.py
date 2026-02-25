@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import flights, health, map_config
+from app.routers import flights, health, map_config, satellites
 
 app = FastAPI(title=settings.app_name)
 
@@ -17,3 +17,4 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(map_config.router, prefix="/api")
 app.include_router(flights.router, prefix="/api")
+app.include_router(satellites.router, prefix="/api")
