@@ -6,6 +6,7 @@ import { wildfiresModule } from "./wildfires/definition";
 import { volcanoesModule } from "./volcanoes/definition";
 import { airQualityModule } from "./air-quality/definition";
 import { nuclearModule } from "./nuclear/definition";
+import { cablesModule } from "./cables/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
@@ -17,6 +18,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   volcanoesModule,
   airQualityModule,
   nuclearModule,
+  cablesModule,
 ];
 
 export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events", "Environment", "Infrastructure"];
