@@ -5,6 +5,7 @@ import { earthquakesModule } from "./earthquakes/definition";
 import { wildfiresModule } from "./wildfires/definition";
 import { volcanoesModule } from "./volcanoes/definition";
 import { airQualityModule } from "./air-quality/definition";
+import { buoysModule } from "./buoys/definition";
 import { nuclearModule } from "./nuclear/definition";
 import { cablesModule } from "./cables/definition";
 import { airportsModule } from "./airports/definition";
@@ -21,6 +22,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   wildfiresModule,
   volcanoesModule,
   airQualityModule,
+  buoysModule,
   nuclearModule,
   cablesModule,
 ];
