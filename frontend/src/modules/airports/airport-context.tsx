@@ -1,0 +1,43 @@
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import type { Airport, SelectedAirport } from "@/types/airports";
+import { useModules } from "@/modules/module-context";
+
+interface AirportSelectionContextValue {
+  selected: SelectedAirport | null;
+  select: (airport: Airport) => void;
+  deselect: () => void;
+}
+
+const AirportSelectionContext = createContext<AirportSelectionContextValue | null>(null);
+
+export function AirportSelectionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { registerDeselect, notifySelected } = useModules();
+  const [selected, setSelected] = useState<SelectedAirport | null>(null);
+
+  const select = useCallback((airport: Airport) => {
+    notifySelected("airports");
+    setSelected({ airport });
+  }, [notifySelected]);
+
+  const deselect = useCallback(() => {
+    setSelected(null);
+  }, []);
+
+  useEffect(() => { registerDeselect("airports", deselect); }, [registerDeselect, deselect]);
+
+  return (
+    <AirportSelectionContext value={{ selected, select, deselect }}>
+      {children}
+    </AirportSelectionContext>
+  );
+}
+
+export function useAirportSelection() {
+  const ctx = useContext(AirportSelectionContext);
+  if (!ctx) throw new Error("useAirportSelection must be used within AirportSelectionProvider");
+  return ctx;
+}
