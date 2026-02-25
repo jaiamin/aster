@@ -1,15 +1,12 @@
 import type { StyleSpecification } from "maplibre-gl";
 import { THEME } from "@/config/map";
 
-export function transformStyle(
+export function transformDarkStyle(
   style: StyleSpecification
 ): StyleSpecification {
   const transformed = structuredClone(style);
 
-  // Enable globe projection
   transformed.projection = { type: "globe" };
-
-  // Sky / atmosphere
   transformed.sky = {
     "sky-color": "#0a0a1a",
     "horizon-color": "#00d4ff08",
@@ -19,7 +16,6 @@ export function transformStyle(
     "fog-ground-blend": 0.9,
   };
 
-  // Override background
   if (transformed.layers) {
     for (const layer of transformed.layers) {
       const paint = (layer as Record<string, unknown>).paint as
@@ -29,19 +25,19 @@ export function transformStyle(
 
       const id = layer.id.toLowerCase();
 
-      // Water
+      // Water — dark navy, distinct from land
       if (id.includes("water") || id.includes("ocean")) {
         if ("fill-color" in paint) paint["fill-color"] = THEME.water;
       }
 
-      // Land / earth / background
+      // Land / background
       if (
         layer.type === "background" ||
         id.includes("land") ||
         id.includes("earth")
       ) {
         if ("background-color" in paint)
-          paint["background-color"] = THEME.background;
+          paint["background-color"] = THEME.land;
         if ("fill-color" in paint) paint["fill-color"] = THEME.land;
       }
 
@@ -52,11 +48,16 @@ export function transformStyle(
           paint["fill-extrusion-color"] = THEME.buildings;
       }
 
-      // Roads
-      if (
+      // Major roads — brighter
+      if (id.includes("highway") || id.includes("motorway") || id.includes("trunk") || id.includes("primary")) {
+        if ("line-color" in paint) paint["line-color"] = THEME.roadsMajor;
+      }
+      // Minor roads
+      else if (
         id.includes("road") ||
-        id.includes("highway") ||
         id.includes("street") ||
+        id.includes("secondary") ||
+        id.includes("tertiary") ||
         id.includes("tunnel") ||
         id.includes("bridge") ||
         id.includes("path")
@@ -64,17 +65,21 @@ export function transformStyle(
         if ("line-color" in paint) paint["line-color"] = THEME.roads;
       }
 
-      // Borders
-      if (id.includes("boundary") || id.includes("border") || id.includes("admin")) {
+      // Borders — visible blue
+      if (
+        id.includes("boundary") ||
+        id.includes("border") ||
+        id.includes("admin")
+      ) {
         if ("line-color" in paint) paint["line-color"] = THEME.borders;
       }
 
-      // Labels
+      // Labels — bright with solid halos
       if (layer.type === "symbol") {
         if ("text-color" in paint) paint["text-color"] = THEME.labels;
         if ("text-halo-color" in paint)
           paint["text-halo-color"] = THEME.labelHalo;
-        if ("text-halo-width" in paint) paint["text-halo-width"] = 1.5;
+        paint["text-halo-width"] = 2;
       }
     }
   }

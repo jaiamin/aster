@@ -1,57 +1,85 @@
 import { useState } from "react";
-import { PanelLeftClose, PanelLeftOpen, Radio } from "lucide-react";
+import {
+  Globe,
+  ChevronLeft,
+  Plane,
+  Ship,
+  Cloud,
+  TrafficCone,
+} from "lucide-react";
+
+const MODULES = [
+  { name: "Flights", icon: Plane },
+  { name: "Maritime", icon: Ship },
+  { name: "Weather", icon: Cloud },
+  { name: "Traffic", icon: TrafficCone },
+];
 
 export function Sidebar() {
-  const [open, setOpen] = useState(false);
+  const [modulesOpen, setModulesOpen] = useState(false);
 
   return (
-    <>
-      {/* Toggle button */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="absolute left-3 bottom-10 z-20 flex h-8 w-8 items-center justify-center rounded border border-panel-border bg-panel text-muted backdrop-blur-md transition-all hover:border-accent-dim hover:text-accent hover:shadow-[0_0_8px_var(--color-accent-dim)]"
-        aria-label={open ? "Close sidebar" : "Open sidebar"}
-      >
-        {open ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
-      </button>
+    <div className="relative flex h-full shrink-0">
+      {/* Icon rail */}
+      <div className="flex h-full w-12 flex-col items-center border-r border-panel-border bg-panel">
+        <div className="flex h-12 w-full items-center justify-center">
+          <span className="text-sm font-bold tracking-tight text-accent">S</span>
+        </div>
 
-      {/* Panel */}
-      <div
-        className={`scanline absolute left-0 top-0 z-10 h-full w-64 border-r border-panel-border bg-panel backdrop-blur-md transition-transform duration-300 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex h-full flex-col">
-          {/* Header */}
-          <div className="flex items-center gap-2 border-b border-panel-border px-4 py-3">
-            <Radio size={14} className="text-accent" />
-            <span className="text-xs font-medium tracking-widest text-accent">
-              SAKA
-            </span>
-          </div>
+        <div className="mx-2 h-px w-8 bg-panel-border" />
 
-          {/* Module list placeholder */}
-          <div className="flex-1 px-4 py-3">
-            <p className="mb-3 text-[10px] tracking-widest text-muted">
-              MODULES
-            </p>
-            <div className="space-y-2">
-              {["Flights", "Maritime", "Weather", "Traffic"].map((mod) => (
+        <button
+          onClick={() => setModulesOpen(!modulesOpen)}
+          aria-label="Toggle modules"
+          className={`mt-2 flex h-9 w-9 items-center justify-center rounded transition-all ${
+            modulesOpen
+              ? "bg-panel-hover text-accent"
+              : "text-muted hover:bg-panel-hover hover:text-foreground"
+          }`}
+        >
+          <Globe size={16} />
+        </button>
+      </div>
+
+      {/* Modules flyout */}
+      {modulesOpen && (
+        <>
+          <div className="h-full w-52 border-r border-panel-border bg-panel">
+            <div className="flex h-12 items-center gap-2 px-4">
+              <Globe size={18} className="text-muted" />
+              <span className="text-[12px] font-medium tracking-widest text-muted">
+                MODULES
+              </span>
+              <button
+                onClick={() => setModulesOpen(false)}
+                aria-label="Close modules"
+                className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted transition-colors hover:bg-panel-hover hover:text-foreground"
+              >
+                <ChevronLeft size={14} />
+              </button>
+            </div>
+            <div className="h-px bg-panel-border" />
+            <div className="p-2">
+              {MODULES.map(({ name, icon: Icon }) => (
                 <div
-                  key={mod}
-                  className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-muted/60 cursor-not-allowed"
+                  key={name}
+                  className="flex cursor-not-allowed items-center gap-3 rounded px-3 py-2 text-xs text-muted/60"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted/30" />
-                  {mod}
-                  <span className="ml-auto text-[9px] text-muted/30">
-                    SOON
-                  </span>
+                  <Icon size={14} />
+                  {name}
+                  <span className="ml-auto text-[9px] text-muted/30">SOON</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
-    </>
+
+          {/* Click-away backdrop */}
+          <div
+            className="fixed inset-0 z-[-1]"
+            onClick={() => setModulesOpen(false)}
+          />
+        </>
+      )}
+    </div>
   );
 }

@@ -5,8 +5,9 @@
   --color-foreground: #e2e8f0;
   --color-accent: #00d4ff;
   --color-accent-dim: #00d4ff44;
-  --color-panel: #0a0a0fcc;
-  --color-panel-border: #00d4ff1a;
+  --color-panel: #111827;
+  --color-panel-border: #1e2a3a;
+  --color-panel-hover: #1a2332;
   --color-muted: #8892b0;
   --color-surface: #0d1117;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
