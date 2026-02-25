@@ -14,7 +14,7 @@ function typeLabel(type: string): string {
 
 function typeColor(type: string): string {
   switch (type) {
-    case "large_airport": return "#1e88a8";
+    case "large_airport": return "#3d7ab5";
     case "medium_airport": return "#5b9bd5";
     default: return "#5b9bd5";
   }
@@ -132,7 +132,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-muted">{label}</span>
-      <span className="text-foreground">{value}</span>
+      <span className="font-mono text-foreground">{value}</span>
     </div>
   );
 }

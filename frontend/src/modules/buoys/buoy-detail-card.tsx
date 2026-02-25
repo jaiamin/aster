@@ -186,7 +186,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-muted">{label}</span>
-      <span className="text-foreground">{value}</span>
+      <span className="font-mono text-foreground">{value}</span>
     </div>
   );
 }

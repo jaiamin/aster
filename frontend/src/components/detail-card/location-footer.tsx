@@ -21,16 +21,16 @@ export function LocationFooter({
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <div className="flex justify-between">
           <span className="text-muted">Latitude</span>
-          <span className="text-foreground">{latitude.toFixed(4)}&deg;</span>
+          <span className="font-mono text-foreground">{latitude.toFixed(4)}&deg;</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted">Longitude</span>
-          <span className="text-foreground">{longitude.toFixed(4)}&deg;</span>
+          <span className="font-mono text-foreground">{longitude.toFixed(4)}&deg;</span>
         </div>
         {altitude != null && (
           <div className="flex justify-between">
             <span className="text-muted">{altitudeLabel}</span>
-            <span className="text-foreground">
+            <span className="font-mono text-foreground">
               {altitude.toLocaleString()} {altitudeUnit}
             </span>
           </div>

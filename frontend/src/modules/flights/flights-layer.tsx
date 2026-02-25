@@ -124,7 +124,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
       map.addImage(ICON_NORMAL, createPlaneIcon("#b0b8c4", "#ffffff"), { pixelRatio: DPR });
     }
     if (!map.hasImage(ICON_SELECTED)) {
-      map.addImage(ICON_SELECTED, createPlaneIcon("#1e88a8", "#ffffff"), { pixelRatio: DPR });
+      map.addImage(ICON_SELECTED, createPlaneIcon("#3d7ab5", "#ffffff"), { pixelRatio: DPR });
     }
   }, [mapRef]);
 
@@ -212,7 +212,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
             type="line"
             beforeId="flights-layer"
             paint={{
-              "line-color": "#1e88a8",
+              "line-color": "#3d7ab5",
               "line-width": 2,
               "line-opacity": 0.7,
             }}
@@ -228,7 +228,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
             beforeId="flights-layer"
             paint={{
               "circle-radius": 5,
-              "circle-color": "#1e88a8",
+              "circle-color": "#3d7ab5",
               "circle-stroke-color": "#ffffff",
               "circle-stroke-width": 1.5,
             }}

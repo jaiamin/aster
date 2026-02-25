@@ -12,8 +12,8 @@ export const INITIAL_VIEW_STATE = {
 
 export const THEME = {
   background: "#0a0a0f",
-  accent: "#1e88a8",
-  accentDim: "#1e88a844",
+  accent: "#3d7ab5",
+  accentDim: "#3d7ab544",
   water: "#0c1a2e",
   land: "#1a2233",
   roads: "#2a3a52",
