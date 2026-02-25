@@ -8,3 +8,7 @@ export interface Ship {
   heading: number | null;
   shipType: number | null;
 }
+
+export interface SelectedShip {
+  ship: Ship;
+}

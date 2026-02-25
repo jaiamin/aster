@@ -46,7 +46,7 @@ function createPlaneIcon(): ImageData {
   return ctx.getImageData(0, 0, ICON_SIZE, ICON_SIZE);
 }
 
-function toGeoJSON(flights: Flight[]): GeoJSON.FeatureCollection {
+function toGeoJSON(flights: Flight[], selectedIcao: string | null): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: flights.map((f) => ({
@@ -56,6 +56,7 @@ function toGeoJSON(flights: Flight[]): GeoJSON.FeatureCollection {
         icao24: f.icao24,
         callsign: f.callsign,
         true_track: f.true_track ?? 0,
+        selected: f.icao24 === selectedIcao,
       },
     })),
   };
@@ -105,7 +106,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     const map = mapRef?.getMap();
     if (!map) return;
     if (!map.hasImage(ICON_ID)) {
-      map.addImage(ICON_ID, createPlaneIcon(), { sdf: false });
+      map.addImage(ICON_ID, createPlaneIcon(), { sdf: true });
     }
   }, [mapRef]);
 
@@ -115,11 +116,14 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
+      const consumed = (e.originalEvent as any)._layerHandled;
+
       const features = map.queryRenderedFeatures(e.point, {
         layers: ["flights-layer"],
       });
 
-      if (features.length > 0) {
+      if (features.length > 0 && !consumed) {
+        (e.originalEvent as any)._layerHandled = true;
         const icao24 = features[0].properties?.icao24;
         const flight = flightsRef.current.find((f) => f.icao24 === icao24);
         if (flight) {
@@ -174,7 +178,8 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     });
   }, [selected?.flight.longitude, selected?.flight.latitude, mapRef, tracking]);
 
-  const geojson = useMemo(() => toGeoJSON(flights), [flights]);
+  const selectedIcao = selected?.flight.icao24 ?? null;
+  const geojson = useMemo(() => toGeoJSON(flights, selectedIcao), [flights, selectedIcao]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],
@@ -253,6 +258,11 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
+          }}
+          paint={{
+            "icon-color": ["case", ["get", "selected"], "#00d4ff", "#ffffff"],
+            "icon-halo-color": ["case", ["get", "selected"], "#00d4ff", "transparent"],
+            "icon-halo-width": ["case", ["get", "selected"], 3, 0],
           }}
         />
       </Source>
