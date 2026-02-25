@@ -14,7 +14,7 @@ function typeLabel(type: string): string {
 
 function typeColor(type: string): string {
   switch (type) {
-    case "large_airport": return "#00d4ff";
+    case "large_airport": return "#1e88a8";
     case "medium_airport": return "#5b9bd5";
     default: return "#5b9bd5";
   }

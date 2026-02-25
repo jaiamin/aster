@@ -124,7 +124,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
       map.addImage(ICON_NORMAL, createPlaneIcon("#b0b8c4", "#ffffff"), { pixelRatio: DPR });
     }
     if (!map.hasImage(ICON_SELECTED)) {
-      map.addImage(ICON_SELECTED, createPlaneIcon("#00d4ff", "#ffffff"), { pixelRatio: DPR });
+      map.addImage(ICON_SELECTED, createPlaneIcon("#1e88a8", "#ffffff"), { pixelRatio: DPR });
     }
   }, [mapRef]);
 
@@ -210,8 +210,9 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           <Layer
             id="flight-track-layer"
             type="line"
+            beforeId="flights-layer"
             paint={{
-              "line-color": "#00d4ff",
+              "line-color": "#1e88a8",
               "line-width": 2,
               "line-opacity": 0.7,
             }}
@@ -224,9 +225,10 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           <Layer
             id="flight-airports-circle"
             type="circle"
+            beforeId="flights-layer"
             paint={{
               "circle-radius": 5,
-              "circle-color": "#00d4ff",
+              "circle-color": "#1e88a8",
               "circle-stroke-color": "#ffffff",
               "circle-stroke-width": 1.5,
             }}
@@ -234,6 +236,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           <Layer
             id="flight-airports-label"
             type="symbol"
+            beforeId="flights-layer"
             layout={{
               "text-field": ["get", "icao"],
               "text-size": 11,

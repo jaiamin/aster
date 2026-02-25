@@ -82,12 +82,12 @@ function AltitudeChart({ track }: { track: FlightTrack }) {
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none">
           <defs>
             <linearGradient id="alt-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#1e88a8" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#1e88a8" stopOpacity="0.02" />
             </linearGradient>
           </defs>
           <path d={areaPath} fill="url(#alt-fill)" />
-          <path d={linePath} fill="none" stroke="#00d4ff" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d={linePath} fill="none" stroke="#1e88a8" strokeWidth="1.5" strokeLinejoin="round" />
         </svg>
         <div className="absolute top-0 right-0 text-[9px] text-muted/50">{maxFt} ft</div>
         <div className="absolute bottom-0 right-0 text-[9px] text-muted/50">{minFt} ft</div>

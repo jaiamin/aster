@@ -9,7 +9,7 @@ export function transformDarkStyle(
   transformed.projection = { type: "globe" };
   transformed.sky = {
     "sky-color": "#0a0a1a",
-    "horizon-color": "#00d4ff08",
+    "horizon-color": "#1e88a808",
     "fog-color": "#0a0a0f",
     "sky-horizon-blend": 0.5,
     "horizon-fog-blend": 0.8,

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Layers, ChevronLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModules } from "@/modules/module-context";
 import type { ModuleDefinition } from "@/types/modules";
@@ -13,69 +13,29 @@ function ModuleRow({
   enabled: boolean;
   onToggle: () => void;
 }) {
-  const { icon: Icon, name, useCount, quickPicks } = def;
-  const { focusTarget } = useModules();
+  const { icon: Icon, name, useCount } = def;
   const count = useCount?.() ?? null;
-  const [expanded, setExpanded] = useState(false);
-  const hasQuickPicks = quickPicks && quickPicks.length > 0;
 
   return (
-    <div>
-      <div className="flex items-center">
-        {hasQuickPicks ? (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex h-7 w-5 shrink-0 items-center justify-center text-muted/40 hover:text-muted transition-colors"
-          >
-            <ChevronDown
-              size={12}
-              className={`transition-transform ${expanded ? "" : "-rotate-90"}`}
-            />
-          </button>
-        ) : (
-          <div className="w-5 shrink-0" />
-        )}
-
-        <button
-          onClick={onToggle}
-          className={`flex flex-1 items-center gap-3 px-2 py-1.5 text-xs transition-colors ${
-            enabled
-              ? "text-accent"
-              : "text-muted hover:bg-panel-hover hover:text-foreground"
-          }`}
-        >
-          <Icon size={14} />
-          {name}
-          {count != null && (
-            <span className="text-[10px] tabular-nums text-muted/50">
-              {count.toLocaleString()}
-            </span>
-          )}
-          <div
-            className={`ml-auto h-3 w-3 border transition-colors ${
-              enabled
-                ? "border-accent bg-accent"
-                : "border-muted/40 bg-transparent"
-            }`}
-          />
-        </button>
-      </div>
-
-      {hasQuickPicks && expanded && (
-        <div className="relative ml-[9px] mb-1 border-l border-panel-border pl-[11px]">
-          {quickPicks!.map((pick) => (
-            <button
-              key={pick.targetId}
-              onClick={() => focusTarget(def.id, pick.targetId)}
-              className="flex w-full items-center gap-2 px-2 py-1.5 text-xs text-muted hover:bg-panel-hover hover:text-foreground transition-colors"
-            >
-              <span className="h-1.5 w-1.5 bg-current opacity-40" />
-              {pick.name}
-            </button>
-          ))}
-        </div>
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center gap-3 px-2 py-1.5 text-xs text-white/70 transition-colors hover:bg-panel-hover hover:text-white"
+    >
+      <Icon size={14} />
+      {name}
+      {count != null && (
+        <span className="text-[10px] tabular-nums text-muted/50">
+          {count.toLocaleString()}
+        </span>
       )}
-    </div>
+      <div
+        className={`ml-auto h-3 w-3 border transition-colors ${
+          enabled
+            ? "border-accent bg-accent"
+            : "border-muted/40 bg-transparent"
+        }`}
+      />
+    </button>
   );
 }
 
@@ -83,31 +43,34 @@ function CategoryGroup({
   category,
   modules,
   enabledModules,
+  open,
+  onToggleOpen,
   onToggle,
 }: {
   category: string;
   modules: ModuleDefinition[];
   enabledModules: Set<string>;
+  open: boolean;
+  onToggleOpen: () => void;
   onToggle: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const activeCount = modules.filter((m) => enabledModules.has(m.id)).length;
 
   return (
     <div>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={onToggleOpen}
         className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-panel-hover"
       >
         <ChevronRight
           size={12}
-          className={`shrink-0 text-muted/40 transition-transform ${open ? "rotate-90" : ""}`}
+          className={`shrink-0 text-white/50 transition-transform ${open ? "rotate-90" : ""}`}
         />
-        <span className="font-medium text-muted tracking-wide uppercase text-[10px]">
+        <span className="font-medium text-white tracking-wide text-xs">
           {category}
         </span>
         {activeCount > 0 && (
-          <span className="ml-auto text-[9px] tabular-nums text-accent">
+          <span className="ml-auto tabular-nums text-white/50">
             {activeCount}
           </span>
         )}
@@ -131,6 +94,7 @@ function CategoryGroup({
 
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
   const { enabledModules, toggle } = useModules();
 
   const grouped = useMemo(() => {
@@ -145,22 +109,50 @@ export function Sidebar() {
       .map((c) => ({ category: c, modules: map.get(c)! }));
   }, []);
 
+  const allExpanded = grouped.length > 0 && grouped.every((g) => openCategories.has(g.category));
+
+  const toggleAll = useCallback(() => {
+    setOpenCategories(allExpanded ? new Set() : new Set(grouped.map((g) => g.category)));
+  }, [allExpanded, grouped]);
+
+  const toggleCategory = useCallback((category: string) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="relative flex h-full shrink-0">
       {/* Icon rail */}
       <div className="flex h-full w-12 flex-col items-center border-r border-panel-border bg-panel">
-        <div className="flex h-12 w-full items-center justify-center">
-          <span className="text-sm font-bold tracking-tight text-accent">S</span>
-        </div>
+        <a href="/" className="flex h-12 w-full items-center justify-center">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="text-white transition-transform duration-700 ease-in-out hover:rotate-[360deg]">
+            {[0, 72, 144, 216, 288].map((angle) => (
+              <rect
+                key={angle}
+                x="10"
+                y="2"
+                width="4"
+                height="7"
+                rx="0.5"
+                fill="currentColor"
+                transform={`rotate(${angle} 12 12)`}
+              />
+            ))}
+          </svg>
+        </a>
 
-        <div className="mx-2 h-px w-8 bg-panel-border" />
+        <div className="h-px w-full bg-panel-border" />
 
         <button
           onClick={() => setModulesOpen(!modulesOpen)}
           aria-label="Toggle modules"
           className={`mt-2 flex h-9 w-9 items-center justify-center transition-all ${
             modulesOpen
-              ? "bg-panel-hover text-accent"
+              ? "bg-panel-hover text-foreground"
               : "text-muted hover:bg-panel-hover hover:text-foreground"
           }`}
         >
@@ -171,19 +163,28 @@ export function Sidebar() {
       {/* Modules flyout */}
       {modulesOpen && (
         <>
-          <div className="h-full w-64 border-r border-panel-border bg-panel">
-            <div className="flex h-12 items-center gap-2 px-4">
-              <Layers size={16} className="text-muted" />
-              <span className="text-[12px] font-medium tracking-widest text-muted">
-                LAYERS
+          <div className="h-full w-72 border-r border-panel-border bg-panel">
+            <div className="flex h-12 items-center gap-3 px-4 bg-accent">
+              <Layers size={16} className="text-white" />
+              <span className="text-[14px] font-medium text-white translate-y-px">
+                Data Layers
               </span>
-              <button
-                onClick={() => setModulesOpen(false)}
-                aria-label="Close modules"
-                className="ml-auto flex h-6 w-6 items-center justify-center text-muted transition-colors hover:bg-panel-hover hover:text-foreground"
-              >
-                <ChevronLeft size={14} />
-              </button>
+              <div className="ml-auto flex items-center gap-1">
+                <button
+                  onClick={toggleAll}
+                  aria-label={allExpanded ? "Collapse all" : "Expand all"}
+                  className="flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
+                >
+                  <ChevronsUpDown size={14} />
+                </button>
+                <button
+                  onClick={() => setModulesOpen(false)}
+                  aria-label="Close modules"
+                  className="flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+              </div>
             </div>
             <div className="h-px bg-panel-border" />
             <div className="p-2 space-y-0.5">
@@ -193,6 +194,8 @@ export function Sidebar() {
                   category={category}
                   modules={modules}
                   enabledModules={enabledModules}
+                  open={openCategories.has(category)}
+                  onToggleOpen={() => toggleCategory(category)}
                   onToggle={toggle}
                 />
               ))}

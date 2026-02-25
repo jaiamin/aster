@@ -25,5 +25,4 @@ export const satellitesModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["satellites"],
   MapLayer: SatellitesLayer,
   useCount: useSatelliteCount,
-  quickPicks: [{ name: "ISS (ZARYA)", targetId: 25544 }],
 };

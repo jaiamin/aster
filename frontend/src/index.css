@@ -3,8 +3,8 @@
 @theme inline {
   --color-background: #0a0a0f;
   --color-foreground: #e2e8f0;
-  --color-accent: #00d4ff;
-  --color-accent-dim: #00d4ff44;
+  --color-accent: #1e88a8;
+  --color-accent-dim: #1e88a844;
   --color-panel: #111827;
   --color-panel-border: #1e2a3a;
   --color-panel-hover: #1a2332;
@@ -69,8 +69,8 @@ body {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 212, 255, 0.015) 2px,
-    rgba(0, 212, 255, 0.015) 4px
+    rgba(30, 136, 168, 0.015) 2px,
+    rgba(30, 136, 168, 0.015) 4px
   );
   pointer-events: none;
 }

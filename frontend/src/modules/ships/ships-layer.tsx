@@ -81,7 +81,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
       map.addImage(ICON_NORMAL, createShipIcon("#b0b8c4", "#ffffff"), { pixelRatio: DPR });
     }
     if (!map.hasImage(ICON_SELECTED)) {
-      map.addImage(ICON_SELECTED, createShipIcon("#00d4ff", "#ffffff"), { pixelRatio: DPR });
+      map.addImage(ICON_SELECTED, createShipIcon("#1e88a8", "#ffffff"), { pixelRatio: DPR });
     }
   }, [mapRef]);
 
