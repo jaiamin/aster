@@ -196,7 +196,11 @@ export async function registerModulePins(
     // No status: just normal + selected
     const normal = await renderPinIcon({ svgImg, bgColor });
     const selected = await renderPinIcon({ svgImg, bgColor, selected: true });
-    map.addImage(`${moduleId}-pin`, normal, { pixelRatio: PIXEL_RATIO });
-    map.addImage(`${moduleId}-pin-selected`, selected, { pixelRatio: PIXEL_RATIO });
+    if (!map.hasImage(`${moduleId}-pin`)) {
+      map.addImage(`${moduleId}-pin`, normal, { pixelRatio: PIXEL_RATIO });
+    }
+    if (!map.hasImage(`${moduleId}-pin-selected`)) {
+      map.addImage(`${moduleId}-pin-selected`, selected, { pixelRatio: PIXEL_RATIO });
+    }
   }
 }
