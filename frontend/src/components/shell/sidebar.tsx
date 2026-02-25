@@ -1,22 +1,11 @@
 import { useState } from "react";
-import {
-  Globe,
-  ChevronLeft,
-  Plane,
-  Ship,
-  Cloud,
-  TrafficCone,
-} from "lucide-react";
-
-const MODULES = [
-  { name: "Flights", icon: Plane },
-  { name: "Maritime", icon: Ship },
-  { name: "Weather", icon: Cloud },
-  { name: "Traffic", icon: TrafficCone },
-];
+import { Globe, ChevronLeft } from "lucide-react";
+import { MODULE_REGISTRY } from "@/modules/registry";
+import { useModules } from "@/modules/module-context";
 
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
+  const { enabledModules, toggle } = useModules();
 
   return (
     <div className="relative flex h-full shrink-0">
@@ -60,16 +49,30 @@ export function Sidebar() {
             </div>
             <div className="h-px bg-panel-border" />
             <div className="p-2">
-              {MODULES.map(({ name, icon: Icon }) => (
-                <div
-                  key={name}
-                  className="flex cursor-not-allowed items-center gap-3 rounded px-3 py-2 text-xs text-muted/60"
-                >
-                  <Icon size={14} />
-                  {name}
-                  <span className="ml-auto text-[9px] text-muted/30">SOON</span>
-                </div>
-              ))}
+              {MODULE_REGISTRY.map(({ id, name, icon: Icon }) => {
+                const enabled = enabledModules.has(id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => toggle(id)}
+                    className={`flex w-full items-center gap-3 rounded px-3 py-2 text-xs transition-colors ${
+                      enabled
+                        ? "text-accent"
+                        : "text-muted hover:bg-panel-hover hover:text-foreground"
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {name}
+                    <div
+                      className={`ml-auto h-3 w-3 rounded-sm border transition-colors ${
+                        enabled
+                          ? "border-accent bg-accent"
+                          : "border-muted/40 bg-transparent"
+                      }`}
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
