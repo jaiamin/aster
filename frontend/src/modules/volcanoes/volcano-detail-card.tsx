@@ -1,4 +1,5 @@
 import { Mountain, LocateFixed, X, ExternalLink } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useVolcanoSelection } from "./volcano-context";
 
@@ -84,16 +85,7 @@ export function VolcanoDetailCard() {
             )}
           </div>
 
-          {/* Position */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Location
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Latitude" value={volcano.latitude.toFixed(4) + "°"} />
-              <Row label="Longitude" value={volcano.longitude.toFixed(4) + "°"} />
-            </div>
-          </div>
+          <LocationFooter latitude={volcano.latitude} longitude={volcano.longitude} />
 
           {/* Source */}
           <div className="flex items-center justify-between pt-1 border-t border-panel-border">

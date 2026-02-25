@@ -1,27 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { PlaneTakeoff } from "lucide-react";
 import { useAirports } from "./use-airports";
 import { AirportSelectionProvider, useAirportSelection } from "./airport-context";
 import { AirportDetailCard } from "./airport-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { Airport } from "@/types/airports";
 
-const TYPE_COLOR: maplibregl.ExpressionSpecification = [
-  "match",
-  ["get", "type"],
-  "large_airport", "#00d4ff",
-  "medium_airport", "#5b9bd5",
-  "#5b9bd5",
-];
-
-const TYPE_RADIUS: maplibregl.ExpressionSpecification = [
-  "match",
-  ["get", "type"],
-  "large_airport", 1.4,
-  "medium_airport", 1.0,
-  1.0,
-];
-
 const FOCUS_ZOOM = 12;
+const MODULE_ID = "airports";
 
 function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.FeatureCollection {
   return {
@@ -31,8 +19,7 @@ function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.Feat
       geometry: { type: "Point", coordinates: [a.longitude, a.latitude] },
       properties: {
         id: a.id,
-        type: a.type,
-        selected: a.id === selectedId,
+        pinImage: a.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
       },
     })),
   };
@@ -45,9 +32,21 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   airportsRef.current = airports;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.airport.id ?? null;
   const geojson = useMemo(() => toGeoJSON(airports, selectedId), [airports, selectedId]);
+
+  // Register pin images
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: PlaneTakeoff,
+      bgColor: CATEGORY_COLORS.Transportation,
+    }).then(() => setReady(true));
+  }, [mapRef]);
 
   // Click handler
   useEffect(() => {
@@ -56,10 +55,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["airports-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -67,11 +63,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
         const airport = airportsRef.current.find((a) => a.id === id);
         if (airport) {
           select(airport);
-          map.flyTo({
-            center: [airport.longitude, airport.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -82,61 +74,33 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
     return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
-
-    map.on("mouseenter", "airports-core", onEnter);
-    map.on("mouseleave", "airports-core", onLeave);
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "airports-core", onEnter);
-      map.off("mouseleave", "airports-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
-  return (
-    <Source id="airports-source" type="geojson" data={geojson}>
-      {/* Glow */}
-      <Layer
-        id="airports-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, ["*", 3, TYPE_RADIUS],
-            6, ["*", 6, TYPE_RADIUS],
-            10, ["*", 12, TYPE_RADIUS],
-          ],
-          "circle-color": TYPE_COLOR,
-          "circle-opacity": 0.12,
-          "circle-blur": 1,
-        }}
-      />
+  if (!ready) return null;
 
-      {/* Core dot */}
+  return (
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="airports-core"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, ["*", 1.5, TYPE_RADIUS],
-            6, ["*", 3, TYPE_RADIUS],
-            10, ["*", 6, TYPE_RADIUS],
-          ],
-          "circle-color": TYPE_COLOR,
-          "circle-opacity": 0.85,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Satellite, LocateFixed, X, Video } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useSatelliteSelection } from "./satellite-context";
 import { zoomForAltitude } from "./satellites-layer";
@@ -171,6 +172,14 @@ export function SatelliteDetailCard() {
               )}
             </div>
           </div>
+
+          <LocationFooter
+            latitude={position.latitude}
+            longitude={position.longitude}
+            altitude={Math.round(altitudeKm)}
+            altitudeLabel="Altitude"
+            altitudeUnit="km"
+          />
 
           {/* ISS Live Feed toggle */}
           {isISS && (

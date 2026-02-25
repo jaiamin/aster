@@ -1,42 +1,47 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Wind } from "lucide-react";
 import { useAirQuality } from "./use-air-quality";
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
 import { AirQualityDetailCard } from "./air-quality-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { AirQualityStation } from "@/types/air-quality";
 
-// EPA AQI color scale for PM2.5 (µg/m³)
-const AQI_COLOR: maplibregl.ExpressionSpecification = [
-  "interpolate",
-  ["linear"],
-  ["get", "pm25"],
-  0, "#00e400",
-  12, "#00e400",
-  13, "#ffff00",
-  35, "#ffff00",
-  36, "#ff7e00",
-  55, "#ff7e00",
-  56, "#ff0000",
-  150, "#ff0000",
-  151, "#8f3f97",
-  250, "#8f3f97",
-  251, "#7e0023",
+const FOCUS_ZOOM = 10;
+const MODULE_ID = "air-quality";
+
+const STATUS_VARIANTS = [
+  { key: "good", dotColor: "#00e400" },
+  { key: "moderate", dotColor: "#eab308" },
+  { key: "unhealthy-sg", dotColor: "#ff7e00" },
+  { key: "unhealthy", dotColor: "#ff0000" },
+  { key: "hazardous", dotColor: "#8f3f97" },
 ];
 
-const FOCUS_ZOOM = 10;
+function pm25ToStatusKey(pm25: number): string {
+  if (pm25 > 150) return "hazardous";
+  if (pm25 > 55) return "unhealthy";
+  if (pm25 > 35) return "unhealthy-sg";
+  if (pm25 > 12) return "moderate";
+  return "good";
+}
 
 function toGeoJSON(stations: AirQualityStation[], selectedId: string | null): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: stations.map((s) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-      properties: {
-        id: s.id,
-        pm25: s.pm25,
-        selected: s.id === selectedId,
-      },
-    })),
+    features: stations.map((s) => {
+      const key = pm25ToStatusKey(s.pm25);
+      const sel = s.id === selectedId;
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
+        properties: {
+          id: s.id,
+          pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+        },
+      };
+    }),
   };
 }
 
@@ -47,9 +52,22 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
   stationsRef.current = stations;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.station.id ?? null;
   const geojson = useMemo(() => toGeoJSON(stations, selectedId), [stations, selectedId]);
+
+  // Register pin images
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: Wind,
+      bgColor: CATEGORY_COLORS.Environment,
+      statusVariants: STATUS_VARIANTS,
+    }).then(() => setReady(true));
+  }, [mapRef]);
 
   // Click handler
   useEffect(() => {
@@ -58,10 +76,7 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["air-quality-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -69,11 +84,7 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
         const station = stationsRef.current.find((s) => s.id === id);
         if (station) {
           select(station);
-          map.flyTo({
-            center: [station.longitude, station.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [station.longitude, station.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -84,63 +95,33 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
     return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
-
-    map.on("mouseenter", "air-quality-core", onEnter);
-    map.on("mouseleave", "air-quality-core", onLeave);
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "air-quality-core", onEnter);
-      map.off("mouseleave", "air-quality-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
-  return (
-    <Source id="air-quality-source" type="geojson" data={geojson}>
-      {/* Soft glow halo */}
-      <Layer
-        id="air-quality-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            1, 3,
-            4, 6,
-            8, 12,
-            12, 20,
-          ],
-          "circle-color": AQI_COLOR,
-          "circle-opacity": 0.2,
-          "circle-blur": 1,
-        }}
-      />
+  if (!ready) return null;
 
-      {/* Core dot */}
+  return (
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="air-quality-core"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            1, 1.5,
-            4, 3,
-            8, 6,
-            12, 10,
-          ],
-          "circle-color": AQI_COLOR,
-          "circle-opacity": 0.9,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>

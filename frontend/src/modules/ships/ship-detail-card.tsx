@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Ship as ShipIcon, LocateFixed, X } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useShipSelection } from "./ship-context";
 
@@ -144,16 +145,7 @@ export function ShipDetailCard() {
             </div>
           </div>
 
-          {/* Position */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Position
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Latitude" value={ship.latitude.toFixed(4) + "°"} />
-              <Row label="Longitude" value={ship.longitude.toFixed(4) + "°"} />
-            </div>
-          </div>
+          <LocationFooter latitude={ship.latitude} longitude={ship.longitude} />
 
           {/* Last updated */}
           <div className="text-[11px] text-muted/50 text-center pt-1 border-t border-panel-border">

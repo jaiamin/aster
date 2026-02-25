@@ -1,4 +1,5 @@
 import { Anchor, LocateFixed, X } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePortSelection } from "./port-context";
 
@@ -74,16 +75,7 @@ export function PortDetailCard() {
             </p>
           </div>
 
-          {/* Position */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Coordinates
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Latitude" value={port.latitude.toFixed(4) + "\u00B0"} />
-              <Row label="Longitude" value={port.longitude.toFixed(4) + "\u00B0"} />
-            </div>
-          </div>
+          <LocationFooter latitude={port.latitude} longitude={port.longitude} />
 
           {/* Source */}
           <div className="flex items-center justify-between pt-1 border-t border-panel-border">

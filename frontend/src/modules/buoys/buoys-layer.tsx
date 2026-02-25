@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Navigation } from "lucide-react";
 import { useBuoys } from "./use-buoys";
 import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
 import { BuoyDetailCard } from "./buoy-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { Buoy } from "@/types/buoys";
 
-const BUOY_COLOR = "#22d3ee";
 const FOCUS_ZOOM = 8;
+const MODULE_ID = "buoys";
 
 function toGeoJSON(buoys: Buoy[], selectedId: string | null): GeoJSON.FeatureCollection {
   return {
@@ -16,8 +19,7 @@ function toGeoJSON(buoys: Buoy[], selectedId: string | null): GeoJSON.FeatureCol
       geometry: { type: "Point", coordinates: [b.longitude, b.latitude] },
       properties: {
         id: b.id,
-        hasWave: b.waveHeight != null,
-        selected: b.id === selectedId,
+        pinImage: b.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
       },
     })),
   };
@@ -30,9 +32,21 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
   buoysRef.current = buoys;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.buoy.id ?? null;
   const geojson = useMemo(() => toGeoJSON(buoys, selectedId), [buoys, selectedId]);
+
+  // Register pin images
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: Navigation,
+      bgColor: CATEGORY_COLORS.Environment,
+    }).then(() => setReady(true));
+  }, [mapRef]);
 
   // Click handler
   useEffect(() => {
@@ -41,10 +55,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["buoys-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -52,11 +63,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
         const buoy = buoysRef.current.find((b) => b.id === id);
         if (buoy) {
           select(buoy);
-          map.flyTo({
-            center: [buoy.longitude, buoy.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [buoy.longitude, buoy.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -67,61 +74,33 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
     return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
-
-    map.on("mouseenter", "buoys-core", onEnter);
-    map.on("mouseleave", "buoys-core", onLeave);
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "buoys-core", onEnter);
-      map.off("mouseleave", "buoys-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
-  return (
-    <Source id="buoys-source" type="geojson" data={geojson}>
-      {/* Glow */}
-      <Layer
-        id="buoys-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 3,
-            6, 7,
-            10, 14,
-          ],
-          "circle-color": BUOY_COLOR,
-          "circle-opacity": 0.15,
-          "circle-blur": 1,
-        }}
-      />
+  if (!ready) return null;
 
-      {/* Core dot */}
+  return (
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="buoys-core"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 1.5,
-            6, 3.5,
-            10, 7,
-          ],
-          "circle-color": BUOY_COLOR,
-          "circle-opacity": 0.85,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>

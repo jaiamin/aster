@@ -1,4 +1,5 @@
 import { Flame, LocateFixed, X } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useWildfireSelection } from "./wildfire-context";
 
@@ -115,16 +116,7 @@ export function WildfireDetailCard() {
             </div>
           </div>
 
-          {/* Position */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Location
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Latitude" value={fire.latitude.toFixed(4) + "°"} />
-              <Row label="Longitude" value={fire.longitude.toFixed(4) + "°"} />
-            </div>
-          </div>
+          <LocationFooter latitude={fire.latitude} longitude={fire.longitude} />
 
           {/* Source */}
           <div className="text-[11px] text-muted/50 text-center pt-1 border-t border-panel-border">

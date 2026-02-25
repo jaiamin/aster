@@ -1,45 +1,45 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Activity } from "lucide-react";
 import { useEarthquakes } from "./use-earthquakes";
 import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquake-context";
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { Earthquake } from "@/types/earthquakes";
 
-const MAG_COLOR: maplibregl.ExpressionSpecification = [
-  "interpolate",
-  ["linear"],
-  ["get", "magnitude"],
-  2.5, "#22c55e",
-  4.0, "#eab308",
-  5.5, "#f97316",
-  7.0, "#ef4444",
-  8.0, "#dc2626",
-];
-
-const MAG_RADIUS: maplibregl.ExpressionSpecification = [
-  "interpolate",
-  ["exponential", 2],
-  ["get", "magnitude"],
-  2.5, 4,
-  5.0, 12,
-  7.0, 28,
-  9.0, 52,
-];
-
 const FOCUS_ZOOM = 7;
+const MODULE_ID = "earthquakes";
+
+const STATUS_VARIANTS = [
+  { key: "green", dotColor: "#22c55e" },
+  { key: "yellow", dotColor: "#eab308" },
+  { key: "orange", dotColor: "#f97316" },
+  { key: "red", dotColor: "#ef4444" },
+];
+
+function magToStatusKey(mag: number): string {
+  if (mag >= 7.0) return "red";
+  if (mag >= 5.5) return "orange";
+  if (mag >= 4.0) return "yellow";
+  return "green";
+}
 
 function toGeoJSON(quakes: Earthquake[], selectedId: string | null): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: quakes.map((q) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [q.longitude, q.latitude] },
-      properties: {
-        id: q.id,
-        magnitude: q.magnitude,
-        selected: q.id === selectedId,
-      },
-    })),
+    features: quakes.map((q) => {
+      const key = magToStatusKey(q.magnitude);
+      const sel = q.id === selectedId;
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [q.longitude, q.latitude] },
+        properties: {
+          id: q.id,
+          pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+        },
+      };
+    }),
   };
 }
 
@@ -50,32 +50,21 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
   quakesRef.current = quakes;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
-  const pulseRef = useRef(0);
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.quake.id ?? null;
   const geojson = useMemo(() => toGeoJSON(quakes, selectedId), [quakes, selectedId]);
 
-  // Pulse animation on the outer ring
+  // Register pin images
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
-    let animId: number;
-    const animate = () => {
-      pulseRef.current = (pulseRef.current + 0.02) % (Math.PI * 2);
-      const scale = 1 + 0.3 * Math.sin(pulseRef.current);
-      const opacity = 0.6 - 0.25 * Math.sin(pulseRef.current);
-
-      if (map.getLayer("earthquakes-pulse")) {
-        map.setPaintProperty("earthquakes-pulse", "circle-opacity", opacity);
-        // Scale radius by modifying stroke width as a visual pulse
-        map.setPaintProperty("earthquakes-pulse", "circle-stroke-width", 2 * scale);
-      }
-
-      animId = requestAnimationFrame(animate);
-    };
-    animId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animId);
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: Activity,
+      bgColor: CATEGORY_COLORS["Natural Events"],
+      statusVariants: STATUS_VARIANTS,
+    }).then(() => setReady(true));
   }, [mapRef]);
 
   // Click handler
@@ -85,10 +74,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["earthquakes-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -96,11 +82,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
         const quake = quakesRef.current.find((q) => q.id === id);
         if (quake) {
           select(quake);
-          map.flyTo({
-            center: [quake.longitude, quake.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -108,98 +90,36 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
     };
 
     map.on("click", handleClick);
-    return () => {
-      map.off("click", handleClick);
-    };
+    return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
-    const onEnter = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const onLeave = () => {
-      map.getCanvas().style.cursor = "";
-    };
-
-    map.on("mouseenter", "earthquakes-core", onEnter);
-    map.on("mouseleave", "earthquakes-core", onLeave);
+    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
+    const onLeave = () => { map.getCanvas().style.cursor = ""; };
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "earthquakes-core", onEnter);
-      map.off("mouseleave", "earthquakes-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
+  if (!ready) return null;
+
   return (
-    <Source id="earthquakes-source" type="geojson" data={geojson}>
-      {/* Outer glow — soft blurred halo */}
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="earthquakes-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            2,
-            ["*", MAG_RADIUS, 0.8],
-            8,
-            ["*", MAG_RADIUS, 1.6],
-          ],
-          "circle-color": MAG_COLOR,
-          "circle-opacity": 0.15,
-          "circle-blur": 1,
-        }}
-      />
-
-      {/* Pulsing ring — animated stroke */}
-      <Layer
-        id="earthquakes-pulse"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            2,
-            ["*", MAG_RADIUS, 0.6],
-            8,
-            ["*", MAG_RADIUS, 1.2],
-          ],
-          "circle-color": "transparent",
-          "circle-opacity": 0.6,
-          "circle-stroke-color": MAG_COLOR,
-          "circle-stroke-width": 2,
-          "circle-stroke-opacity": 0.8,
-        }}
-      />
-
-      {/* Core dot — solid, bright */}
-      <Layer
-        id="earthquakes-core"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            2,
-            ["*", MAG_RADIUS, 0.3],
-            8,
-            ["*", MAG_RADIUS, 0.6],
-          ],
-          "circle-color": MAG_COLOR,
-          "circle-opacity": 0.9,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>

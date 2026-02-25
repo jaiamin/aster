@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
 import { VolcanoDetailCard } from "./volcano-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { Volcano } from "@/types/volcanoes";
 
-const VOLCANO_COLOR = "#e85d04";
 const FOCUS_ZOOM = 8;
+const MODULE_ID = "volcanoes";
 
 function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.FeatureCollection {
   return {
@@ -16,7 +19,7 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.Fea
       geometry: { type: "Point", coordinates: [v.longitude, v.latitude] },
       properties: {
         id: v.id,
-        selected: v.id === selectedId,
+        pinImage: v.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
       },
     })),
   };
@@ -29,31 +32,20 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   volcanoesRef.current = volcanoes;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
-  const pulseRef = useRef(0);
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.volcano.id ?? null;
   const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId), [volcanoes, selectedId]);
 
-  // Pulse animation
+  // Register pin images
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
-    let animId: number;
-    const animate = () => {
-      pulseRef.current = (pulseRef.current + 0.025) % (Math.PI * 2);
-      const scale = 1 + 0.35 * Math.sin(pulseRef.current);
-      const opacity = 0.5 - 0.2 * Math.sin(pulseRef.current);
-
-      if (map.getLayer("volcanoes-pulse")) {
-        map.setPaintProperty("volcanoes-pulse", "circle-opacity", opacity);
-        map.setPaintProperty("volcanoes-pulse", "circle-stroke-width", 2 * scale);
-      }
-
-      animId = requestAnimationFrame(animate);
-    };
-    animId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animId);
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: Mountain,
+      bgColor: CATEGORY_COLORS["Natural Events"],
+    }).then(() => setReady(true));
   }, [mapRef]);
 
   // Click handler
@@ -63,10 +55,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["volcanoes-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -74,11 +63,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
         const volcano = volcanoesRef.current.find((v) => v.id === id);
         if (volcano) {
           select(volcano);
-          map.flyTo({
-            center: [volcano.longitude, volcano.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [volcano.longitude, volcano.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -89,82 +74,33 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
     return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
-
-    map.on("mouseenter", "volcanoes-core", onEnter);
-    map.on("mouseleave", "volcanoes-core", onLeave);
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "volcanoes-core", onEnter);
-      map.off("mouseleave", "volcanoes-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
-  const baseRadius: maplibregl.ExpressionSpecification = [
-    "interpolate", ["linear"], ["zoom"],
-    2, 5,
-    6, 10,
-    10, 16,
-  ];
+  if (!ready) return null;
 
   return (
-    <Source id="volcanoes-source" type="geojson" data={geojson}>
-      {/* Outer glow */}
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="volcanoes-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 12,
-            6, 22,
-            10, 36,
-          ],
-          "circle-color": VOLCANO_COLOR,
-          "circle-opacity": 0.12,
-          "circle-blur": 1,
-        }}
-      />
-
-      {/* Pulsing ring */}
-      <Layer
-        id="volcanoes-pulse"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 8,
-            6, 14,
-            10, 24,
-          ],
-          "circle-color": "transparent",
-          "circle-opacity": 0.5,
-          "circle-stroke-color": VOLCANO_COLOR,
-          "circle-stroke-width": 2,
-          "circle-stroke-opacity": 0.7,
-        }}
-      />
-
-      {/* Core dot */}
-      <Layer
-        id="volcanoes-core"
-        type="circle"
-        paint={{
-          "circle-radius": baseRadius,
-          "circle-color": VOLCANO_COLOR,
-          "circle-opacity": 0.9,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>

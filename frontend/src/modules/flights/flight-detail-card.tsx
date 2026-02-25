@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PlaneTakeoff, PlaneLanding, Plane, X, LocateFixed } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useFlightSelection } from "./flight-context";
 import type { Airport, FlightTrack } from "@/types/flights";
@@ -230,6 +231,12 @@ export function FlightDetailCard() {
 
           {/* Altitude profile */}
           {track && <AltitudeChart track={track} />}
+
+          <LocationFooter
+            latitude={flight.latitude}
+            longitude={flight.longitude}
+            altitude={flight.baro_altitude != null ? Math.round(flight.baro_altitude * 3.281) : undefined}
+          />
 
           {/* Last updated */}
           <div className="text-[11px] text-muted/50 text-center pt-1 border-t border-panel-border">

@@ -1,4 +1,5 @@
 import { Activity, LocateFixed, X, ExternalLink, AlertTriangle } from "lucide-react";
+import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useEarthquakeSelection } from "./earthquake-context";
 
@@ -118,16 +119,7 @@ export function EarthquakeDetailCard() {
             </div>
           </div>
 
-          {/* Position */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Epicenter
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Latitude" value={quake.latitude.toFixed(4) + "°"} />
-              <Row label="Longitude" value={quake.longitude.toFixed(4) + "°"} />
-            </div>
-          </div>
+          <LocationFooter latitude={quake.latitude} longitude={quake.longitude} />
 
           {/* Status + link */}
           <div className="flex items-center justify-between pt-1 border-t border-panel-border">

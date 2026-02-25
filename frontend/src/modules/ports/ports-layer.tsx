@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Anchor } from "lucide-react";
 import { usePorts } from "./use-ports";
 import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { PortDetailCard } from "./port-detail-card";
+import { registerModulePins } from "@/lib/pin-icon";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import type { Port } from "@/types/ports";
 
-const PORT_COLOR = "#38bdf8";
 const FOCUS_ZOOM = 12;
+const MODULE_ID = "ports";
 
 function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCollection {
   return {
@@ -16,7 +19,7 @@ function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCol
       geometry: { type: "Point", coordinates: [p.longitude, p.latitude] },
       properties: {
         id: p.id,
-        selected: p.id === selectedId,
+        pinImage: p.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
       },
     })),
   };
@@ -29,9 +32,21 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
   portsRef.current = ports;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.port.id ?? null;
   const geojson = useMemo(() => toGeoJSON(ports, selectedId), [ports, selectedId]);
+
+  // Register pin images
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    registerModulePins(map, {
+      moduleId: MODULE_ID,
+      icon: Anchor,
+      bgColor: CATEGORY_COLORS.Transportation,
+    }).then(() => setReady(true));
+  }, [mapRef]);
 
   // Click handler
   useEffect(() => {
@@ -40,10 +55,7 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["ports-core"],
-      });
+      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
 
       if (features.length > 0 && !consumed) {
         (e.originalEvent as any)._layerHandled = true;
@@ -51,11 +63,7 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
         const port = portsRef.current.find((p) => p.id === id);
         if (port) {
           select(port);
-          map.flyTo({
-            center: [port.longitude, port.latitude],
-            zoom: FOCUS_ZOOM,
-            duration: 1500,
-          });
+          map.flyTo({ center: [port.longitude, port.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();
@@ -66,61 +74,33 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
     return () => { map.off("click", handleClick); };
   }, [mapRef, select, deselect]);
 
-  // Pointer cursor on hover
+  // Pointer cursor
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
-
-    map.on("mouseenter", "ports-core", onEnter);
-    map.on("mouseleave", "ports-core", onLeave);
+    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
+    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
     return () => {
-      map.off("mouseenter", "ports-core", onEnter);
-      map.off("mouseleave", "ports-core", onLeave);
+      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
+      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
     };
   }, [mapRef]);
 
-  return (
-    <Source id="ports-source" type="geojson" data={geojson}>
-      {/* Glow */}
-      <Layer
-        id="ports-glow"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 3,
-            6, 6,
-            10, 12,
-          ],
-          "circle-color": PORT_COLOR,
-          "circle-opacity": 0.12,
-          "circle-blur": 1,
-        }}
-      />
+  if (!ready) return null;
 
-      {/* Core dot */}
+  return (
+    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
       <Layer
-        id="ports-core"
-        type="circle"
-        paint={{
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 1.5,
-            6, 3,
-            10, 6,
-          ],
-          "circle-color": PORT_COLOR,
-          "circle-opacity": 0.85,
-          "circle-stroke-color": [
-            "case",
-            ["get", "selected"],
-            "#ffffff",
-            "transparent",
-          ],
-          "circle-stroke-width": ["case", ["get", "selected"], 2, 0],
+        id={`${MODULE_ID}-pins`}
+        type="symbol"
+        layout={{
+          "icon-image": ["get", "pinImage"],
+          "icon-size": 1,
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
         }}
       />
     </Source>
