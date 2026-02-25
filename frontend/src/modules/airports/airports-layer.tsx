@@ -6,9 +6,8 @@ import { AirportSelectionProvider, useAirportSelection } from "./airport-context
 import { AirportDetailCard } from "./airport-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Airport } from "@/types/airports";
-
-const FOCUS_ZOOM = 12;
 const MODULE_ID = "airports";
 
 function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.FeatureCollection {
@@ -63,7 +62,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
         const airport = airportsRef.current.find((a) => a.id === id);
         if (airport) {
           select(airport);
-          map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

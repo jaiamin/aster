@@ -2,8 +2,7 @@ import { PlaneTakeoff, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirportSelection } from "./airport-context";
-
-const FOCUS_ZOOM = 12;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function typeLabel(type: string): string {
   switch (type) {
@@ -35,7 +34,7 @@ export function AirportDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [airport.longitude, airport.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["airports"],
       duration: 1500,
     });
   };

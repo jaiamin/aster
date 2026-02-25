@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigation } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { BuoysLayer } from "./buoys-layer";
 import type { Buoy } from "@/types/buoys";
 
@@ -24,6 +25,7 @@ export const buoysModule: ModuleDefinition = {
   name: "Ocean Buoys",
   category: "Environment",
   icon: Navigation,
+  focusZoom: FOCUS_ZOOM["buoys"],
   MapLayer: BuoysLayer,
   useCount: useBuoyCount,
 };

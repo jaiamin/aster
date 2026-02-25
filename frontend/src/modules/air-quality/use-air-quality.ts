@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { AirQualityStation } from "@/types/air-quality";
 
 const POLL_INTERVAL = 300_000; // 5 minutes
+const MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export function useAirQuality() {
   const [stations, setStations] = useState<AirQualityStation[]>([]);
@@ -14,7 +15,8 @@ export function useAirQuality() {
         const res = await fetch("/api/air-quality", { signal: controller.signal });
         if (!res.ok) return;
         const data: AirQualityStation[] = await res.json();
-        setStations(data);
+        const cutoff = Date.now() - MAX_AGE_MS;
+        setStations(data.filter((s) => !s.lastUpdated || new Date(s.lastUpdated).getTime() >= cutoff));
       } catch {
         // aborted or network error
       }

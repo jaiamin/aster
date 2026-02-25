@@ -6,9 +6,8 @@ import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quali
 import { AirQualityDetailCard } from "./air-quality-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { AirQualityStation } from "@/types/air-quality";
-
-const FOCUS_ZOOM = 10;
 const MODULE_ID = "air-quality";
 
 const STATUS_VARIANTS = [
@@ -84,7 +83,7 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
         const station = stationsRef.current.find((s) => s.id === id);
         if (station) {
           select(station);
-          map.flyTo({ center: [station.longitude, station.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [station.longitude, station.latitude], zoom: FOCUS_ZOOM["air-quality"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

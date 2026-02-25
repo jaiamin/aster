@@ -6,9 +6,8 @@ import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { PortDetailCard } from "./port-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Port } from "@/types/ports";
-
-const FOCUS_ZOOM = 12;
 const MODULE_ID = "ports";
 
 function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCollection {
@@ -63,7 +62,7 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
         const port = portsRef.current.find((p) => p.id === id);
         if (port) {
           select(port);
-          map.flyTo({ center: [port.longitude, port.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [port.longitude, port.latitude], zoom: FOCUS_ZOOM["ports"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

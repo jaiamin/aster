@@ -3,10 +3,9 @@ import { Ship as ShipIcon, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useShipSelection } from "./ship-context";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
-const FOCUS_ZOOM = 10;
-
-// AIS ship type code → human-readable category
+// AIS vessel type code → human-readable category
 const SHIP_TYPE_LABELS: Record<number, string> = {
   20: "Wing in Ground",
   30: "Fishing",
@@ -70,7 +69,7 @@ export function ShipDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [ship.longitude, ship.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["ships"],
       duration: 1500,
     });
     map.once("moveend", () => resumeTracking());
@@ -88,7 +87,7 @@ export function ShipDetailCard() {
             <button
               onClick={recenter}
               className="p-1 bg-black/50 text-white/80 hover:text-accent hover:bg-black/70 transition-colors"
-              title="Recenter on ship"
+              title="Recenter on vessel"
             >
               <LocateFixed size={16} />
             </button>

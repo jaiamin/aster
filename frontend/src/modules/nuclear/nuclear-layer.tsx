@@ -6,9 +6,8 @@ import { NuclearSelectionProvider, useNuclearSelection } from "./nuclear-context
 import { NuclearDetailCard } from "./nuclear-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { NuclearFacility } from "@/types/nuclear";
-
-const FOCUS_ZOOM = 10;
 const MODULE_ID = "nuclear";
 
 const STATUS_VARIANTS = [
@@ -84,7 +83,7 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
         const facility = facilitiesRef.current.find((f) => f.id === id);
         if (facility) {
           select(facility);
-          map.flyTo({ center: [facility.longitude, facility.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [facility.longitude, facility.latitude], zoom: FOCUS_ZOOM["nuclear"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

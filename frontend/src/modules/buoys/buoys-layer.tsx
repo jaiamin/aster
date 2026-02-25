@@ -6,9 +6,8 @@ import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
 import { BuoyDetailCard } from "./buoy-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Buoy } from "@/types/buoys";
-
-const FOCUS_ZOOM = 8;
 const MODULE_ID = "buoys";
 
 function toGeoJSON(buoys: Buoy[], selectedId: string | null): GeoJSON.FeatureCollection {
@@ -63,7 +62,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
         const buoy = buoysRef.current.find((b) => b.id === id);
         if (buoy) {
           select(buoy);
-          map.flyTo({ center: [buoy.longitude, buoy.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [buoy.longitude, buoy.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

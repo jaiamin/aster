@@ -25,6 +25,7 @@ function useAircraftPhoto(icao24: string) {
   useEffect(() => {
     setUrl(null);
     setLoaded(false);
+    if (!icao24) { setLoaded(true); return; }
     fetch(`https://hexdb.io/hex-image-thumb?hex=${icao24}`)
       .then((r) => (r.ok ? r.text() : null))
       .then((text) => {

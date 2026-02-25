@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Anchor } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { PortsLayer } from "./ports-layer";
 import type { Port } from "@/types/ports";
 
@@ -24,6 +25,7 @@ export const portsModule: ModuleDefinition = {
   name: "Ports",
   category: "Transportation",
   icon: Anchor,
+  focusZoom: FOCUS_ZOOM["ports"],
   MapLayer: PortsLayer,
   useCount: usePortCount,
 };

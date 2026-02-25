@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Radiation } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { NuclearLayer } from "./nuclear-layer";
 import type { NuclearFacility } from "@/types/nuclear";
 
@@ -24,6 +25,7 @@ export const nuclearModule: ModuleDefinition = {
   name: "Nuclear Facilities",
   category: "Infrastructure",
   icon: Radiation,
+  focusZoom: FOCUS_ZOOM["nuclear"],
   MapLayer: NuclearLayer,
   useCount: useNuclearCount,
 };

@@ -5,8 +5,6 @@ import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
 import type { CableData, CableFeature } from "@/types/cables";
 
-const FOCUS_ZOOM = 4;
-
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 function buildCablesGeoJSON(data: CableData | null, selectedId: string | null): GeoJSON.FeatureCollection {

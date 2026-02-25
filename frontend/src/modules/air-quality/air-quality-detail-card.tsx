@@ -2,8 +2,7 @@ import { Wind, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirQualitySelection } from "./air-quality-context";
-
-const FOCUS_ZOOM = 10;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function aqiCategory(pm25: number): { label: string; color: string } {
   if (pm25 <= 12) return { label: "Good", color: "#00e400" };
@@ -57,7 +56,7 @@ export function AirQualityDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [station.longitude, station.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["air-quality"],
       duration: 1500,
     });
   };

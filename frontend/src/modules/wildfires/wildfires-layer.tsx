@@ -6,9 +6,8 @@ import { WildfireSelectionProvider, useWildfireSelection } from "./wildfire-cont
 import { WildfireDetailCard } from "./wildfire-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Wildfire } from "@/types/wildfires";
-
-const FOCUS_ZOOM = 9;
 const MODULE_ID = "wildfires";
 
 const STATUS_VARIANTS = [
@@ -88,7 +87,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
         const fire = firesRef.current[idx];
         if (fire) {
           select(fire);
-          map.flyTo({ center: [fire.longitude, fire.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [fire.longitude, fire.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

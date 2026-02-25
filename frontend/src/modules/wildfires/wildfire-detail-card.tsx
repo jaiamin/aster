@@ -2,8 +2,7 @@ import { Flame, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useWildfireSelection } from "./wildfire-context";
-
-const FOCUS_ZOOM = 9;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function frpColor(frp: number): string {
   if (frp >= 200) return "#f44336";
@@ -47,7 +46,7 @@ export function WildfireDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [fire.longitude, fire.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["wildfires"],
       duration: 1500,
     });
   };

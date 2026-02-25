@@ -2,8 +2,7 @@ import { Activity, LocateFixed, X, ExternalLink, AlertTriangle } from "lucide-re
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useEarthquakeSelection } from "./earthquake-context";
-
-const FOCUS_ZOOM = 7;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function magColor(mag: number): string {
   if (mag >= 7) return "#ef4444";
@@ -46,7 +45,7 @@ export function EarthquakeDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [quake.longitude, quake.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["earthquakes"],
       duration: 1500,
     });
   };

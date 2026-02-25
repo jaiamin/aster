@@ -6,9 +6,8 @@ import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquak
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Earthquake } from "@/types/earthquakes";
-
-const FOCUS_ZOOM = 7;
 const MODULE_ID = "earthquakes";
 
 const STATUS_VARIANTS = [
@@ -82,7 +81,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
         const quake = quakesRef.current.find((q) => q.id === id);
         if (quake) {
           select(quake);
-          map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

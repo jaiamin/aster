@@ -2,8 +2,7 @@ import { Anchor, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePortSelection } from "./port-context";
-
-const FOCUS_ZOOM = 12;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 const PORT_COLOR = "#38bdf8";
 
 export function PortDetailCard() {
@@ -19,7 +18,7 @@ export function PortDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [port.longitude, port.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["ports"],
       duration: 1500,
     });
   };

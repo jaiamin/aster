@@ -2,9 +2,9 @@ import { Mountain, LocateFixed, X, ExternalLink } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useVolcanoSelection } from "./volcano-context";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 const VOLCANO_COLOR = "#e85d04";
-const FOCUS_ZOOM = 8;
 
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -32,7 +32,7 @@ export function VolcanoDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [volcano.longitude, volcano.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["volcanoes"],
       duration: 1500,
     });
   };

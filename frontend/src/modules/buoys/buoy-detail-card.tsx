@@ -2,8 +2,7 @@ import { Navigation, Wind, Waves, Thermometer, Gauge, LocateFixed, X } from "luc
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useBuoySelection } from "./buoy-context";
-
-const FOCUS_ZOOM = 8;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 const BUOY_COLOR = "#22d3ee";
 
 function windDirLabel(deg: number): string {
@@ -43,7 +42,7 @@ export function BuoyDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [buoy.longitude, buoy.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["buoys"],
       duration: 1500,
     });
   };

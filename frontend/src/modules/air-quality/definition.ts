@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Wind } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { AirQualityLayer } from "./air-quality-layer";
 import type { AirQualityStation } from "@/types/air-quality";
 
@@ -24,6 +25,7 @@ export const airQualityModule: ModuleDefinition = {
   name: "Air Quality",
   category: "Environment",
   icon: Wind,
+  focusZoom: FOCUS_ZOOM["air-quality"],
   MapLayer: AirQualityLayer,
   useCount: useAirQualityCount,
 };

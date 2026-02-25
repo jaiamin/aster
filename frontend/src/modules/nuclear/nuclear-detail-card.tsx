@@ -2,8 +2,7 @@ import { Radiation, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useNuclearSelection } from "./nuclear-context";
-
-const FOCUS_ZOOM = 10;
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -40,7 +39,7 @@ export function NuclearDetailCard() {
     if (!map) return;
     map.flyTo({
       center: [facility.longitude, facility.latitude],
-      zoom: FOCUS_ZOOM,
+      zoom: FOCUS_ZOOM["nuclear"],
       duration: 1500,
     });
   };

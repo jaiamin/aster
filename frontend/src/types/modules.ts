@@ -10,6 +10,8 @@ export interface ModuleDefinition {
   name: string;
   category: string;
   icon: LucideIcon;
+  /** Zoom level when focusing on a selected item */
+  focusZoom: number;
   MapLayer: ComponentType;
   useCount?: () => number | null;
   quickPicks?: QuickPick[];

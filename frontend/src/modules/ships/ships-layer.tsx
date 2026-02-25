@@ -3,35 +3,49 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Ship } from "@/types/ships";
 
-const ICON_ID = "ship-icon";
-const ICON_SIZE = 24;
+const ICON_NORMAL = "ship-icon";
+const ICON_SELECTED = "ship-icon-selected";
+const ICON_SIZE = 48;
+const DPR = 2;
 
-function createShipIcon(): ImageData {
-  const canvas = document.createElement("canvas");
-  canvas.width = ICON_SIZE;
-  canvas.height = ICON_SIZE;
-  const ctx = canvas.getContext("2d")!;
+function drawShip(ctx: CanvasRenderingContext2D, size: number, fillColor: string, strokeColor: string) {
+  const cx = size / 2;
+  const s = size / 24; // scale from 24-unit design
 
-  const cx = ICON_SIZE / 2;
-
-  ctx.fillStyle = "#ffffff";
+  // Hull shape
   ctx.beginPath();
-  ctx.moveTo(cx, 2);
-  ctx.lineTo(cx + 5, 10);
-  ctx.lineTo(cx + 5, 20);
-  ctx.lineTo(cx + 3, 22);
-  ctx.lineTo(cx - 3, 22);
-  ctx.lineTo(cx - 5, 20);
-  ctx.lineTo(cx - 5, 10);
+  ctx.moveTo(cx, 2 * s);
+  ctx.lineTo(cx + 5 * s, 10 * s);
+  ctx.lineTo(cx + 5 * s, 20 * s);
+  ctx.lineTo(cx + 3 * s, 22 * s);
+  ctx.lineTo(cx - 3 * s, 22 * s);
+  ctx.lineTo(cx - 5 * s, 20 * s);
+  ctx.lineTo(cx - 5 * s, 10 * s);
   ctx.closePath();
+
+  // Outline
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5 * s;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  // Fill
+  ctx.fillStyle = fillColor;
   ctx.fill();
 
-  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-  ctx.fillRect(cx - 2, 12, 4, 4);
+}
 
-  return ctx.getImageData(0, 0, ICON_SIZE, ICON_SIZE);
+function createShipIcon(fillColor: string, strokeColor: string): ImageData {
+  const canvas = document.createElement("canvas");
+  canvas.width = ICON_SIZE * DPR;
+  canvas.height = ICON_SIZE * DPR;
+  const ctx = canvas.getContext("2d")!;
+  ctx.scale(DPR, DPR);
+  drawShip(ctx, ICON_SIZE, fillColor, strokeColor);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureCollection {
@@ -50,8 +64,6 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureC
   };
 }
 
-const FOCUS_ZOOM = 10;
-
 function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const { current: mapRef } = useMap();
   const { selected, tracking, select, deselect } = useShipSelection();
@@ -61,12 +73,15 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
 
-  // Register ship icon
+  // Register ship icon variants
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    if (!map.hasImage(ICON_ID)) {
-      map.addImage(ICON_ID, createShipIcon(), { sdf: true });
+    if (!map.hasImage(ICON_NORMAL)) {
+      map.addImage(ICON_NORMAL, createShipIcon("#b0b8c4", "#ffffff"), { pixelRatio: DPR });
+    }
+    if (!map.hasImage(ICON_SELECTED)) {
+      map.addImage(ICON_SELECTED, createShipIcon("#00d4ff", "#ffffff"), { pixelRatio: DPR });
     }
   }, [mapRef]);
 
@@ -91,7 +106,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
           select(ship);
           map.flyTo({
             center: [ship.longitude, ship.latitude],
-            zoom: FOCUS_ZOOM,
+            zoom: FOCUS_ZOOM["ships"],
             duration: 1500,
           });
           map.once("moveend", () => {
@@ -147,30 +162,23 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
         id="ships-layer"
         type="symbol"
         layout={{
-          "icon-image": ICON_ID,
+          "icon-image": ["case", ["get", "selected"], ICON_SELECTED, ICON_NORMAL],
           "icon-size": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            2,
-            0.3,
-            5,
-            0.6,
-            8,
-            1,
-            12,
-            1.8,
+            2, 0.15,
+            5, 0.3,
+            8, 0.5,
+            12, 0.9,
           ],
           "icon-rotate": ["get", "course"],
           "icon-rotation-alignment": "map",
           "icon-allow-overlap": true,
           "icon-ignore-placement": true,
         }}
-        paint={{
-          "icon-color": ["case", ["get", "selected"], "#00d4ff", "#ffffff"],
-          "icon-halo-color": ["case", ["get", "selected"], "#00d4ff", "transparent"],
-          "icon-halo-width": ["case", ["get", "selected"], 3, 0],
-        }}
+        paint={{}}
+
       />
     </Source>
   );

@@ -6,9 +6,8 @@ import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context
 import { VolcanoDetailCard } from "./volcano-detail-card";
 import { registerModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Volcano } from "@/types/volcanoes";
-
-const FOCUS_ZOOM = 8;
 const MODULE_ID = "volcanoes";
 
 function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.FeatureCollection {
@@ -63,7 +62,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
         const volcano = volcanoesRef.current.find((v) => v.id === id);
         if (volcano) {
           select(volcano);
-          map.flyTo({ center: [volcano.longitude, volcano.latitude], zoom: FOCUS_ZOOM, duration: 1500 });
+          map.flyTo({ center: [volcano.longitude, volcano.latitude], zoom: FOCUS_ZOOM["volcanoes"], duration: 1500 });
         }
       } else if (selectedRef.current && !consumed) {
         deselect();

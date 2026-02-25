@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { EarthquakesLayer } from "./earthquakes-layer";
 import type { Earthquake } from "@/types/earthquakes";
 
@@ -26,6 +27,7 @@ export const earthquakesModule: ModuleDefinition = {
   name: "Earthquakes",
   category: "Natural Events",
   icon: Activity,
+  focusZoom: FOCUS_ZOOM["earthquakes"],
   MapLayer: EarthquakesLayer,
   useCount: useEarthquakeCount,
 };

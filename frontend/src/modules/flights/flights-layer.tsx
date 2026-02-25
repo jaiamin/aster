@@ -3,47 +3,64 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
-const ICON_ID = "plane-icon";
-const ICON_SIZE = 24;
+const ICON_NORMAL = "plane-icon";
+const ICON_SELECTED = "plane-icon-selected";
+const ICON_SIZE = 48;
+const DPR = 2;
 
-function createPlaneIcon(): ImageData {
+function planePath(ctx: CanvasRenderingContext2D, size: number) {
+  const cx = size / 2;
+  const s = size / 24;
+
+  // Fuselage
+  ctx.beginPath();
+  ctx.moveTo(cx, 2 * s);
+  ctx.lineTo(cx + 2 * s, cx + 4 * s);
+  ctx.lineTo(cx, size - 2 * s);
+  ctx.lineTo(cx - 2 * s, cx + 4 * s);
+  ctx.closePath();
+
+  // Wings
+  ctx.moveTo(cx, cx - 1 * s);
+  ctx.lineTo(cx + 9 * s, cx + 5 * s);
+  ctx.lineTo(cx + 9 * s, cx + 6 * s);
+  ctx.lineTo(cx, cx + 2 * s);
+  ctx.lineTo(cx - 9 * s, cx + 6 * s);
+  ctx.lineTo(cx - 9 * s, cx + 5 * s);
+  ctx.closePath();
+
+  // Tail
+  ctx.moveTo(cx, size - 5 * s);
+  ctx.lineTo(cx + 4 * s, size - 2 * s);
+  ctx.lineTo(cx - 4 * s, size - 2 * s);
+  ctx.closePath();
+}
+
+function createPlaneIcon(fillColor: string, strokeColor: string): ImageData {
   const canvas = document.createElement("canvas");
-  canvas.width = ICON_SIZE;
-  canvas.height = ICON_SIZE;
+  canvas.width = ICON_SIZE * DPR;
+  canvas.height = ICON_SIZE * DPR;
   const ctx = canvas.getContext("2d")!;
+  ctx.scale(DPR, DPR);
 
-  const cx = ICON_SIZE / 2;
-  const cy = ICON_SIZE / 2;
+  const s = ICON_SIZE / 24;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.moveTo(cx, 2);
-  ctx.lineTo(cx + 2, cy + 4);
-  ctx.lineTo(cx, ICON_SIZE - 2);
-  ctx.lineTo(cx - 2, cy + 4);
-  ctx.closePath();
+  // Outline
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5 * s;
+  ctx.lineJoin = "round";
+  planePath(ctx, ICON_SIZE);
+  ctx.stroke();
+
+  // Fill
+  ctx.fillStyle = fillColor;
+  planePath(ctx, ICON_SIZE);
   ctx.fill();
 
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - 1);
-  ctx.lineTo(cx + 9, cy + 5);
-  ctx.lineTo(cx + 9, cy + 6);
-  ctx.lineTo(cx, cy + 2);
-  ctx.lineTo(cx - 9, cy + 6);
-  ctx.lineTo(cx - 9, cy + 5);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(cx, ICON_SIZE - 5);
-  ctx.lineTo(cx + 4, ICON_SIZE - 2);
-  ctx.lineTo(cx - 4, ICON_SIZE - 2);
-  ctx.closePath();
-  ctx.fill();
-
-  return ctx.getImageData(0, 0, ICON_SIZE, ICON_SIZE);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 function toGeoJSON(flights: Flight[], selectedIcao: string | null): GeoJSON.FeatureCollection {
@@ -90,8 +107,6 @@ function airportsToGeoJSON(selected: SelectedFlight): GeoJSON.FeatureCollection 
   return { type: "FeatureCollection", features };
 }
 
-const FOCUS_ZOOM = 7;
-
 function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const { current: mapRef } = useMap();
   const { selected, tracking, select, deselect } = useFlightSelection();
@@ -101,16 +116,19 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
 
-  // Register plane icon
+  // Register plane icon variants
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    if (!map.hasImage(ICON_ID)) {
-      map.addImage(ICON_ID, createPlaneIcon(), { sdf: true });
+    if (!map.hasImage(ICON_NORMAL)) {
+      map.addImage(ICON_NORMAL, createPlaneIcon("#b0b8c4", "#ffffff"), { pixelRatio: DPR });
+    }
+    if (!map.hasImage(ICON_SELECTED)) {
+      map.addImage(ICON_SELECTED, createPlaneIcon("#00d4ff", "#ffffff"), { pixelRatio: DPR });
     }
   }, [mapRef]);
 
-  // Click handler — select or deselect
+  // Click handler
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
@@ -131,14 +149,14 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           select(flight);
           map.flyTo({
             center: [flight.longitude, flight.latitude],
-            zoom: FOCUS_ZOOM,
+            zoom: FOCUS_ZOOM["flights"],
             duration: 1500,
           });
           map.once("moveend", () => {
             flyingToRef.current = false;
           });
         }
-      } else if (selectedRef.current) {
+      } else if (selectedRef.current && !consumed) {
         deselect();
       }
     };
@@ -154,12 +172,8 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     const map = mapRef?.getMap();
     if (!map) return;
 
-    const onEnter = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const onLeave = () => {
-      map.getCanvas().style.cursor = "";
-    };
+    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
+    const onLeave = () => { map.getCanvas().style.cursor = ""; };
 
     map.on("mouseenter", "flights-layer", onEnter);
     map.on("mouseleave", "flights-layer", onLeave);
@@ -169,7 +183,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     };
   }, [mapRef]);
 
-  // Camera lock — follow selected plane (skip during initial fly-to or when paused)
+  // Camera follow
   useEffect(() => {
     if (!selected || !mapRef || flyingToRef.current || !tracking) return;
     mapRef.easeTo({
@@ -240,30 +254,22 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           id="flights-layer"
           type="symbol"
           layout={{
-            "icon-image": ICON_ID,
+            "icon-image": ["case", ["get", "selected"], ICON_SELECTED, ICON_NORMAL],
             "icon-size": [
               "interpolate",
               ["linear"],
               ["zoom"],
-              2,
-              0.3,
-              5,
-              0.6,
-              8,
-              1,
-              12,
-              1.8,
+              2, 0.4,
+              5, 0.7,
+              8, 1.1,
+              12, 1.8,
             ],
             "icon-rotate": ["get", "true_track"],
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
           }}
-          paint={{
-            "icon-color": ["case", ["get", "selected"], "#00d4ff", "#ffffff"],
-            "icon-halo-color": ["case", ["get", "selected"], "#00d4ff", "transparent"],
-            "icon-halo-width": ["case", ["get", "selected"], 3, 0],
-          }}
+          paint={{}}
         />
       </Source>
     </>

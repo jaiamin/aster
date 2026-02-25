@@ -13,18 +13,18 @@ import { portsModule } from "./ports/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
-  flightsModule,
-  satellitesModule,
-  shipsModule,
-  airportsModule,
-  portsModule,
-  earthquakesModule,
-  wildfiresModule,
-  volcanoesModule,
-  airQualityModule,
+  cablesModule,
   buoysModule,
   nuclearModule,
-  cablesModule,
+  airQualityModule,
+  volcanoesModule,
+  wildfiresModule,
+  earthquakesModule,
+  portsModule,
+  airportsModule,
+  shipsModule,
+  satellitesModule,
+  flightsModule,
 ];
 
 export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events", "Environment", "Infrastructure"];
