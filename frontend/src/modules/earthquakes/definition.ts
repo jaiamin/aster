@@ -24,6 +24,7 @@ function useEarthquakeCount() {
 export const earthquakesModule: ModuleDefinition = {
   id: "earthquakes",
   name: "Earthquakes",
+  category: "Natural Events",
   icon: Activity,
   MapLayer: EarthquakesLayer,
   useCount: useEarthquakeCount,

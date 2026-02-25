@@ -12,3 +12,5 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   earthquakesModule,
   wildfiresModule,
 ];
+
+export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events"];

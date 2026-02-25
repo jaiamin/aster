@@ -19,6 +19,7 @@ function useSatelliteCount() {
 export const satellitesModule: ModuleDefinition = {
   id: "satellites",
   name: "Satellites",
+  category: "Space",
   icon: Satellite,
   MapLayer: SatellitesLayer,
   useCount: useSatelliteCount,

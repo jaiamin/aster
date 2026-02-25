@@ -24,6 +24,7 @@ function useWildfireCount() {
 export const wildfiresModule: ModuleDefinition = {
   id: "wildfires",
   name: "Wildfires",
+  category: "Natural Events",
   icon: Flame,
   MapLayer: WildfiresLayer,
   useCount: useWildfireCount,

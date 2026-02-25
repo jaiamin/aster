@@ -19,6 +19,7 @@ function useFlightCount() {
 export const flightsModule: ModuleDefinition = {
   id: "flights",
   name: "Flights",
+  category: "Transportation",
   icon: Plane,
   MapLayer: FlightsLayer,
   useCount: useFlightCount,

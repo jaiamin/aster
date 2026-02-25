@@ -24,6 +24,7 @@ function useShipCount() {
 export const shipsModule: ModuleDefinition = {
   id: "ships",
   name: "Ships",
+  category: "Transportation",
   icon: Ship,
   MapLayer: ShipsLayer,
   useCount: useShipCount,

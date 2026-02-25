@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
+import { useModules } from "@/modules/module-context";
 
 interface FlightSelectionContextValue {
   selected: SelectedFlight | null;
@@ -20,6 +21,7 @@ export function FlightSelectionProvider({
   flights: Flight[];
   children: React.ReactNode;
 }) {
+  const { registerDeselect, notifySelected } = useModules();
   const [selectedIcao, setSelectedIcao] = useState<string | null>(null);
   const [track, setTrack] = useState<FlightTrack | null>(null);
   const [detail, setDetail] = useState<FlightDetail | null>(null);
@@ -49,12 +51,13 @@ export function FlightSelectionProvider({
   }, [currentFlight?.latitude, currentFlight?.longitude]);
 
   const select = useCallback((flight: Flight) => {
+    notifySelected("flights");
     setSelectedIcao(flight.icao24);
     setTrack(null);
     setDetail(null);
     setFetchedAt(Date.now());
     setTracking(true);
-  }, []);
+  }, [notifySelected]);
 
   const deselect = useCallback(() => {
     setSelectedIcao(null);
@@ -63,6 +66,8 @@ export function FlightSelectionProvider({
     setFetchedAt(null);
     setTracking(true);
   }, []);
+
+  useEffect(() => { registerDeselect("flights", deselect); }, [registerDeselect, deselect]);
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);

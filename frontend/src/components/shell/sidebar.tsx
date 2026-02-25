@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Globe, ChevronLeft, ChevronDown } from "lucide-react";
-import { MODULE_REGISTRY } from "@/modules/registry";
+import { useMemo, useState } from "react";
+import { Layers, ChevronLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModules } from "@/modules/module-context";
 import type { ModuleDefinition } from "@/types/modules";
 
@@ -22,11 +22,10 @@ function ModuleRow({
   return (
     <div>
       <div className="flex items-center">
-        {/* Expand chevron */}
         {hasQuickPicks ? (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex h-7 w-5 items-center justify-center text-muted/40 hover:text-muted transition-colors"
+            className="flex h-7 w-5 shrink-0 items-center justify-center text-muted/40 hover:text-muted transition-colors"
           >
             <ChevronDown
               size={12}
@@ -34,13 +33,12 @@ function ModuleRow({
             />
           </button>
         ) : (
-          <div className="w-5" />
+          <div className="w-5 shrink-0" />
         )}
 
-        {/* Module toggle */}
         <button
           onClick={onToggle}
-          className={`flex flex-1 items-center gap-3 rounded px-2 py-2 text-xs transition-colors ${
+          className={`flex flex-1 items-center gap-3 px-2 py-1.5 text-xs transition-colors ${
             enabled
               ? "text-accent"
               : "text-muted hover:bg-panel-hover hover:text-foreground"
@@ -54,7 +52,7 @@ function ModuleRow({
             </span>
           )}
           <div
-            className={`ml-auto h-3 w-3 rounded-sm border transition-colors ${
+            className={`ml-auto h-3 w-3 border transition-colors ${
               enabled
                 ? "border-accent bg-accent"
                 : "border-muted/40 bg-transparent"
@@ -63,18 +61,67 @@ function ModuleRow({
         </button>
       </div>
 
-      {/* Quick picks dropdown */}
       {hasQuickPicks && expanded && (
-        <div className="ml-5 mb-1">
+        <div className="relative ml-[9px] mb-1 border-l border-panel-border pl-[11px]">
           {quickPicks!.map((pick) => (
             <button
               key={pick.targetId}
               onClick={() => focusTarget(def.id, pick.targetId)}
-              className="flex w-full items-center gap-2 rounded px-4 py-1.5 text-xs text-muted hover:bg-panel-hover hover:text-foreground transition-colors"
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-xs text-muted hover:bg-panel-hover hover:text-foreground transition-colors"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />
+              <span className="h-1.5 w-1.5 bg-current opacity-40" />
               {pick.name}
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryGroup({
+  category,
+  modules,
+  enabledModules,
+  onToggle,
+}: {
+  category: string;
+  modules: ModuleDefinition[];
+  enabledModules: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCount = modules.filter((m) => enabledModules.has(m.id)).length;
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-panel-hover"
+      >
+        <ChevronRight
+          size={12}
+          className={`shrink-0 text-muted/40 transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="font-medium text-muted tracking-wide uppercase text-[10px]">
+          {category}
+        </span>
+        {activeCount > 0 && (
+          <span className="ml-auto text-[9px] tabular-nums text-accent">
+            {activeCount}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="relative ml-[17px] border-l border-panel-border pl-[7px] mb-1">
+          {modules.map((def) => (
+            <ModuleRow
+              key={def.id}
+              def={def}
+              enabled={enabledModules.has(def.id)}
+              onToggle={() => onToggle(def.id)}
+            />
           ))}
         </div>
       )}
@@ -85,6 +132,18 @@ function ModuleRow({
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
   const { enabledModules, toggle } = useModules();
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, ModuleDefinition[]>();
+    for (const def of MODULE_REGISTRY) {
+      const list = map.get(def.category) ?? [];
+      list.push(def);
+      map.set(def.category, list);
+    }
+    return CATEGORY_ORDER
+      .filter((c) => map.has(c))
+      .map((c) => ({ category: c, modules: map.get(c)! }));
+  }, []);
 
   return (
     <div className="relative flex h-full shrink-0">
@@ -99,13 +158,13 @@ export function Sidebar() {
         <button
           onClick={() => setModulesOpen(!modulesOpen)}
           aria-label="Toggle modules"
-          className={`mt-2 flex h-9 w-9 items-center justify-center rounded transition-all ${
+          className={`mt-2 flex h-9 w-9 items-center justify-center transition-all ${
             modulesOpen
               ? "bg-panel-hover text-accent"
               : "text-muted hover:bg-panel-hover hover:text-foreground"
           }`}
         >
-          <Globe size={16} />
+          <Layers size={16} />
         </button>
       </div>
 
@@ -114,26 +173,27 @@ export function Sidebar() {
         <>
           <div className="h-full w-64 border-r border-panel-border bg-panel">
             <div className="flex h-12 items-center gap-2 px-4">
-              <Globe size={18} className="text-muted" />
+              <Layers size={16} className="text-muted" />
               <span className="text-[12px] font-medium tracking-widest text-muted">
-                MODULES
+                LAYERS
               </span>
               <button
                 onClick={() => setModulesOpen(false)}
                 aria-label="Close modules"
-                className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted transition-colors hover:bg-panel-hover hover:text-foreground"
+                className="ml-auto flex h-6 w-6 items-center justify-center text-muted transition-colors hover:bg-panel-hover hover:text-foreground"
               >
                 <ChevronLeft size={14} />
               </button>
             </div>
             <div className="h-px bg-panel-border" />
-            <div className="p-2">
-              {MODULE_REGISTRY.map((def) => (
-                <ModuleRow
-                  key={def.id}
-                  def={def}
-                  enabled={enabledModules.has(def.id)}
-                  onToggle={() => toggle(def.id)}
+            <div className="p-2 space-y-0.5">
+              {grouped.map(({ category, modules }) => (
+                <CategoryGroup
+                  key={category}
+                  category={category}
+                  modules={modules}
+                  enabledModules={enabledModules}
+                  onToggle={toggle}
                 />
               ))}
             </div>

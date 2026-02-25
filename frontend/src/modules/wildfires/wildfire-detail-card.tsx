@@ -53,7 +53,7 @@ export function WildfireDetailCard() {
 
   return (
     <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="rounded-xl border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* FRP banner */}
         <div className="relative">
           <div
@@ -71,7 +71,7 @@ export function WildfireDetailCard() {
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
               onMouseEnter={(e) => (e.currentTarget.style.color = color)}
               onMouseLeave={(e) => (e.currentTarget.style.color = "")}
               title="Recenter"
@@ -80,7 +80,7 @@ export function WildfireDetailCard() {
             </button>
             <button
               onClick={deselect}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
             >
               <X size={16} />
             </button>

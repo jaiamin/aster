@@ -110,7 +110,7 @@ export function FlightDetailCard() {
 
   return (
     <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="rounded-xl border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         <div className="relative">
           {photoUrl ? (
             <img
@@ -137,14 +137,14 @@ export function FlightDetailCard() {
                 });
                 map.once("moveend", () => resumeTracking());
               }}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:text-accent hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-accent hover:bg-black/70 transition-colors"
               title="Recenter on plane"
             >
               <LocateFixed size={16} />
             </button>
             <button
               onClick={deselect}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
             >
               <X size={16} />
             </button>
@@ -269,7 +269,7 @@ function AirportRow({ airport, icon, label }: { airport: Airport; icon: React.Re
   return (
     <button
       onClick={hasCoords ? handleClick : undefined}
-      className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 text-left transition-colors ${
         hasCoords ? "hover:bg-panel-hover cursor-pointer" : "cursor-default"
       }`}
     >

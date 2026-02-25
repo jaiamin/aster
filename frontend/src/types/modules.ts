@@ -8,6 +8,7 @@ export interface QuickPick {
 export interface ModuleDefinition {
   id: string;
   name: string;
+  category: string;
   icon: LucideIcon;
   MapLayer: ComponentType;
   useCount?: () => number | null;

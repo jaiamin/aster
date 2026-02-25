@@ -78,7 +78,7 @@ export function SatelliteDetailCard() {
 
   return (
     <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="rounded-xl border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* Flag or placeholder */}
         <div className="relative">
           {showFlag ? (
@@ -98,14 +98,14 @@ export function SatelliteDetailCard() {
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:text-[#ffb432] hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-[#ffb432] hover:bg-black/70 transition-colors"
               title="Recenter on satellite"
             >
               <LocateFixed size={16} />
             </button>
             <button
               onClick={deselect}
-              className="rounded-md p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
             >
               <X size={16} />
             </button>
@@ -176,7 +176,7 @@ export function SatelliteDetailCard() {
           {isISS && (
             <button
               onClick={() => setShowLiveFeed((v) => !v)}
-              className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-[#ffb432]/10 text-[#ffb432] hover:bg-[#ffb432]/20"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ffb432]/10 text-[#ffb432] hover:bg-[#ffb432]/20"
             >
               <Video size={14} />
               {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}
@@ -187,12 +187,12 @@ export function SatelliteDetailCard() {
 
       {/* Live feed card */}
       {isISS && showLiveFeed && (
-        <div className="mt-2 rounded-xl border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden animate-slide-in-right">
+        <div className="mt-2 border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden animate-slide-in-right">
           <div className="p-3 space-y-2">
             <div className="text-[10px] uppercase tracking-widest text-muted/60">
               ISS Live — Earth View
             </div>
-            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-surface">
+            <div className="relative w-full aspect-video overflow-hidden bg-surface">
               <iframe
                 src={ISS_LIVE_URL}
                 className="absolute inset-0 w-full h-full"

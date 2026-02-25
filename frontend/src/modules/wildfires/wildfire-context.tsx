@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Wildfire, SelectedWildfire } from "@/types/wildfires";
+import { useModules } from "@/modules/module-context";
 
 interface WildfireSelectionContextValue {
   selected: SelectedWildfire | null;
@@ -14,15 +15,19 @@ export function WildfireSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { registerDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedWildfire | null>(null);
 
   const select = useCallback((fire: Wildfire) => {
+    notifySelected("wildfires");
     setSelected({ fire });
-  }, []);
+  }, [notifySelected]);
 
   const deselect = useCallback(() => {
     setSelected(null);
   }, []);
+
+  useEffect(() => { registerDeselect("wildfires", deselect); }, [registerDeselect, deselect]);
 
   return (
     <WildfireSelectionContext value={{ selected, select, deselect }}>
