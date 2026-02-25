@@ -42,7 +42,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
       const consumed = (e.originalEvent as any)._layerHandled;
 
       const features = map.queryRenderedFeatures(e.point, {
-        layers: ["cables-line", "cables-line-selected"],
+        layers: ["cables-hit", "cables-line", "cables-line-selected"],
       });
 
       if (features.length > 0 && !consumed) {
@@ -74,17 +74,31 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
     const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
     const onLeave = () => { map.getCanvas().style.cursor = ""; };
 
-    map.on("mouseenter", "cables-line", onEnter);
-    map.on("mouseleave", "cables-line", onLeave);
+    map.on("mouseenter", "cables-hit", onEnter);
+    map.on("mouseleave", "cables-hit", onLeave);
     return () => {
-      map.off("mouseenter", "cables-line", onEnter);
-      map.off("mouseleave", "cables-line", onLeave);
+      map.off("mouseenter", "cables-hit", onEnter);
+      map.off("mouseleave", "cables-hit", onLeave);
     };
   }, [mapRef]);
 
   return (
     <>
       <Source id="cables-source" type="geojson" data={cablesGeojson}>
+        {/* Invisible wide hit area for easier clicking */}
+        <Layer
+          id="cables-hit"
+          type="line"
+          paint={{
+            "line-color": "transparent",
+            "line-width": 14,
+          }}
+          layout={{
+            "line-cap": "round",
+            "line-join": "round",
+          }}
+        />
+
         {/* Cable lines — unselected */}
         <Layer
           id="cables-line"
@@ -92,12 +106,12 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
           filter={["!", ["get", "selected"]]}
           paint={{
             "line-color": ["get", "color"],
-            "line-opacity": 0.4,
+            "line-opacity": 0.6,
             "line-width": [
               "interpolate", ["linear"], ["zoom"],
-              1, 0.5,
-              4, 1,
-              8, 2,
+              1, 1,
+              4, 1.5,
+              8, 3,
             ],
           }}
           layout={{
@@ -116,8 +130,8 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
             "line-opacity": 1,
             "line-width": [
               "interpolate", ["linear"], ["zoom"],
-              1, 2,
-              4, 3,
+              1, 2.5,
+              4, 3.5,
               8, 5,
             ],
           }}
@@ -137,9 +151,9 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
             "line-opacity": 0.3,
             "line-width": [
               "interpolate", ["linear"], ["zoom"],
-              1, 6,
-              4, 10,
-              8, 16,
+              1, 8,
+              4, 12,
+              8, 18,
             ],
             "line-blur": 4,
           }}
