@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Earthquake, SelectedEarthquake } from "@/types/earthquakes";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface EarthquakeSelectionContextValue {
   selected: SelectedEarthquake | null;
@@ -15,7 +15,7 @@ export function EarthquakeSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedEarthquake | null>(null);
 
   const select = useCallback((quake: Earthquake) => {

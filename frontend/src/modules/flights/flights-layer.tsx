@@ -4,7 +4,9 @@ import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
+import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -114,6 +116,7 @@ function airportsToGeoJSON(selected: SelectedFlight): GeoJSON.FeatureCollection 
 
 function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const { current: mapRef } = useMap();
+  const zoom = useMapZoom();
   const { selected, tracking, select, deselect } = useFlightSelection();
   const flightsRef = useRef(flights);
   flightsRef.current = flights;
@@ -201,7 +204,20 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   }, [selected?.flight.longitude, selected?.flight.latitude, mapRef, tracking]);
 
   const selectedIcao = selected?.flight.icao24 ?? null;
-  const geojson = useMemo(() => toGeoJSON(flights, selectedIcao), [flights, selectedIcao]);
+  const zoomBand = zoom < 5 ? 0 : 1;
+  const sampled = useMemo(
+    () =>
+      gridSample(
+        flights,
+        (f) => f.longitude,
+        (f) => f.latitude,
+        (f) => f.icao24 === selectedIcao,
+        zoom,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [flights, selectedIcao, zoomBand],
+  );
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao), [sampled, selectedIcao]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],

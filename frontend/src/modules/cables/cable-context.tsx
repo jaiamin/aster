@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { CableFeature, SelectedCable } from "@/types/cables";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface CableSelectionContextValue {
   selected: SelectedCable | null;
@@ -15,7 +15,7 @@ export function CableSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedCable | null>(null);
 
   const select = useCallback((cable: CableFeature) => {

@@ -1,7 +1,8 @@
 import { Zap } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { PowerPlantsLayer } from "./power-plants-layer";
+import { lazy } from "react";
+const PowerPlantsLayer = lazy(() => import("./power-plants-layer").then(m => ({ default: m.PowerPlantsLayer })));
 
 export const powerPlantsModule: ModuleDefinition = {
   id: "power-plants",

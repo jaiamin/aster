@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { PowerPlant, SelectedPowerPlant } from "@/types/power-plants";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface PowerPlantSelectionContextValue {
   selected: SelectedPowerPlant | null;
@@ -11,7 +11,7 @@ interface PowerPlantSelectionContextValue {
 const PowerPlantSelectionContext = createContext<PowerPlantSelectionContextValue | null>(null);
 
 export function PowerPlantSelectionProvider({ children }: { children: React.ReactNode }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedPowerPlant | null>(null);
 
   const select = useCallback((plant: PowerPlant) => {

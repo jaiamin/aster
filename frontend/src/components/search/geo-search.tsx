@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LocateFixed, Search, X } from "lucide-react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection, useModuleFilter } from "@/modules/module-context";
 
 interface NominatimResult {
   place_id: number;
@@ -301,7 +301,8 @@ const GEO_SEARCH_ID = "geo-search";
 
 export function GeoSearch() {
   const { current: mapRef } = useMap();
-  const { registerDeselect, unregisterDeselect, notifySelected, searchQuery: urlSearchQuery, setSearchQuery: setUrlSearchQuery } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { searchQuery: urlSearchQuery, setSearchQuery: setUrlSearchQuery } = useModuleFilter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);

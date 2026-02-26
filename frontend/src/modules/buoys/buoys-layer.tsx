@@ -4,7 +4,7 @@ import { Navigation } from "lucide-react";
 import { useBuoys } from "./use-buoys";
 import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -64,7 +64,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 
 export function BuoysLayer() {
   const buoys = useBuoys();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => buoys ? filterByTime(buoys, "buoys", timeFilter) : null,
     [buoys, timeFilter],

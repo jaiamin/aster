@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Buoy, SelectedBuoy } from "@/types/buoys";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface BuoySelectionContextValue {
   selected: SelectedBuoy | null;
@@ -15,7 +15,7 @@ export function BuoySelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedBuoy | null>(null);
 
   const select = useCallback((buoy: Buoy) => {

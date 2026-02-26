@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Ship, SelectedShip } from "@/types/ships";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface ShipSelectionContextValue {
   selected: SelectedShip | null;
@@ -21,7 +21,7 @@ export function ShipSelectionProvider({
   ships: Ship[];
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selectedMmsi, setSelectedMmsi] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [tracking, setTracking] = useState(true);

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Airport, SelectedAirport } from "@/types/airports";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface AirportSelectionContextValue {
   selected: SelectedAirport | null;
@@ -15,7 +15,7 @@ export function AirportSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedAirport | null>(null);
 
   const select = useCallback((airport: Airport) => {

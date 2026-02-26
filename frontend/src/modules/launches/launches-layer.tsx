@@ -4,7 +4,7 @@ import { Rocket } from "lucide-react";
 import { useLaunches } from "./use-launches";
 import { LaunchSelectionProvider, useLaunchSelection } from "./launch-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -90,7 +90,7 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
 
 export function LaunchesLayer() {
   const launches = useLaunches();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => launches ? filterByTime(launches, "launches", timeFilter) : null,
     [launches, timeFilter],

@@ -1,7 +1,8 @@
 import { Satellite } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { SatellitesLayer } from "./satellites-layer";
+import { lazy } from "react";
+const SatellitesLayer = lazy(() => import("./satellites-layer").then(m => ({ default: m.SatellitesLayer })));
 
 export const satellitesModule: ModuleDefinition = {
   id: "satellites",

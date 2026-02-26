@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { AirQualityStation, SelectedStation } from "@/types/air-quality";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface AirQualitySelectionContextValue {
   selected: SelectedStation | null;
@@ -15,7 +15,7 @@ export function AirQualitySelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedStation | null>(null);
 
   const select = useCallback((station: AirQualityStation) => {

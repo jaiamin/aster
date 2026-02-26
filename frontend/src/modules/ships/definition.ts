@@ -1,7 +1,8 @@
 import { Ship } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { ShipsLayer } from "./ships-layer";
+import { lazy } from "react";
+const ShipsLayer = lazy(() => import("./ships-layer").then(m => ({ default: m.ShipsLayer })));
 
 export const shipsModule: ModuleDefinition = {
   id: "ships",

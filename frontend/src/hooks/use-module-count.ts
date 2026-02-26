@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useModules } from "@/modules/module-context";
+import { useModuleCounts } from "@/modules/module-context";
 
 export function useModuleCount(moduleId: string, count: number | null) {
-  const { registerCount, unregisterCount } = useModules();
+  const { registerCount, unregisterCount } = useModuleCounts();
 
   useEffect(() => {
     registerCount(moduleId, count);

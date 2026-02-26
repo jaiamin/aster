@@ -4,7 +4,7 @@ import { CloudLightning } from "lucide-react";
 import { useStorms } from "./use-storms";
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -168,7 +168,7 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
 
 export function StormsLayer() {
   const storms = useStorms();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => storms ? filterByTime(storms, "storms", timeFilter) : null,
     [storms, timeFilter],

@@ -4,7 +4,7 @@ import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -64,7 +64,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 
 export function VolcanoesLayer() {
   const volcanoes = useVolcanoes();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => volcanoes ? filterByTime(volcanoes, "volcanoes", timeFilter) : null,
     [volcanoes, timeFilter],

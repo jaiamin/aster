@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { NuclearFacility, SelectedFacility } from "@/types/nuclear";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface NuclearSelectionContextValue {
   selected: SelectedFacility | null;
@@ -15,7 +15,7 @@ export function NuclearSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedFacility | null>(null);
 
   const select = useCallback((facility: NuclearFacility) => {

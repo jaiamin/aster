@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Storm, SelectedStorm } from "@/types/storms";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface StormSelectionContextValue {
   selected: SelectedStorm | null;
@@ -15,7 +15,7 @@ export function StormSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedStorm | null>(null);
 
   const select = useCallback((storm: Storm) => {

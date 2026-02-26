@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { DeckGLOverlay } from "@/components/globe/deckgl-overlay";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 import { useSatellites } from "./use-satellites";
 import { useSatellitePositions } from "./use-satellite-positions";
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
@@ -36,7 +36,7 @@ function SatellitesLayerInner({
   const recordsRef = useRef(records);
   recordsRef.current = records;
   const flyingToRef = useRef(false);
-  const { pendingTarget, clearPendingTarget } = useModules();
+  const { pendingTarget, clearPendingTarget } = useModuleSelection();
 
   // Handle pending target from quick picks (e.g. ISS)
   useEffect(() => {

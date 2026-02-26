@@ -4,7 +4,9 @@ import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
+import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Ship } from "@/types/ships";
 
@@ -71,6 +73,7 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureC
 
 function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const { current: mapRef } = useMap();
+  const zoom = useMapZoom();
   const { selected, tracking, select, deselect } = useShipSelection();
   const shipsRef = useRef(ships);
   shipsRef.current = ships;
@@ -162,7 +165,20 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   }, [selected?.ship.longitude, selected?.ship.latitude, mapRef, tracking]);
 
   const selectedMmsi = selected?.ship.mmsi ?? null;
-  const geojson = useMemo(() => toGeoJSON(ships, selectedMmsi), [ships, selectedMmsi]);
+  const zoomBand = zoom < 5 ? 0 : 1;
+  const sampled = useMemo(
+    () =>
+      gridSample(
+        ships,
+        (s) => s.longitude,
+        (s) => s.latitude,
+        (s) => s.mmsi === selectedMmsi,
+        zoom,
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ships, selectedMmsi, zoomBand],
+  );
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi), [sampled, selectedMmsi]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>

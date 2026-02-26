@@ -1,7 +1,8 @@
 import { Navigation } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { BuoysLayer } from "./buoys-layer";
+import { lazy } from "react";
+const BuoysLayer = lazy(() => import("./buoys-layer").then(m => ({ default: m.BuoysLayer })));
 
 export const buoysModule: ModuleDefinition = {
   id: "buoys",

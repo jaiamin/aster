@@ -4,7 +4,7 @@ import { Activity } from "lucide-react";
 import { useEarthquakes } from "./use-earthquakes";
 import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquake-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -82,7 +82,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 
 export function EarthquakesLayer() {
   const quakes = useEarthquakes();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => quakes ? filterByTime(quakes, "earthquakes", timeFilter) : null,
     [quakes, timeFilter],

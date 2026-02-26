@@ -1,7 +1,8 @@
 import { PlaneTakeoff } from "lucide-react";
 import type { ModuleDefinition } from "@/types/modules";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { AirportsLayer } from "./airports-layer";
+import { lazy } from "react";
+const AirportsLayer = lazy(() => import("./airports-layer").then(m => ({ default: m.AirportsLayer })));
 
 export const airportsModule: ModuleDefinition = {
   id: "airports",

@@ -4,7 +4,7 @@ import { Wind } from "lucide-react";
 import { useAirQuality } from "./use-air-quality";
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModules } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -84,7 +84,7 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
 
 export function AirQualityLayer() {
   const stations = useAirQuality();
-  const { timeFilter } = useModules();
+  const { timeFilter } = useModuleFilter();
   const filtered = useMemo(
     () => stations ? filterByTime(stations, "air-quality", timeFilter) : null,
     [stations, timeFilter],

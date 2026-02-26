@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Launch, SelectedLaunch } from "@/types/launches";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface LaunchSelectionContextValue {
   selected: SelectedLaunch | null;
@@ -15,7 +15,7 @@ export function LaunchSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedLaunch | null>(null);
 
   const select = useCallback((launch: Launch) => {

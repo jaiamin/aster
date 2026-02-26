@@ -11,24 +11,57 @@ function getProjectionMode(zoom: number): ProjectionMode {
 }
 
 function zoomToAltitude(zoom: number): number {
-  // Approximate altitude in km from zoom level
   return Math.round(40075 / Math.pow(2, zoom));
 }
 
+function buildStatus(vs: MapViewState): MapStatus {
+  return { viewState: vs, projection: getProjectionMode(vs.zoom), altitude: zoomToAltitude(vs.zoom) };
+}
+
+const STATUS_INTERVAL_MS = 1000 / 15; // ~15fps
+
 export function useMapState() {
   const [viewState, setViewState] = useState<MapViewState>(getInitialViewState);
+  const [status, setStatus] = useState<MapStatus>(() => buildStatus(getInitialViewState()));
 
-  const projection = getProjectionMode(viewState.zoom);
-  const altitude = zoomToAltitude(viewState.zoom);
+  const rafRef = useRef(0);
+  const lastFlushRef = useRef(0);
+  const pendingFlushRef = useRef<ReturnType<typeof setTimeout>>();
+  const latestVsRef = useRef(viewState);
 
   const onMove = useCallback(
     (evt: { viewState: MapViewState }) => {
-      setViewState(evt.viewState);
+      const vs = evt.viewState;
+      setViewState(vs);
+      latestVsRef.current = vs;
+
+      // Throttle derived status updates to ~15fps during continuous interaction
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          const now = performance.now();
+          if (now - lastFlushRef.current >= STATUS_INTERVAL_MS) {
+            lastFlushRef.current = now;
+            setStatus(buildStatus(latestVsRef.current));
+          }
+        });
+      }
+
+      // Schedule a trailing flush to catch the final state after movement stops
+      clearTimeout(pendingFlushRef.current);
+      pendingFlushRef.current = setTimeout(() => {
+        setStatus(buildStatus(latestVsRef.current));
+      }, 100);
     },
-    []
+    [],
   );
 
-  // Debounced URL sync — exposed for AppShell to call with full state
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    clearTimeout(pendingFlushRef.current);
+  }, []);
+
+  // Debounced URL sync
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string, searchQuery?: string, timeFilter?: TimePreset) => {
     clearTimeout(timerRef.current);
@@ -36,8 +69,6 @@ export function useMapState() {
   }, []);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
-
-  const status: MapStatus = { viewState, projection, altitude };
 
   return { viewState, status, onMove, syncUrl } as const;
 }

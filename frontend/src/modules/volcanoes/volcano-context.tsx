@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Volcano, SelectedVolcano } from "@/types/volcanoes";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 
 interface VolcanoSelectionContextValue {
   selected: SelectedVolcano | null;
@@ -15,7 +15,7 @@ export function VolcanoSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selected, setSelected] = useState<SelectedVolcano | null>(null);
 
   const select = useCallback((volcano: Volcano) => {

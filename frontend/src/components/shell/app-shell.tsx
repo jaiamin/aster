@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { GlobeMap } from "@/components/globe/globe-map";
 import { GlobeControls } from "@/components/globe/globe-controls";
 import { UserLocationDot } from "@/components/globe/user-location-dot";
 import { Sidebar } from "@/components/shell/sidebar";
 import { StatusBar } from "@/components/shell/status-bar";
 import { useMapState } from "@/hooks/use-map-state";
-import { useModules } from "@/modules/module-context";
+import { useModuleToggle, useModuleFilter } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
 import { GeoSearch } from "@/components/search/geo-search";
 import { getInitialStyle } from "@/lib/url-state";
@@ -17,7 +17,8 @@ export function AppShell() {
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const { enabledModules, searchQuery, timeFilter } = useModules();
+  const { enabledModules } = useModuleToggle();
+  const { searchQuery, timeFilter } = useModuleFilter();
 
   useEffect(() => {
     syncUrl(viewState, enabledModules, styleMode, searchQuery, timeFilter);
@@ -40,7 +41,9 @@ export function AppShell() {
       <div className="relative flex-1">
         <GlobeMap viewState={viewState} onMove={onMove} styleMode={styleMode} onMapReady={handleMapReady}>
           {activeLayers.map((m) => (
-            <m.MapLayer key={m.id} />
+            <Suspense key={m.id} fallback={null}>
+              <m.MapLayer />
+            </Suspense>
           ))}
           <GeoSearch />
           <UserLocationDot location={userLocation} />

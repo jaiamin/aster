@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
-import { useModules } from "@/modules/module-context";
+import { useModuleSelection } from "@/modules/module-context";
 import { usePageVisibility } from "@/hooks/use-page-visibility";
 
 interface FlightSelectionContextValue {
@@ -22,7 +22,7 @@ export function FlightSelectionProvider({
   flights: Flight[];
   children: React.ReactNode;
 }) {
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const [selectedIcao, setSelectedIcao] = useState<string | null>(null);
   const [track, setTrack] = useState<FlightTrack | null>(null);
   const [detail, setDetail] = useState<FlightDetail | null>(null);

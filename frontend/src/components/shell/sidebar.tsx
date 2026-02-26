@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
-import { useModules } from "@/modules/module-context";
+import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
 import type { ModuleDefinition } from "@/types/modules";
 
@@ -128,7 +128,9 @@ function TimeFilterRow({ value, onChange }: { value: TimePreset; onChange: (p: T
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
-  const { enabledModules, moduleCounts, timeFilter, toggle, setTimeFilter } = useModules();
+  const { enabledModules, toggle } = useModuleToggle();
+  const { moduleCounts } = useModuleCounts();
+  const { timeFilter, setTimeFilter } = useModuleFilter();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
