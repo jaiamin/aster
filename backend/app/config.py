@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     model_config = {"env_file": ".env"}
 
-    app_name: str = "Saka"
+    app_name: str = "Aster"
     debug: bool = False
     cors_origins: list[str] = ["http://localhost:5173"]
     map_style_url: str = "https://tiles.openfreemap.org/styles/dark"
