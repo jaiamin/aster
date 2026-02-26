@@ -10,6 +10,7 @@ import { nuclearModule } from "./nuclear/definition";
 import { cablesModule } from "./cables/definition";
 import { airportsModule } from "./airports/definition";
 import { portsModule } from "./ports/definition";
+import { launchesModule } from "./launches/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
@@ -24,6 +25,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   airportsModule,
   shipsModule,
   satellitesModule,
+  launchesModule,
   flightsModule,
 ];
 
