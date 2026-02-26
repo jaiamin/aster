@@ -39,6 +39,13 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       const consumed = (e.originalEvent as any)._layerHandled;
+      const zoom = map.getZoom();
+
+      // Cables are too dense at globe zoom — skip hit detection below zoom 3
+      if (zoom < 3) {
+        if (selectedRef.current && !consumed) deselect();
+        return;
+      }
 
       const features = map.queryRenderedFeatures(e.point, {
         layers: ["cables-hit", "cables-line", "cables-line-selected"],
@@ -84,13 +91,14 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
   return (
     <>
       <Source id="cables-source" type="geojson" data={cablesGeojson} tolerance={0.5}>
-        {/* Invisible wide hit area for easier clicking */}
+        {/* Invisible wide hit area for easier clicking — hidden at low zoom */}
         <Layer
           id="cables-hit"
           type="line"
+          minzoom={3}
           paint={{
             "line-color": "transparent",
-            "line-width": 14,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 3, 6, 6, 14],
           }}
           layout={{
             "line-cap": "round",
