@@ -91,7 +91,7 @@ export function SatelliteDetailCard() {
             />
           ) : (
             <div className="w-full h-[140px] bg-surface flex items-center justify-center">
-              <Satellite size={64} strokeWidth={1} className="text-[#ffb432]/20 rotate-12" />
+              <Satellite size={64} strokeWidth={1} className="text-[#ef4444]/20 rotate-12" />
             </div>
           )}
           {/* Dark overlay so buttons remain visible on light flags */}
@@ -99,7 +99,7 @@ export function SatelliteDetailCard() {
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}
-              className="p-1 bg-black/50 text-white/80 hover:text-[#ffb432] hover:bg-black/70 transition-colors"
+              className="p-1 bg-black/50 text-white/80 hover:text-[#ef4444] hover:bg-black/70 transition-colors"
               title="Recenter on satellite"
             >
               <LocateFixed size={16} />
@@ -120,7 +120,7 @@ export function SatelliteDetailCard() {
               <button
                 onClick={recenter}
                 className={`text-lg font-semibold transition-colors ${
-                  tracking ? "text-[#ffb432]" : "text-[#ffb432]/60 hover:text-[#ffb432]"
+                  tracking ? "text-[#ef4444]" : "text-[#ef4444]/60 hover:text-[#ef4444]"
                 }`}
               >
                 {gp.OBJECT_NAME}
@@ -185,7 +185,7 @@ export function SatelliteDetailCard() {
           {isISS && (
             <button
               onClick={() => setShowLiveFeed((v) => !v)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ffb432]/10 text-[#ffb432] hover:bg-[#ffb432]/20"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20"
             >
               <Video size={14} />
               {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}

@@ -161,15 +161,15 @@ function SatellitesLayerInner({
         data: positions,
         getPosition: (d) => [d.longitude, d.latitude, d.altitude],
         getFillColor: (d) => {
-          if (d.id === selectedId) return [239, 68, 68, 255];
-          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [255, 180, 50, 50];
-          return [255, 180, 50, 200];
+          if (d.id === selectedId) return [255, 255, 255, 255];
+          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [239, 68, 68, 50];
+          return [239, 68, 68, 200];
         },
         stroked: true,
         getLineColor: (d) => {
           if (d.id === selectedId) return [252, 165, 165, 255];
-          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [255, 220, 150, 50];
-          return [255, 220, 150, 255];
+          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [252, 165, 165, 50];
+          return [252, 165, 165, 255];
         },
         lineWidthMinPixels: 1,
         getRadius: (d) => (d.id === selectedId ? 7 : 5),

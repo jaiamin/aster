@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
 import type { ModuleDefinition } from "@/types/modules";
 
@@ -16,24 +17,35 @@ function ModuleRow({
   count: number | null | undefined;
   onToggle: () => void;
 }) {
-  const { icon: Icon, name } = def;
+  const { icon: Icon, name, category } = def;
+  const color = CATEGORY_COLORS[category] ?? "#8892b0";
 
   return (
     <button
       onClick={onToggle}
       className="flex w-full items-center gap-3 px-2 py-1.5 text-xs text-white/70 transition-colors hover:bg-panel-hover hover:text-white"
     >
-      <Icon size={14} />
-      {name}
-      {count !== undefined && (
-        <span className="text-[10px] tabular-nums text-muted/50">
-          {count === null ? (
-            <span className="inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
+      <div
+        className="flex shrink-0 items-center justify-center"
+        style={{
+          width: 22,
+          height: 22,
+          backgroundColor: color,
+          border: "1px solid rgba(255,255,255,0.8)",
+        }}
+      >
+        <Icon size={12} className="text-white" />
+      </div>
+      <span className="text-[13px]">
+        {name}
+        {count !== undefined && (
+          count === null ? (
+            <span className="ml-1 inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
           ) : (
-            count.toLocaleString()
-          )}
-        </span>
-      )}
+            <span className="tabular-nums"> ({count.toLocaleString()})</span>
+          )
+        )}
+      </span>
       <div
         className={`ml-auto h-3 w-3 border transition-colors ${
           enabled
