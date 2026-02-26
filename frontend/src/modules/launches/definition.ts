@@ -5,7 +5,7 @@ import { LaunchesLayer } from "./launches-layer";
 
 export const launchesModule: ModuleDefinition = {
   id: "launches",
-  name: "Rocket Launches",
+  name: "Rocket Launch Sites",
   category: "Space",
   icon: Rocket,
   focusZoom: FOCUS_ZOOM["launches"],
