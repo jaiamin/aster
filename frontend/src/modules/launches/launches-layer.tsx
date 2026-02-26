@@ -30,16 +30,26 @@ function statusToKey(status: string): string {
 }
 
 function toGeoJSON(launches: Launch[], selectedId: string | null): GeoJSON.FeatureCollection {
+  // Group launches by pad coordinates so each site = one pin
+  const sites = new Map<string, Launch[]>();
+  for (const l of launches) {
+    const coordKey = `${l.longitude},${l.latitude}`;
+    const group = sites.get(coordKey);
+    if (group) group.push(l);
+    else sites.set(coordKey, [l]);
+  }
+
   return {
     type: "FeatureCollection",
-    features: launches.map((l) => {
-      const key = statusToKey(l.status);
-      const sel = l.id === selectedId;
+    features: Array.from(sites.values()).map((group) => {
+      const first = group[0];
+      const sel = group.some((l) => l.id === selectedId);
+      const key = statusToKey(first.status);
       return {
         type: "Feature",
-        geometry: { type: "Point", coordinates: [l.longitude, l.latitude] },
+        geometry: { type: "Point", coordinates: [first.longitude, first.latitude] },
         properties: {
-          id: l.id,
+          id: first.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
         },
       };
