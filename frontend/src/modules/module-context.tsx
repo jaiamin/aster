@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { getInitialLayers } from "@/lib/url-state";
 
 export interface PendingTarget {
   moduleId: string;
@@ -23,7 +24,7 @@ interface ModuleContextValue {
 const ModuleContext = createContext<ModuleContextValue | null>(null);
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
-  const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
+  const [enabledModules, setEnabledModules] = useState<Set<string>>(getInitialLayers);
   const [moduleCounts, setModuleCounts] = useState<Map<string, number>>(new Map());
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
   const deselectMap = useRef(new Map<string, DeselectFn>());

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GlobeMap } from "@/components/globe/globe-map";
 import { GlobeControls } from "@/components/globe/globe-controls";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -6,12 +6,17 @@ import { StatusBar } from "@/components/shell/status-bar";
 import { useMapState } from "@/hooks/use-map-state";
 import { useModules } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
+import { getInitialStyle } from "@/lib/url-state";
 import type { MapStyleMode } from "@/config/map";
 
 export function AppShell() {
-  const { viewState, status, onMove } = useMapState();
-  const [styleMode, setStyleMode] = useState<MapStyleMode>("dark");
+  const { viewState, status, onMove, syncUrl } = useMapState();
+  const [styleMode, setStyleMode] = useState<MapStyleMode>(getInitialStyle);
   const { enabledModules } = useModules();
+
+  useEffect(() => {
+    syncUrl(viewState, enabledModules, styleMode);
+  }, [viewState, enabledModules, styleMode, syncUrl]);
 
   const activeLayers = MODULE_REGISTRY.filter((m) => enabledModules.has(m.id));
 

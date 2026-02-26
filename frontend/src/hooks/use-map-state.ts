@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { MapViewState, ProjectionMode, MapStatus } from "@/types/map";
-import { INITIAL_VIEW_STATE, GLOBE_TRANSITION_ZOOM } from "@/config/map";
+import { GLOBE_TRANSITION_ZOOM } from "@/config/map";
+import { getInitialViewState, writeUrlState } from "@/lib/url-state";
 
 function getProjectionMode(zoom: number): ProjectionMode {
   if (zoom < GLOBE_TRANSITION_ZOOM.start) return "globe";
@@ -14,13 +15,7 @@ function zoomToAltitude(zoom: number): number {
 }
 
 export function useMapState() {
-  const [viewState, setViewState] = useState<MapViewState>({
-    latitude: INITIAL_VIEW_STATE.latitude,
-    longitude: INITIAL_VIEW_STATE.longitude,
-    zoom: INITIAL_VIEW_STATE.zoom,
-    bearing: INITIAL_VIEW_STATE.bearing,
-    pitch: INITIAL_VIEW_STATE.pitch,
-  });
+  const [viewState, setViewState] = useState<MapViewState>(getInitialViewState);
 
   const projection = getProjectionMode(viewState.zoom);
   const altitude = zoomToAltitude(viewState.zoom);
@@ -32,7 +27,16 @@ export function useMapState() {
     []
   );
 
+  // Debounced URL sync — exposed for AppShell to call with full state
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => writeUrlState(vs, layers, style), 300);
+  }, []);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
   const status: MapStatus = { viewState, projection, altitude };
 
-  return { viewState, status, onMove } as const;
+  return { viewState, status, onMove, syncUrl } as const;
 }
