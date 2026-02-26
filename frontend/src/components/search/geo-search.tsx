@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LocateFixed, Search, X } from "lucide-react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { useModules } from "@/modules/module-context";
 
 interface NominatimResult {
   place_id: number;
@@ -39,10 +40,12 @@ function isAllowedResult(r: NominatimResult): boolean {
 
 const FALLBACK_ZOOM = 14;
 
-/** Compute bbox [west, south, east, north] from a single ring of coordinates. */
-function bboxFromRing(ring: number[][]): [number, number, number, number] {
+type Bbox = [number, number, number, number]; // [west, south, east, north]
+
+/** Compute bbox from a flat list of [lng, lat] coordinates. */
+function bboxFromCoords(coords: number[][]): Bbox {
   let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
-  for (const [lng, lat] of ring) {
+  for (const [lng, lat] of coords) {
     if (lng < minLng) minLng = lng;
     if (lng > maxLng) maxLng = lng;
     if (lat < minLat) minLat = lat;
@@ -51,37 +54,232 @@ function bboxFromRing(ring: number[][]): [number, number, number, number] {
   return [minLng, minLat, maxLng, maxLat];
 }
 
-/** Compute tight bbox from GeoJSON, using the largest polygon for MultiPolygon. */
-function bboxFromGeometry(geom: GeoJSON.Geometry): [number, number, number, number] | null {
+/** Degree-area of a bbox (rough proxy for geographic size). */
+function bboxArea(b: Bbox): number {
+  return (b[2] - b[0]) * (b[3] - b[1]);
+}
+
+/** Union two bboxes. */
+function bboxUnion(a: Bbox, b: Bbox): Bbox {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.max(a[2], b[2]),
+    Math.max(a[3], b[3]),
+  ];
+}
+
+/** Parse Nominatim's boundingbox [south, north, west, east] → our Bbox [west, south, east, north]. */
+function nominatimBbox(bb: [string, string, string, string]): Bbox {
+  return [parseFloat(bb[2]), parseFloat(bb[0]), parseFloat(bb[3]), parseFloat(bb[1])];
+}
+
+/** Minimum area ratio for a polygon to be included (filters overseas territories). */
+const OUTLIER_THRESHOLD = 0.01;
+/** If the union bbox spans more than this in longitude, fall back to largest only. */
+const MAX_LNG_SPAN = 180;
+
+/**
+ * Compute tight bbox from GeoJSON with outlier rejection.
+ *
+ * - Point: returns null (caller should use Nominatim boundingbox fallback)
+ * - LineString / MultiLineString: bbox from all coordinates
+ * - Polygon: bbox from outer ring
+ * - MultiPolygon: union with outlier rejection
+ */
+function bboxFromGeometry(geom: GeoJSON.Geometry): Bbox | null {
+  if (geom.type === "Point") return null;
+
+  if (geom.type === "LineString") {
+    if (geom.coordinates.length === 0) return null;
+    return bboxFromCoords(geom.coordinates as number[][]);
+  }
+
+  if (geom.type === "MultiLineString") {
+    const all = geom.coordinates.flat() as number[][];
+    if (all.length === 0) return null;
+    return bboxFromCoords(all);
+  }
+
   if (geom.type === "Polygon") {
     const ring = geom.coordinates[0];
     if (!ring || ring.length === 0) return null;
-    return bboxFromRing(ring as number[][]);
+    return bboxFromCoords(ring as number[][]);
   }
 
   if (geom.type === "MultiPolygon") {
-    // Find the polygon with the most coordinates (the "main" landmass)
-    let largestRing: number[][] | null = null;
-    let maxLen = 0;
+    const parts: { bbox: Bbox; area: number }[] = [];
     for (const polygon of geom.coordinates) {
       const ring = polygon[0];
-      if (ring && ring.length > maxLen) {
-        maxLen = ring.length;
-        largestRing = ring as number[][];
-      }
+      if (!ring || ring.length === 0) continue;
+      const bbox = bboxFromCoords(ring as number[][]);
+      parts.push({ bbox, area: bboxArea(bbox) });
     }
-    if (!largestRing) return null;
-    return bboxFromRing(largestRing);
+    if (parts.length === 0) return null;
+
+    const maxArea = Math.max(...parts.map((p) => p.area));
+    const kept = parts.filter((p) => p.area >= maxArea * OUTLIER_THRESHOLD);
+
+    let result = kept[0].bbox;
+    for (let i = 1; i < kept.length; i++) {
+      result = bboxUnion(result, kept[i].bbox);
+    }
+
+    if (result[2] - result[0] > MAX_LNG_SPAN) {
+      const largest = parts.reduce((a, b) => (b.area > a.area ? b : a));
+      return largest.bbox;
+    }
+
+    return result;
   }
 
-  // Point, LineString, etc. — no meaningful bbox for fit
   return null;
+}
+
+/** Resolve the best bbox for a result: prefer GeoJSON geometry, fall back to Nominatim bbox. */
+function resolveBbox(result: NominatimResult): Bbox | null {
+  const geoBbox = result.geojson ? bboxFromGeometry(result.geojson) : null;
+  if (geoBbox) return geoBbox;
+  // Nominatim always provides a boundingbox, even for Points — use it as fallback
+  if (result.boundingbox) {
+    const nb = nominatimBbox(result.boundingbox);
+    // If the Nominatim bbox is an epsilon point (~0.001°), it's useless
+    if (nb[2] - nb[0] < 0.01 && nb[3] - nb[1] < 0.01) return null;
+    return nb;
+  }
+  return null;
+}
+
+/** Approximate distance in km between two lat/lng points. */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Distance threshold for proximity deduplication (km). */
+const DEDUP_DISTANCE_KM = 50;
+
+/**
+ * Post-process Nominatim results:
+ * 1. Union river segments that share the same name into one result
+ * 2. Deduplicate by proximity — if two results are within 50km, keep the higher-ranked one
+ */
+function deduplicateResults(results: NominatimResult[]): NominatimResult[] {
+  // 1. Group and merge river/waterway segments by name prefix
+  const riverKey = (r: NominatimResult) => {
+    if (r.class !== "waterway") return null;
+    // Use first part of display_name as the river identity
+    return r.display_name.split(",")[0].trim().toLowerCase();
+  };
+
+  const riverGroups = new Map<string, NominatimResult[]>();
+  const nonRivers: NominatimResult[] = [];
+
+  for (const r of results) {
+    const key = riverKey(r);
+    if (key) {
+      const group = riverGroups.get(key) ?? [];
+      group.push(r);
+      riverGroups.set(key, group);
+    } else {
+      nonRivers.push(r);
+    }
+  }
+
+  // Merge each river group into a single result with unioned bbox
+  const mergedRivers: NominatimResult[] = [];
+  for (const [, group] of riverGroups) {
+    const primary = group[0]; // highest-ranked segment
+    if (group.length > 1) {
+      // Union all segment bboxes into the primary result's boundingbox
+      let union: Bbox | null = null;
+      for (const seg of group) {
+        const segBbox = seg.geojson ? bboxFromGeometry(seg.geojson) : null;
+        const bbox = segBbox ?? nominatimBbox(seg.boundingbox);
+        union = union ? bboxUnion(union, bbox) : bbox;
+      }
+      if (union) {
+        // Store the unioned bbox back as Nominatim format [south, north, west, east]
+        primary.boundingbox = [
+          String(union[1]), String(union[3]), String(union[0]), String(union[2]),
+        ] as [string, string, string, string];
+        // Clear geojson so resolveBbox uses the unioned Nominatim bbox
+        primary.geojson = undefined;
+      }
+    }
+    mergedRivers.push(primary);
+  }
+
+  // 2. Combine and deduplicate by proximity
+  const combined = [...nonRivers, ...mergedRivers];
+  // Sort by original index (Nominatim returns results by relevance)
+  combined.sort(
+    (a, b) => results.indexOf(a) - results.indexOf(b),
+  );
+
+  const kept: NominatimResult[] = [];
+  for (const r of combined) {
+    const lat = parseFloat(r.lat);
+    const lon = parseFloat(r.lon);
+    const tooClose = kept.some((k) =>
+      haversineKm(lat, lon, parseFloat(k.lat), parseFloat(k.lon)) < DEDUP_DISTANCE_KM
+    );
+    if (!tooClose) kept.push(r);
+  }
+
+  return kept;
 }
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
+/** Symbol layer prefixes that represent clickable place/water labels. */
+const LABEL_LAYER_PREFIXES = ["place_", "water_name"];
+
+function isLabelLayer(id: string): boolean {
+  return LABEL_LAYER_PREFIXES.some((p) => id.startsWith(p));
+}
+
+/** Extract the English name from a MapLibre feature's properties. */
+function labelName(properties: Record<string, unknown>): string | null {
+  const name =
+    (properties["name_en"] as string) ??
+    (properties["name:latin"] as string) ??
+    (properties["name"] as string) ??
+    null;
+  return name && name.trim().length > 0 ? name.trim() : null;
+}
+
+/** Search Nominatim and return the best matching result. */
+async function searchNominatim(
+  query: string,
+  signal: AbortSignal,
+): Promise<NominatimResult | null> {
+  const resp = await fetch(
+    `https://nominatim.openstreetmap.org/search?` +
+      new URLSearchParams({
+        q: query,
+        format: "json",
+        polygon_geojson: "1",
+        dedupe: "1",
+        limit: "5",
+      }),
+    { signal, headers: { "Accept-Language": "en" } },
+  );
+  const data: NominatimResult[] = await resp.json();
+  const filtered = deduplicateResults(data.filter(isAllowedResult));
+  return filtered[0] ?? null;
+}
+
+const GEO_SEARCH_ID = "geo-search";
+
 export function GeoSearch() {
   const { current: mapRef } = useMap();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -90,6 +288,7 @@ export function GeoSearch() {
   const savedBoundsRef = useRef<{ bbox: [number, number, number, number] | null; center: [number, number] } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const abortRef = useRef<AbortController>();
+  const labelAbortRef = useRef<AbortController>();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced Nominatim search
@@ -120,7 +319,7 @@ export function GeoSearch() {
       )
         .then((r) => r.json())
         .then((data: NominatimResult[]) => {
-          const filtered = data.filter(isAllowedResult).slice(0, 6);
+          const filtered = deduplicateResults(data.filter(isAllowedResult)).slice(0, 6);
           setResults(filtered);
           setOpen(filtered.length > 0);
         })
@@ -135,23 +334,25 @@ export function GeoSearch() {
       const map = mapRef?.getMap();
       if (!map) return;
 
+      notifySelected(GEO_SEARCH_ID);
+
       const center: [number, number] = [parseFloat(result.lon), parseFloat(result.lat)];
-      const geoBbox = result.geojson ? bboxFromGeometry(result.geojson) : null;
+      const bbox = resolveBbox(result);
 
       // Save for recenter
-      savedBoundsRef.current = { bbox: geoBbox, center };
+      savedBoundsRef.current = { bbox, center };
 
-      if (geoBbox) {
+      if (bbox) {
         map.fitBounds(
-          [[geoBbox[0], geoBbox[1]], [geoBbox[2], geoBbox[3]]],
+          [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
           { padding: 60, duration: 2000 },
         );
       } else {
         map.flyTo({ center, zoom: FALLBACK_ZOOM, duration: 2000 });
       }
 
-      // Set boundary outline
-      if (result.geojson) {
+      // Set boundary outline (only for real polygon/line geometries, not points)
+      if (result.geojson && result.geojson.type !== "Point") {
         setBoundary({
           type: "FeatureCollection",
           features: [
@@ -174,7 +375,7 @@ export function GeoSearch() {
       setOpen(false);
       inputRef.current?.blur();
     },
-    [mapRef],
+    [mapRef, notifySelected],
   );
 
   const recenter = useCallback(() => {
@@ -199,6 +400,12 @@ export function GeoSearch() {
     setQuery("");
   }, []);
 
+  // Register with global selection system so module pins can clear search
+  useEffect(() => {
+    registerDeselect(GEO_SEARCH_ID, clearBoundary);
+    return () => unregisterDeselect(GEO_SEARCH_ID);
+  }, [registerDeselect, unregisterDeselect, clearBoundary]);
+
   // Close dropdown on outside click
   useEffect(() => {
     if (!open) return;
@@ -222,6 +429,69 @@ export function GeoSearch() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Keep a stable ref so the map click handler always calls the latest selectResult
+  const selectResultRef = useRef(selectResult);
+  selectResultRef.current = selectResult;
+
+  // Click-on-label: query symbol layers at click point, search Nominatim, auto-select
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const handleLabelClick = (e: maplibregl.MapMouseEvent) => {
+      // Let data pin handlers run first — they set _layerHandled
+      requestAnimationFrame(() => {
+        if ((e.originalEvent as Record<string, unknown>)._layerHandled) return;
+
+        // Find all symbol layers currently in the style that are place/water labels
+        const styleLayers = map.getStyle()?.layers ?? [];
+        const labelLayerIds = styleLayers
+          .filter((l) => l.type === "symbol" && isLabelLayer(l.id))
+          .map((l) => l.id);
+        if (labelLayerIds.length === 0) return;
+
+        const features = map.queryRenderedFeatures(e.point, { layers: labelLayerIds });
+        if (features.length === 0) return;
+
+        const name = labelName(features[0].properties as Record<string, unknown>);
+        if (!name) return;
+
+        // Mark as handled so no other handler fires
+        (e.originalEvent as Record<string, unknown>)._layerHandled = true;
+
+        // Search Nominatim and auto-select the best result
+        labelAbortRef.current?.abort();
+        const controller = new AbortController();
+        labelAbortRef.current = controller;
+
+        searchNominatim(name, controller.signal)
+          .then((result) => {
+            if (result) selectResultRef.current(result);
+          })
+          .catch(() => {});
+      });
+    };
+
+    // Pointer cursor on label hover
+    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+      const styleLayers = map.getStyle()?.layers ?? [];
+      const labelLayerIds = styleLayers
+        .filter((l) => l.type === "symbol" && isLabelLayer(l.id))
+        .map((l) => l.id);
+      if (labelLayerIds.length === 0) return;
+      const features = map.queryRenderedFeatures(e.point, { layers: labelLayerIds });
+      map.getCanvas().style.cursor = features.length > 0 ? "pointer" : "";
+    };
+
+    map.on("click", handleLabelClick);
+    map.on("mousemove", onMouseMove);
+    return () => {
+      map.off("click", handleLabelClick);
+      map.off("mousemove", onMouseMove);
+      labelAbortRef.current?.abort();
+    };
+  }, [mapRef]);
 
   const hasSelection = boundary.features.length > 0 || activeNameRef.current !== "";
 
