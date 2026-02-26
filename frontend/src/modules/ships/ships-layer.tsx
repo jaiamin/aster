@@ -194,10 +194,11 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
 
 export function ShipsLayer() {
   const ships = useShips();
-  useModuleCount("ships", ships.length);
+  useModuleCount("ships", ships?.length ?? null);
+  const resolved = ships ?? [];
   return (
-    <ShipSelectionProvider ships={ships}>
-      <ShipsLayerInner ships={ships} />
+    <ShipSelectionProvider ships={resolved}>
+      <ShipsLayerInner ships={resolved} />
       <ShipDetailCard />
     </ShipSelectionProvider>
   );

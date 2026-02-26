@@ -11,6 +11,7 @@ import { cablesModule } from "./cables/definition";
 import { airportsModule } from "./airports/definition";
 import { portsModule } from "./ports/definition";
 import { launchesModule } from "./launches/definition";
+import { stormsModule } from "./storms/definition";
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
@@ -20,6 +21,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   airQualityModule,
   volcanoesModule,
   wildfiresModule,
+  stormsModule,
   earthquakesModule,
   portsModule,
   airportsModule,

@@ -110,10 +110,10 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 
 export function BuoysLayer() {
   const buoys = useBuoys();
-  useModuleCount("buoys", buoys.length);
+  useModuleCount("buoys", buoys?.length ?? null);
   return (
     <BuoySelectionProvider>
-      <BuoysLayerInner buoys={buoys} />
+      <BuoysLayerInner buoys={buoys ?? []} />
       <BuoyDetailCard />
     </BuoySelectionProvider>
   );

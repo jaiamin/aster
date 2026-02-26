@@ -4,7 +4,7 @@ import type { Volcano } from "@/types/volcanoes";
 const POLL_INTERVAL = 300_000; // 5 minutes
 
 export function useVolcanoes() {
-  const [volcanoes, setVolcanoes] = useState<Volcano[]>([]);
+  const [volcanoes, setVolcanoes] = useState<Volcano[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

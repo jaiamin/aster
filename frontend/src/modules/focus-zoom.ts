@@ -14,4 +14,5 @@ export const FOCUS_ZOOM: Record<string, number> = {
   nuclear: 14,
   cables: 4, // NOT USED
   launches: 10,
+  storms: 6,
 };

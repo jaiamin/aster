@@ -130,10 +130,10 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
 
 export function NuclearLayer() {
   const facilities = useNuclear();
-  useModuleCount("nuclear", facilities.length);
+  useModuleCount("nuclear", facilities?.length ?? null);
   return (
     <NuclearSelectionProvider>
-      <NuclearLayerInner facilities={facilities} />
+      <NuclearLayerInner facilities={facilities ?? []} />
       <NuclearDetailCard />
     </NuclearSelectionProvider>
   );

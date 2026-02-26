@@ -5,7 +5,7 @@ import type { Flight } from "@/types/flights";
 const POLL_INTERVAL = 30_000;
 
 export function useFlights() {
-  const [flights, setFlights] = useState<Flight[]>([]);
+  const [flights, setFlights] = useState<Flight[] | null>(null);
   const visible = usePageVisibility();
 
   useEffect(() => {

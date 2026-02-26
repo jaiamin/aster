@@ -110,10 +110,10 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
 
 export function AirportsLayer() {
   const airports = useAirports();
-  useModuleCount("airports", airports.length);
+  useModuleCount("airports", airports?.length ?? null);
   return (
     <AirportSelectionProvider>
-      <AirportsLayerInner airports={airports} />
+      <AirportsLayerInner airports={airports ?? []} />
       <AirportDetailCard />
     </AirportSelectionProvider>
   );

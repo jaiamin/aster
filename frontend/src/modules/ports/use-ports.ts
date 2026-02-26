@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Port } from "@/types/ports";
 
 export function usePorts() {
-  const [ports, setPorts] = useState<Port[]>([]);
+  const [ports, setPorts] = useState<Port[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

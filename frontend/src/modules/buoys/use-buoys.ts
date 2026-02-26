@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Buoy } from "@/types/buoys";
 
 export function useBuoys() {
-  const [buoys, setBuoys] = useState<Buoy[]>([]);
+  const [buoys, setBuoys] = useState<Buoy[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

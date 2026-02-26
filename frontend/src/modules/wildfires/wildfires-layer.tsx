@@ -134,10 +134,10 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
 
 export function WildfiresLayer() {
   const fires = useWildfires();
-  useModuleCount("wildfires", fires.length);
+  useModuleCount("wildfires", fires?.length ?? null);
   return (
     <WildfireSelectionProvider>
-      <WildfiresLayerInner fires={fires} />
+      <WildfiresLayerInner fires={fires ?? []} />
       <WildfireDetailCard />
     </WildfireSelectionProvider>
   );

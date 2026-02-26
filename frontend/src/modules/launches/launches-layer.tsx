@@ -126,10 +126,10 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
 
 export function LaunchesLayer() {
   const launches = useLaunches();
-  useModuleCount("launches", launches.length);
+  useModuleCount("launches", launches?.length ?? null);
   return (
     <LaunchSelectionProvider>
-      <LaunchesLayerInner launches={launches} />
+      <LaunchesLayerInner launches={launches ?? []} />
       <LaunchDetailCard />
     </LaunchSelectionProvider>
   );

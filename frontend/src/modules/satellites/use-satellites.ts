@@ -4,7 +4,7 @@ import type { GPRecord } from "@/types/satellites";
 const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours
 
 export function useSatellites() {
-  const [records, setRecords] = useState<GPRecord[]>([]);
+  const [records, setRecords] = useState<GPRecord[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

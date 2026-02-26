@@ -6,7 +6,7 @@ const POLL_INTERVAL = 300_000; // 5 minutes
 const MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export function useAirQuality() {
-  const [stations, setStations] = useState<AirQualityStation[]>([]);
+  const [stations, setStations] = useState<AirQualityStation[] | null>(null);
   const visible = usePageVisibility();
 
   useEffect(() => {

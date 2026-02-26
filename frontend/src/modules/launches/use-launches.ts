@@ -4,7 +4,7 @@ import type { Launch } from "@/types/launches";
 const POLL_INTERVAL = 600_000; // 10 min
 
 export function useLaunches() {
-  const [launches, setLaunches] = useState<Launch[]>([]);
+  const [launches, setLaunches] = useState<Launch[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

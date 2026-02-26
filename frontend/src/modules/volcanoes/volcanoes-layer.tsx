@@ -110,10 +110,10 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 
 export function VolcanoesLayer() {
   const volcanoes = useVolcanoes();
-  useModuleCount("volcanoes", volcanoes.length);
+  useModuleCount("volcanoes", volcanoes?.length ?? null);
   return (
     <VolcanoSelectionProvider>
-      <VolcanoesLayerInner volcanoes={volcanoes} />
+      <VolcanoesLayerInner volcanoes={volcanoes ?? []} />
       <VolcanoDetailCard />
     </VolcanoSelectionProvider>
   );

@@ -197,7 +197,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 
 export function CablesLayer() {
   const data = useCables();
-  useModuleCount("cables", data?.cables.features.length ?? 0);
+  useModuleCount("cables", data?.cables.features.length ?? null);
   return (
     <CableSelectionProvider>
       <CablesLayerInner data={data} />

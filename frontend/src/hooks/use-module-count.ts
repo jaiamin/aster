@@ -1,13 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useModules } from "@/modules/module-context";
 
-export function useModuleCount(moduleId: string, count: number) {
+export function useModuleCount(moduleId: string, count: number | null) {
   const { registerCount, unregisterCount } = useModules();
-  const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (count > 0) hasFetched.current = true;
-    registerCount(moduleId, hasFetched.current ? count : null);
+    registerCount(moduleId, count);
   }, [moduleId, count, registerCount]);
 
   useEffect(() => {

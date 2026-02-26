@@ -128,10 +128,10 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 
 export function EarthquakesLayer() {
   const quakes = useEarthquakes();
-  useModuleCount("earthquakes", quakes.length);
+  useModuleCount("earthquakes", quakes?.length ?? null);
   return (
     <EarthquakeSelectionProvider>
-      <EarthquakesLayerInner quakes={quakes} />
+      <EarthquakesLayerInner quakes={quakes ?? []} />
       <EarthquakeDetailCard />
     </EarthquakeSelectionProvider>
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Airport } from "@/types/airports";
 
 export function useAirports() {
-  const [airports, setAirports] = useState<Airport[]>([]);
+  const [airports, setAirports] = useState<Airport[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

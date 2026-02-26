@@ -289,10 +289,11 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
 
 export function FlightsLayer() {
   const flights = useFlights();
-  useModuleCount("flights", flights.length);
+  useModuleCount("flights", flights?.length ?? null);
+  const resolved = flights ?? [];
   return (
-    <FlightSelectionProvider flights={flights}>
-      <FlightsLayerInner flights={flights} />
+    <FlightSelectionProvider flights={resolved}>
+      <FlightsLayerInner flights={resolved} />
       <FlightDetailCard />
     </FlightSelectionProvider>
   );

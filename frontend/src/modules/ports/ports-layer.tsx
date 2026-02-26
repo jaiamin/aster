@@ -110,10 +110,10 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
 
 export function PortsLayer() {
   const ports = usePorts();
-  useModuleCount("ports", ports.length);
+  useModuleCount("ports", ports?.length ?? null);
   return (
     <PortSelectionProvider>
-      <PortsLayerInner ports={ports} />
+      <PortsLayerInner ports={ports ?? []} />
       <PortDetailCard />
     </PortSelectionProvider>
   );

@@ -5,7 +5,7 @@ import type { Ship } from "@/types/ships";
 const POLL_INTERVAL = 30_000;
 
 export function useShips() {
-  const [ships, setShips] = useState<Ship[]>([]);
+  const [ships, setShips] = useState<Ship[] | null>(null);
   const visible = usePageVisibility();
 
   useEffect(() => {

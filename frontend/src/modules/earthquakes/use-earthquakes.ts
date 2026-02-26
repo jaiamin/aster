@@ -4,7 +4,7 @@ import type { Earthquake } from "@/types/earthquakes";
 const POLL_INTERVAL = 60_000;
 
 export function useEarthquakes() {
-  const [quakes, setQuakes] = useState<Earthquake[]>([]);
+  const [quakes, setQuakes] = useState<Earthquake[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

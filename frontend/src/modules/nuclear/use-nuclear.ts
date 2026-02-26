@@ -4,7 +4,7 @@ import type { NuclearFacility } from "@/types/nuclear";
 const POLL_INTERVAL = 3_600_000; // 1 hour — static data
 
 export function useNuclear() {
-  const [facilities, setFacilities] = useState<NuclearFacility[]>([]);
+  const [facilities, setFacilities] = useState<NuclearFacility[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();

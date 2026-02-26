@@ -190,12 +190,12 @@ function SatellitesLayerInner({
 
 export function SatellitesLayer() {
   const records = useSatellites();
-  const positions = useSatellitePositions(records);
-  useModuleCount("satellites", positions.length);
+  const positions = useSatellitePositions(records ?? []);
+  useModuleCount("satellites", records === null ? null : positions.length);
 
   return (
     <SatelliteSelectionProvider positions={positions}>
-      <SatellitesLayerInner positions={positions} records={records} />
+      <SatellitesLayerInner positions={positions} records={records ?? []} />
       <SatelliteDetailCard />
     </SatelliteSelectionProvider>
   );

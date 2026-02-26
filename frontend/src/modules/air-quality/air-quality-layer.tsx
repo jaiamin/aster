@@ -130,10 +130,10 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
 
 export function AirQualityLayer() {
   const stations = useAirQuality();
-  useModuleCount("air-quality", stations.length);
+  useModuleCount("air-quality", stations?.length ?? null);
   return (
     <AirQualitySelectionProvider>
-      <AirQualityLayerInner stations={stations} />
+      <AirQualityLayerInner stations={stations ?? []} />
       <AirQualityDetailCard />
     </AirQualitySelectionProvider>
   );
