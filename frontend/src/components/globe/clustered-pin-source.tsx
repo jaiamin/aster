@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { registerLayerClick } from "@/lib/layer-click";
-import type { GeoJSONSource } from "maplibre-gl";
+import { LngLatBounds, type GeoJSONSource } from "maplibre-gl";
 
 interface ClusteredPinSourceProps {
   moduleId: string;
@@ -28,10 +28,15 @@ export function ClusteredPinSource({
 
     return registerLayerClick(clusterLayer, (feature) => {
       const clusterId = feature.properties?.cluster_id as number;
-      const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+      const pointCount = feature.properties?.point_count as number;
       const source = map.getSource(`${moduleId}-source`) as GeoJSONSource;
-      source.getClusterExpansionZoom(clusterId).then((zoom) => {
-        map.flyTo({ center: [lng, lat], zoom, duration: 500 });
+      source.getClusterLeaves(clusterId, pointCount, 0).then((leaves) => {
+        const bounds = new LngLatBounds();
+        for (const leaf of leaves) {
+          const [lng, lat] = (leaf.geometry as GeoJSON.Point).coordinates;
+          bounds.extend([lng, lat]);
+        }
+        map.fitBounds(bounds, { padding: 80, duration: 500 });
       });
     });
   }, [mapRef, moduleId, clusterLayer]);
