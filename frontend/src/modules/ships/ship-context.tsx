@@ -21,7 +21,7 @@ export function ShipSelectionProvider({
   ships: Ship[];
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selectedMmsi, setSelectedMmsi] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [tracking, setTracking] = useState(true);
@@ -61,7 +61,10 @@ export function ShipSelectionProvider({
     setTracking(true);
   }, []);
 
-  useEffect(() => { registerDeselect("ships", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("ships", deselect);
+    return () => unregisterDeselect("ships");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);

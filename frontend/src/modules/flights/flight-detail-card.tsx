@@ -26,13 +26,15 @@ function useAircraftPhoto(icao24: string) {
     setUrl(null);
     setLoaded(false);
     if (!icao24) { setLoaded(true); return; }
-    fetch(`https://hexdb.io/hex-image-thumb?hex=${icao24}`)
+    const controller = new AbortController();
+    fetch(`https://hexdb.io/hex-image-thumb?hex=${icao24}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.text() : null))
       .then((text) => {
         if (text?.startsWith("http")) setUrl(text.trim());
         else setLoaded(true);
       })
       .catch(() => setLoaded(true));
+    return () => controller.abort();
   }, [icao24]);
 
   return { url, loaded, setLoaded };

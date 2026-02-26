@@ -15,7 +15,7 @@ export function NuclearSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedFacility | null>(null);
 
   const select = useCallback((facility: NuclearFacility) => {
@@ -27,7 +27,10 @@ export function NuclearSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("nuclear", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("nuclear", deselect);
+    return () => unregisterDeselect("nuclear");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <NuclearSelectionContext value={{ selected, select, deselect }}>

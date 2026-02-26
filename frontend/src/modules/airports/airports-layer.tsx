@@ -6,7 +6,6 @@ import { AirportSelectionProvider, useAirportSelection } from "./airport-context
 import { useModuleCount } from "@/hooks/use-module-count";
 import { AirportDetailCard } from "./airport-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
-import { filterByBounds } from "@/lib/viewport";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Airport } from "@/types/airports";
@@ -34,23 +33,9 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const [ready, setReady] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onMove = () => setMoveCount((c) => c + 1);
-    map.on("moveend", onMove);
-    return () => { map.off("moveend", onMove); };
-  }, [mapRef]);
 
   const selectedId = selected?.airport.id ?? null;
-  const geojson = useMemo(() => {
-    const map = mapRef?.getMap();
-    const visible = map ? filterByBounds(airports, (a) => [a.longitude, a.latitude], map) : airports;
-    return toGeoJSON(visible, selectedId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [airports, selectedId, moveCount]);
+  const geojson = useMemo(() => toGeoJSON(airports, selectedId), [airports, selectedId]);
 
   // Register pin images
   useEffect(() => {

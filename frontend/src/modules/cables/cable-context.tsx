@@ -15,7 +15,7 @@ export function CableSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedCable | null>(null);
 
   const select = useCallback((cable: CableFeature) => {
@@ -27,7 +27,10 @@ export function CableSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("cables", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("cables", deselect);
+    return () => unregisterDeselect("cables");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <CableSelectionContext value={{ selected, select, deselect }}>

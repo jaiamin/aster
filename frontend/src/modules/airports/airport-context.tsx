@@ -15,7 +15,7 @@ export function AirportSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedAirport | null>(null);
 
   const select = useCallback((airport: Airport) => {
@@ -27,7 +27,10 @@ export function AirportSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("airports", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("airports", deselect);
+    return () => unregisterDeselect("airports");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <AirportSelectionContext value={{ selected, select, deselect }}>

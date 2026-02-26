@@ -15,7 +15,7 @@ export function BuoySelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedBuoy | null>(null);
 
   const select = useCallback((buoy: Buoy) => {
@@ -27,7 +27,10 @@ export function BuoySelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("buoys", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("buoys", deselect);
+    return () => unregisterDeselect("buoys");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <BuoySelectionContext value={{ selected, select, deselect }}>

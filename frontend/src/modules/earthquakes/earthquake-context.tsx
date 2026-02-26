@@ -15,7 +15,7 @@ export function EarthquakeSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedEarthquake | null>(null);
 
   const select = useCallback((quake: Earthquake) => {
@@ -27,7 +27,10 @@ export function EarthquakeSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("earthquakes", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("earthquakes", deselect);
+    return () => unregisterDeselect("earthquakes");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <EarthquakeSelectionContext value={{ selected, select, deselect }}>

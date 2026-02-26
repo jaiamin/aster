@@ -16,6 +16,7 @@ interface ModuleContextValue {
   focusTarget: (moduleId: string, targetId: number) => void;
   clearPendingTarget: () => void;
   registerDeselect: (moduleId: string, deselect: DeselectFn) => void;
+  unregisterDeselect: (moduleId: string) => void;
   notifySelected: (moduleId: string) => void;
   registerCount: (moduleId: string, count: number) => void;
   unregisterCount: (moduleId: string) => void;
@@ -52,6 +53,10 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     deselectMap.current.set(moduleId, deselect);
   }, []);
 
+  const unregisterDeselect = useCallback((moduleId: string) => {
+    deselectMap.current.delete(moduleId);
+  }, []);
+
   const notifySelected = useCallback((moduleId: string) => {
     for (const [id, deselect] of deselectMap.current) {
       if (id !== moduleId) deselect();
@@ -77,7 +82,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, toggle, focusTarget, clearPendingTarget, registerDeselect, notifySelected, registerCount, unregisterCount }}>
+    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, toggle, focusTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, registerCount, unregisterCount }}>
       {children}
     </ModuleContext.Provider>
   );

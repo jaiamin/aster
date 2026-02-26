@@ -20,7 +20,7 @@ export function SatelliteSelectionProvider({
   positions: SatellitePosition[];
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gp, setGp] = useState<GPRecord | null>(null);
   const [detail, setDetail] = useState<SatelliteDetail | null>(null);
@@ -45,7 +45,10 @@ export function SatelliteSelectionProvider({
     setTracking(true);
   }, []);
 
-  useEffect(() => { registerDeselect("satellites", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("satellites", deselect);
+    return () => unregisterDeselect("satellites");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);

@@ -22,7 +22,7 @@ export function FlightSelectionProvider({
   flights: Flight[];
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selectedIcao, setSelectedIcao] = useState<string | null>(null);
   const [track, setTrack] = useState<FlightTrack | null>(null);
   const [detail, setDetail] = useState<FlightDetail | null>(null);
@@ -68,7 +68,10 @@ export function FlightSelectionProvider({
     setTracking(true);
   }, []);
 
-  useEffect(() => { registerDeselect("flights", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("flights", deselect);
+    return () => unregisterDeselect("flights");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);

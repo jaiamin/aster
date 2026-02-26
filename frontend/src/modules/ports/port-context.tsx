@@ -15,7 +15,7 @@ export function PortSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedPort | null>(null);
 
   const select = useCallback((port: Port) => {
@@ -27,7 +27,10 @@ export function PortSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("ports", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("ports", deselect);
+    return () => unregisterDeselect("ports");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <PortSelectionContext value={{ selected, select, deselect }}>

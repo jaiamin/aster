@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { filterByBounds } from "@/lib/viewport";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -120,15 +119,6 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
-  const [moveCount, setMoveCount] = useState(0);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onMove = () => setMoveCount((c) => c + 1);
-    map.on("moveend", onMove);
-    return () => { map.off("moveend", onMove); };
-  }, [mapRef]);
 
   // Register plane icon variants
   useEffect(() => {
@@ -211,12 +201,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   }, [selected?.flight.longitude, selected?.flight.latitude, mapRef, tracking]);
 
   const selectedIcao = selected?.flight.icao24 ?? null;
-  const geojson = useMemo(() => {
-    const map = mapRef?.getMap();
-    const visible = map ? filterByBounds(flights, (f) => [f.longitude, f.latitude], map) : flights;
-    return toGeoJSON(visible, selectedIcao);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flights, selectedIcao, moveCount]);
+  const geojson = useMemo(() => toGeoJSON(flights, selectedIcao), [flights, selectedIcao]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],

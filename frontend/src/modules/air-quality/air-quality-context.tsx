@@ -15,7 +15,7 @@ export function AirQualitySelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedStation | null>(null);
 
   const select = useCallback((station: AirQualityStation) => {
@@ -27,7 +27,10 @@ export function AirQualitySelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("air-quality", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("air-quality", deselect);
+    return () => unregisterDeselect("air-quality");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <AirQualitySelectionContext value={{ selected, select, deselect }}>

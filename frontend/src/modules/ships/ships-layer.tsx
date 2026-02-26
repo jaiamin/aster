@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { filterByBounds } from "@/lib/viewport";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Ship } from "@/types/ships";
 
@@ -77,15 +76,6 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
-  const [moveCount, setMoveCount] = useState(0);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onMove = () => setMoveCount((c) => c + 1);
-    map.on("moveend", onMove);
-    return () => { map.off("moveend", onMove); };
-  }, [mapRef]);
 
   // Register ship icon variants
   useEffect(() => {
@@ -172,12 +162,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   }, [selected?.ship.longitude, selected?.ship.latitude, mapRef, tracking]);
 
   const selectedMmsi = selected?.ship.mmsi ?? null;
-  const geojson = useMemo(() => {
-    const map = mapRef?.getMap();
-    const visible = map ? filterByBounds(ships, (s) => [s.longitude, s.latitude], map) : ships;
-    return toGeoJSON(visible, selectedMmsi);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ships, selectedMmsi, moveCount]);
+  const geojson = useMemo(() => toGeoJSON(ships, selectedMmsi), [ships, selectedMmsi]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>

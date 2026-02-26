@@ -6,7 +6,6 @@ import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { PortDetailCard } from "./port-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
-import { filterByBounds } from "@/lib/viewport";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Port } from "@/types/ports";
@@ -34,23 +33,9 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const [ready, setReady] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onMove = () => setMoveCount((c) => c + 1);
-    map.on("moveend", onMove);
-    return () => { map.off("moveend", onMove); };
-  }, [mapRef]);
 
   const selectedId = selected?.port.id ?? null;
-  const geojson = useMemo(() => {
-    const map = mapRef?.getMap();
-    const visible = map ? filterByBounds(ports, (p) => [p.longitude, p.latitude], map) : ports;
-    return toGeoJSON(visible, selectedId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ports, selectedId, moveCount]);
+  const geojson = useMemo(() => toGeoJSON(ports, selectedId), [ports, selectedId]);
 
   // Register pin images
   useEffect(() => {

@@ -15,7 +15,7 @@ export function WildfireSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedWildfire | null>(null);
 
   const select = useCallback((fire: Wildfire) => {
@@ -27,7 +27,10 @@ export function WildfireSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("wildfires", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("wildfires", deselect);
+    return () => unregisterDeselect("wildfires");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <WildfireSelectionContext value={{ selected, select, deselect }}>

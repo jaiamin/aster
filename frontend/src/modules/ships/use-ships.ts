@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { Ship } from "@/types/ships";
 
-const POLL_INTERVAL = 10_000;
+const POLL_INTERVAL = 30_000;
 
 export function useShips() {
   const [ships, setShips] = useState<Ship[]>([]);

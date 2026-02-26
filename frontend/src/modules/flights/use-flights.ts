@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { Flight } from "@/types/flights";
 
-const POLL_INTERVAL = 10_000;
+const POLL_INTERVAL = 30_000;
 
 export function useFlights() {
   const [flights, setFlights] = useState<Flight[]>([]);

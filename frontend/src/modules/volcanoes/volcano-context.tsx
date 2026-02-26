@@ -15,7 +15,7 @@ export function VolcanoSelectionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { registerDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
   const [selected, setSelected] = useState<SelectedVolcano | null>(null);
 
   const select = useCallback((volcano: Volcano) => {
@@ -27,7 +27,10 @@ export function VolcanoSelectionProvider({
     setSelected(null);
   }, []);
 
-  useEffect(() => { registerDeselect("volcanoes", deselect); }, [registerDeselect, deselect]);
+  useEffect(() => {
+    registerDeselect("volcanoes", deselect);
+    return () => unregisterDeselect("volcanoes");
+  }, [registerDeselect, unregisterDeselect, deselect]);
 
   return (
     <VolcanoSelectionContext value={{ selected, select, deselect }}>
