@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { Flight } from "@/types/flights";
 
 const POLL_INTERVAL = 10_000;
 
 export function useFlights() {
   const [flights, setFlights] = useState<Flight[]>([]);
+  const visible = usePageVisibility();
 
   useEffect(() => {
+    if (!visible) return;
     const controller = new AbortController();
 
     async function fetchFlights() {
@@ -27,7 +30,7 @@ export function useFlights() {
       controller.abort();
       clearInterval(id);
     };
-  }, []);
+  }, [visible]);
 
   return flights;
 }

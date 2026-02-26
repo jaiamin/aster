@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
 import { useModules } from "@/modules/module-context";
+import { usePageVisibility } from "@/hooks/use-page-visibility";
 
 interface FlightSelectionContextValue {
   selected: SelectedFlight | null;
@@ -71,6 +72,7 @@ export function FlightSelectionProvider({
 
   const pauseTracking = useCallback(() => setTracking(false), []);
   const resumeTracking = useCallback(() => setTracking(true), []);
+  const visible = usePageVisibility();
 
   // Fetch detail once on selection
   useEffect(() => {
@@ -88,7 +90,7 @@ export function FlightSelectionProvider({
 
   // Poll track data to keep trail current
   useEffect(() => {
-    if (!selectedIcao) return;
+    if (!selectedIcao || !visible) return;
     const controller = new AbortController();
 
     function fetchTrack() {
@@ -105,7 +107,7 @@ export function FlightSelectionProvider({
       controller.abort();
       clearInterval(id);
     };
-  }, [selectedIcao]);
+  }, [selectedIcao, visible]);
 
   const selected: SelectedFlight | null = currentFlight
     ? { flight: currentFlight, track, detail }

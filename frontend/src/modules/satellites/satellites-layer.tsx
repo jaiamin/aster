@@ -7,6 +7,7 @@ import { useSatellites } from "./use-satellites";
 import { useSatellitePositions } from "./use-satellite-positions";
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
 import { SatelliteDetailCard } from "./satellite-detail-card";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { useSatelliteOrbit } from "./use-satellite-orbit";
 import type { SatellitePosition, GPRecord, OrbitPoint } from "@/types/satellites";
 import type { PickingInfo } from "@deck.gl/core";
@@ -189,6 +190,7 @@ function SatellitesLayerInner({
 export function SatellitesLayer() {
   const records = useSatellites();
   const positions = useSatellitePositions(records);
+  useModuleCount("satellites", positions.length);
 
   return (
     <SatelliteSelectionProvider positions={positions}>

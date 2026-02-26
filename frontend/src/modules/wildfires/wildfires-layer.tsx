@@ -3,8 +3,9 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Flame } from "lucide-react";
 import { useWildfires } from "./use-wildfires";
 import { WildfireSelectionProvider, useWildfireSelection } from "./wildfire-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { WildfireDetailCard } from "./wildfire-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Wildfire } from "@/types/wildfires";
@@ -64,12 +65,9 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Flame,
-      bgColor: CATEGORY_COLORS["Natural Events"],
-      statusVariants: STATUS_VARIANTS,
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Flame, bgColor: CATEGORY_COLORS["Natural Events"], statusVariants: STATUS_VARIANTS };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -133,6 +131,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
 
 export function WildfiresLayer() {
   const fires = useWildfires();
+  useModuleCount("wildfires", fires.length);
   return (
     <WildfireSelectionProvider>
       <WildfiresLayerInner fires={fires} />

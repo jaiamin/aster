@@ -10,12 +10,12 @@ import {
 import type { GPRecord, OrbitPoint } from "@/types/satellites";
 
 /** Split orbit into segments at antimeridian crossings */
-function splitAtAntimeridian(points: OrbitPoint[]): OrbitPoint[][] {
+function splitAtAntimeridian(points: OrbitPoint[], count: number): OrbitPoint[][] {
   const segments: OrbitPoint[][] = [[]];
-  for (let i = 0; i < points.length; i++) {
+  for (let i = 0; i < count; i++) {
     segments[segments.length - 1].push(points[i]);
     if (
-      i < points.length - 1 &&
+      i < count - 1 &&
       Math.abs(points[i + 1].longitude - points[i].longitude) > 180
     ) {
       segments.push([]);
@@ -25,7 +25,7 @@ function splitAtAntimeridian(points: OrbitPoint[]): OrbitPoint[][] {
 }
 
 export function useSatelliteOrbit(gp: GPRecord | null) {
-  const [points, setPoints] = useState<OrbitPoint[]>([]);
+  const [version, setVersion] = useState(0);
 
   const satrec = useMemo(() => {
     if (!gp) return null;
@@ -42,9 +42,14 @@ export function useSatelliteOrbit(gp: GPRecord | null) {
   const gpRef = useRef(gp);
   gpRef.current = gp;
 
+  // Pre-allocate orbit points array
+  const pointsRef = useRef<OrbitPoint[]>([]);
+  const pointsCountRef = useRef(0);
+
   useEffect(() => {
     if (!satrecRef.current || !gpRef.current) {
-      setPoints([]);
+      pointsCountRef.current = 0;
+      setVersion((v) => v + 1);
       return;
     }
 
@@ -57,8 +62,14 @@ export function useSatelliteOrbit(gp: GPRecord | null) {
       const halfPeriod = periodMinutes / 2;
       const stepMinutes = 2;
       const now = Date.now();
-      const result: OrbitPoint[] = [];
 
+      // Estimate max points needed and pre-allocate if needed
+      const maxPoints = Math.ceil(periodMinutes / stepMinutes) + 1;
+      while (pointsRef.current.length < maxPoints) {
+        pointsRef.current.push({ longitude: 0, latitude: 0, altitude: 0 });
+      }
+
+      let writeIdx = 0;
       for (let m = -halfPeriod; m <= halfPeriod; m += stepMinutes) {
         const time = new Date(now + m * 60_000);
         const posVel = propagate(rec, time);
@@ -66,25 +77,28 @@ export function useSatelliteOrbit(gp: GPRecord | null) {
 
         const gmst = gstime(time);
         const geodetic = eciToGeodetic(posVel.position, gmst);
-        result.push({
-          longitude: degreesLong(geodetic.longitude),
-          latitude: degreesLat(geodetic.latitude),
-          altitude: geodetic.height * 1000, // km → meters
-        });
+        const pt = pointsRef.current[writeIdx];
+        pt.longitude = degreesLong(geodetic.longitude);
+        pt.latitude = degreesLat(geodetic.latitude);
+        pt.altitude = geodetic.height * 1000;
+        writeIdx++;
       }
 
-      setPoints(result);
+      pointsCountRef.current = writeIdx;
+      setVersion((v) => v + 1);
     }
 
     propagateOrbit();
-    const id = setInterval(propagateOrbit, 30_000);
+    const id = setInterval(propagateOrbit, 60_000);
     return () => clearInterval(id);
   }, [satrec]);
 
   const segments = useMemo(() => {
-    if (points.length < 2) return [];
-    return splitAtAntimeridian(points);
-  }, [points]);
+    const count = pointsCountRef.current;
+    if (count < 2) return [];
+    return splitAtAntimeridian(pointsRef.current, count);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
 
   return segments;
 }

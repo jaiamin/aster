@@ -3,8 +3,9 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Radiation } from "lucide-react";
 import { useNuclear } from "./use-nuclear";
 import { NuclearSelectionProvider, useNuclearSelection } from "./nuclear-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { NuclearDetailCard } from "./nuclear-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { NuclearFacility } from "@/types/nuclear";
@@ -60,12 +61,9 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Radiation,
-      bgColor: CATEGORY_COLORS.Infrastructure,
-      statusVariants: STATUS_VARIANTS,
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Radiation, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -129,6 +127,7 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
 
 export function NuclearLayer() {
   const facilities = useNuclear();
+  useModuleCount("nuclear", facilities.length);
   return (
     <NuclearSelectionProvider>
       <NuclearLayerInner facilities={facilities} />

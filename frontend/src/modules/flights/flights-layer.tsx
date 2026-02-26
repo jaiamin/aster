@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
+import { useModuleCount } from "@/hooks/use-module-count";
+import { filterByBounds } from "@/lib/viewport";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -60,7 +62,10 @@ function createPlaneIcon(fillColor: string, strokeColor: string): ImageData {
   planePath(ctx, ICON_SIZE);
   ctx.fill();
 
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width = 0;
+  canvas.height = 0;
+  return data;
 }
 
 function toGeoJSON(flights: Flight[], selectedIcao: string | null): GeoJSON.FeatureCollection {
@@ -115,6 +120,15 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
+  const [moveCount, setMoveCount] = useState(0);
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    const onMove = () => setMoveCount((c) => c + 1);
+    map.on("moveend", onMove);
+    return () => { map.off("moveend", onMove); };
+  }, [mapRef]);
 
   // Register plane icon variants
   useEffect(() => {
@@ -126,6 +140,10 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     if (!map.hasImage(ICON_SELECTED)) {
       map.addImage(ICON_SELECTED, createPlaneIcon("#3d7ab5", "#ffffff"), { pixelRatio: DPR });
     }
+    return () => {
+      if (map.hasImage(ICON_NORMAL)) map.removeImage(ICON_NORMAL);
+      if (map.hasImage(ICON_SELECTED)) map.removeImage(ICON_SELECTED);
+    };
   }, [mapRef]);
 
   // Click handler
@@ -193,7 +211,12 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   }, [selected?.flight.longitude, selected?.flight.latitude, mapRef, tracking]);
 
   const selectedIcao = selected?.flight.icao24 ?? null;
-  const geojson = useMemo(() => toGeoJSON(flights, selectedIcao), [flights, selectedIcao]);
+  const geojson = useMemo(() => {
+    const map = mapRef?.getMap();
+    const visible = map ? filterByBounds(flights, (f) => [f.longitude, f.latitude], map) : flights;
+    return toGeoJSON(visible, selectedIcao);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flights, selectedIcao, moveCount]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],
@@ -281,6 +304,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
 
 export function FlightsLayer() {
   const flights = useFlights();
+  useModuleCount("flights", flights.length);
   return (
     <FlightSelectionProvider flights={flights}>
       <FlightsLayerInner flights={flights} />

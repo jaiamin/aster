@@ -3,8 +3,9 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Activity } from "lucide-react";
 import { useEarthquakes } from "./use-earthquakes";
 import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquake-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Earthquake } from "@/types/earthquakes";
@@ -58,12 +59,9 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Activity,
-      bgColor: CATEGORY_COLORS["Natural Events"],
-      statusVariants: STATUS_VARIANTS,
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Activity, bgColor: CATEGORY_COLORS["Natural Events"], statusVariants: STATUS_VARIANTS };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -127,6 +125,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 
 export function EarthquakesLayer() {
   const quakes = useEarthquakes();
+  useModuleCount("earthquakes", quakes.length);
   return (
     <EarthquakeSelectionProvider>
       <EarthquakesLayerInner quakes={quakes} />

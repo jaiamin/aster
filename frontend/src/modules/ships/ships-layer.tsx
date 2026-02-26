@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
+import { useModuleCount } from "@/hooks/use-module-count";
+import { filterByBounds } from "@/lib/viewport";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Ship } from "@/types/ships";
 
@@ -45,7 +47,10 @@ function createShipIcon(fillColor: string, strokeColor: string): ImageData {
   const ctx = canvas.getContext("2d")!;
   ctx.scale(DPR, DPR);
   drawShip(ctx, ICON_SIZE, fillColor, strokeColor);
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width = 0;
+  canvas.height = 0;
+  return data;
 }
 
 function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureCollection {
@@ -72,6 +77,15 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const flyingToRef = useRef(false);
+  const [moveCount, setMoveCount] = useState(0);
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    const onMove = () => setMoveCount((c) => c + 1);
+    map.on("moveend", onMove);
+    return () => { map.off("moveend", onMove); };
+  }, [mapRef]);
 
   // Register ship icon variants
   useEffect(() => {
@@ -83,6 +97,10 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     if (!map.hasImage(ICON_SELECTED)) {
       map.addImage(ICON_SELECTED, createShipIcon("#3d7ab5", "#ffffff"), { pixelRatio: DPR });
     }
+    return () => {
+      if (map.hasImage(ICON_NORMAL)) map.removeImage(ICON_NORMAL);
+      if (map.hasImage(ICON_SELECTED)) map.removeImage(ICON_SELECTED);
+    };
   }, [mapRef]);
 
   // Click handler — select or deselect
@@ -154,7 +172,12 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   }, [selected?.ship.longitude, selected?.ship.latitude, mapRef, tracking]);
 
   const selectedMmsi = selected?.ship.mmsi ?? null;
-  const geojson = useMemo(() => toGeoJSON(ships, selectedMmsi), [ships, selectedMmsi]);
+  const geojson = useMemo(() => {
+    const map = mapRef?.getMap();
+    const visible = map ? filterByBounds(ships, (s) => [s.longitude, s.latitude], map) : ships;
+    return toGeoJSON(visible, selectedMmsi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ships, selectedMmsi, moveCount]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>
@@ -186,6 +209,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
 
 export function ShipsLayer() {
   const ships = useShips();
+  useModuleCount("ships", ships.length);
   return (
     <ShipSelectionProvider ships={ships}>
       <ShipsLayerInner ships={ships} />

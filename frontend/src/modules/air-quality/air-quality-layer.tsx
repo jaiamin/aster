@@ -3,8 +3,10 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Wind } from "lucide-react";
 import { useAirQuality } from "./use-air-quality";
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { AirQualityDetailCard } from "./air-quality-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
+import { filterByBounds } from "@/lib/viewport";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { AirQualityStation } from "@/types/air-quality";
@@ -52,20 +54,31 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const [ready, setReady] = useState(false);
+  const [moveCount, setMoveCount] = useState(0);
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    const onMove = () => setMoveCount((c) => c + 1);
+    map.on("moveend", onMove);
+    return () => { map.off("moveend", onMove); };
+  }, [mapRef]);
 
   const selectedId = selected?.station.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(stations, selectedId), [stations, selectedId]);
+  const geojson = useMemo(() => {
+    const map = mapRef?.getMap();
+    const visible = map ? filterByBounds(stations, (s) => [s.longitude, s.latitude], map) : stations;
+    return toGeoJSON(visible, selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stations, selectedId, moveCount]);
 
   // Register pin images
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Wind,
-      bgColor: CATEGORY_COLORS.Environment,
-      statusVariants: STATUS_VARIANTS,
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Wind, bgColor: CATEGORY_COLORS.Environment, statusVariants: STATUS_VARIANTS };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -129,6 +142,7 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
 
 export function AirQualityLayer() {
   const stations = useAirQuality();
+  useModuleCount("air-quality", stations.length);
   return (
     <AirQualitySelectionProvider>
       <AirQualityLayerInner stations={stations} />

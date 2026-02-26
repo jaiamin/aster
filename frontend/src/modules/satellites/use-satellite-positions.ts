@@ -8,10 +8,12 @@ import {
   degreesLat,
   type SatRec,
 } from "satellite.js";
+import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { GPRecord, SatellitePosition } from "@/types/satellites";
 
 export function useSatellitePositions(gpRecords: GPRecord[]) {
-  const [positions, setPositions] = useState<SatellitePosition[]>([]);
+  const [version, setVersion] = useState(0);
+  const visible = usePageVisibility();
   const satrecs = useMemo(() => {
     const result: { id: number; name: string; satrec: SatRec }[] = [];
     for (const gp of gpRecords) {
@@ -25,18 +27,34 @@ export function useSatellitePositions(gpRecords: GPRecord[]) {
     return result;
   }, [gpRecords]);
 
+  // Pre-allocate positions array once when satrecs changes
+  const positionsRef = useRef<SatellitePosition[]>([]);
+  useEffect(() => {
+    positionsRef.current = satrecs.map(({ id, name }) => ({
+      id,
+      name,
+      longitude: 0,
+      latitude: 0,
+      altitude: 0,
+    }));
+  }, [satrecs]);
+
+  const positionsCountRef = useRef(0);
   const satrecsRef = useRef(satrecs);
   satrecsRef.current = satrecs;
 
   useEffect(() => {
-    if (satrecsRef.current.length === 0) return;
+    if (satrecsRef.current.length === 0 || !visible) return;
 
     function propagateAll() {
       const now = new Date();
       const gmst = gstime(now);
-      const result: SatellitePosition[] = [];
+      const recs = satrecsRef.current;
+      const positions = positionsRef.current;
+      let writeIdx = 0;
 
-      for (const { id, name, satrec } of satrecsRef.current) {
+      for (let i = 0; i < recs.length; i++) {
+        const { id, name, satrec } = recs[i];
         const posVel = propagate(satrec, now);
         if (
           !posVel.position ||
@@ -45,22 +63,28 @@ export function useSatellitePositions(gpRecords: GPRecord[]) {
           continue;
 
         const geodetic = eciToGeodetic(posVel.position, gmst);
-        result.push({
-          id,
-          name,
-          longitude: degreesLong(geodetic.longitude),
-          latitude: degreesLat(geodetic.latitude),
-          altitude: geodetic.height * 1000, // km → meters
-        });
+        if (writeIdx >= positions.length) {
+          positions.push({ id: 0, name: "", longitude: 0, latitude: 0, altitude: 0 });
+        }
+        const pos = positions[writeIdx];
+        pos.id = id;
+        pos.name = name;
+        pos.longitude = degreesLong(geodetic.longitude);
+        pos.latitude = degreesLat(geodetic.latitude);
+        pos.altitude = geodetic.height * 1000;
+        writeIdx++;
       }
 
-      setPositions(result);
+      positionsCountRef.current = writeIdx;
+      setVersion((v) => v + 1);
     }
 
     propagateAll();
-    const id = setInterval(propagateAll, 1000);
+    const id = setInterval(propagateAll, 2000);
     return () => clearInterval(id);
-  }, [satrecs]);
+  }, [satrecs, visible]);
 
-  return positions;
+  // Return only valid entries — version change triggers re-render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => positionsRef.current.slice(0, positionsCountRef.current), [version]);
 }

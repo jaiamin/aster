@@ -6,6 +6,16 @@ export function transformDarkStyle(
 ): StyleSpecification {
   const transformed = structuredClone(style);
 
+  // Remove unused raster sources (e.g. ne2_shaded) to prevent MapLibre
+  // from loading tiles for sources that have no visible layers.
+  if (transformed.sources) {
+    for (const [key, src] of Object.entries(transformed.sources)) {
+      if ((src as Record<string, unknown>).type === "raster") {
+        delete transformed.sources[key];
+      }
+    }
+  }
+
   transformed.projection = { type: "globe" };
   transformed.sky = {
     "sky-color": "#0a0a1a",

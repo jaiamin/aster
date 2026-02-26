@@ -7,14 +7,15 @@ import type { ModuleDefinition } from "@/types/modules";
 function ModuleRow({
   def,
   enabled,
+  count,
   onToggle,
 }: {
   def: ModuleDefinition;
   enabled: boolean;
+  count: number | undefined;
   onToggle: () => void;
 }) {
-  const { icon: Icon, name, useCount } = def;
-  const count = useCount?.() ?? null;
+  const { icon: Icon, name } = def;
 
   return (
     <button
@@ -43,6 +44,7 @@ function CategoryGroup({
   category,
   modules,
   enabledModules,
+  moduleCounts,
   open,
   onToggleOpen,
   onToggle,
@@ -50,6 +52,7 @@ function CategoryGroup({
   category: string;
   modules: ModuleDefinition[];
   enabledModules: Set<string>;
+  moduleCounts: Map<string, number>;
   open: boolean;
   onToggleOpen: () => void;
   onToggle: (id: string) => void;
@@ -83,6 +86,7 @@ function CategoryGroup({
               key={def.id}
               def={def}
               enabled={enabledModules.has(def.id)}
+              count={moduleCounts.get(def.id)}
               onToggle={() => onToggle(def.id)}
             />
           ))}
@@ -95,7 +99,7 @@ function CategoryGroup({
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
-  const { enabledModules, toggle } = useModules();
+  const { enabledModules, moduleCounts, toggle } = useModules();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -194,6 +198,7 @@ export function Sidebar() {
                   category={category}
                   modules={modules}
                   enabledModules={enabledModules}
+                  moduleCounts={moduleCounts}
                   open={openCategories.has(category)}
                   onToggleOpen={() => toggleCategory(category)}
                   onToggle={toggle}

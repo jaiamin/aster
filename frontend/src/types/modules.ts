@@ -13,6 +13,5 @@ export interface ModuleDefinition {
   /** Zoom level when focusing on a selected item */
   focusZoom: number;
   MapLayer: ComponentType;
-  useCount?: () => number | null;
   quickPicks?: QuickPick[];
 }

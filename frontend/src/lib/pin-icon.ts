@@ -154,7 +154,10 @@ async function renderPinIcon(opts: {
     ctx.fill();
   }
 
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width = 0;
+  canvas.height = 0;
+  return data;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,6 +166,22 @@ async function renderPinIcon(opts: {
 
 // pixelRatio maps padded canvas back to intended display size
 const PIXEL_RATIO = ((PIN_W + PAD * 2) * 2) / PIN_W; // ≈ 2.25
+
+export function unregisterModulePins(
+  map: maplibregl.Map,
+  config: Pick<PinConfig, "moduleId" | "statusVariants">,
+): void {
+  const { moduleId, statusVariants } = config;
+  if (statusVariants && statusVariants.length > 0) {
+    for (const { key } of statusVariants) {
+      if (map.hasImage(`${moduleId}-pin-${key}`)) map.removeImage(`${moduleId}-pin-${key}`);
+      if (map.hasImage(`${moduleId}-pin-${key}-selected`)) map.removeImage(`${moduleId}-pin-${key}-selected`);
+    }
+  } else {
+    if (map.hasImage(`${moduleId}-pin`)) map.removeImage(`${moduleId}-pin`);
+    if (map.hasImage(`${moduleId}-pin-selected`)) map.removeImage(`${moduleId}-pin-selected`);
+  }
+}
 
 export async function registerModulePins(
   map: maplibregl.Map,

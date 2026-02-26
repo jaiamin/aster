@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { Ship } from "@/types/ships";
 
 const POLL_INTERVAL = 10_000;
 
 export function useShips() {
   const [ships, setShips] = useState<Ship[]>([]);
+  const visible = usePageVisibility();
 
   useEffect(() => {
+    if (!visible) return;
     const controller = new AbortController();
 
     async function fetchShips() {
@@ -27,7 +30,7 @@ export function useShips() {
       controller.abort();
       clearInterval(id);
     };
-  }, []);
+  }, [visible]);
 
   return ships;
 }

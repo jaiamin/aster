@@ -3,8 +3,9 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { VolcanoDetailCard } from "./volcano-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Volcano } from "@/types/volcanoes";
@@ -40,11 +41,9 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Mountain,
-      bgColor: CATEGORY_COLORS["Natural Events"],
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Natural Events"] };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -108,6 +107,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 
 export function VolcanoesLayer() {
   const volcanoes = useVolcanoes();
+  useModuleCount("volcanoes", volcanoes.length);
   return (
     <VolcanoSelectionProvider>
       <VolcanoesLayerInner volcanoes={volcanoes} />

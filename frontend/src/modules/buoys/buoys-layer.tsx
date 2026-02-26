@@ -3,8 +3,9 @@ import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { Navigation } from "lucide-react";
 import { useBuoys } from "./use-buoys";
 import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
+import { useModuleCount } from "@/hooks/use-module-count";
 import { BuoyDetailCard } from "./buoy-detail-card";
-import { registerModulePins } from "@/lib/pin-icon";
+import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Buoy } from "@/types/buoys";
@@ -40,11 +41,9 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
-    registerModulePins(map, {
-      moduleId: MODULE_ID,
-      icon: Navigation,
-      bgColor: CATEGORY_COLORS.Environment,
-    }).then(() => setReady(true));
+    const config = { moduleId: MODULE_ID, icon: Navigation, bgColor: CATEGORY_COLORS.Environment };
+    registerModulePins(map, config).then(() => setReady(true));
+    return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
   // Click handler
@@ -108,6 +107,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 
 export function BuoysLayer() {
   const buoys = useBuoys();
+  useModuleCount("buoys", buoys.length);
   return (
     <BuoySelectionProvider>
       <BuoysLayerInner buoys={buoys} />

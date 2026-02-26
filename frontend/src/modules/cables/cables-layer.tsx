@@ -4,6 +4,7 @@ import { useCables } from "./use-cables";
 import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
 import type { CableData, CableFeature } from "@/types/cables";
+import { useModuleCount } from "@/hooks/use-module-count";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -82,7 +83,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 
   return (
     <>
-      <Source id="cables-source" type="geojson" data={cablesGeojson}>
+      <Source id="cables-source" type="geojson" data={cablesGeojson} tolerance={0.5}>
         {/* Invisible wide hit area for easier clicking */}
         <Layer
           id="cables-hit"
@@ -188,6 +189,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 
 export function CablesLayer() {
   const data = useCables();
+  useModuleCount("cables", data?.cables.features.length ?? 0);
   return (
     <CableSelectionProvider>
       <CablesLayerInner data={data} />

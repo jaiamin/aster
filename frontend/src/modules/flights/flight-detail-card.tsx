@@ -50,7 +50,15 @@ function AltitudeChart({ track }: { track: FlightTrack }) {
   const points = track.path.filter((wp) => wp.altitude != null);
   if (points.length < 2) return null;
 
-  const altitudes = points.map((wp) => wp.altitude! * 3.281); // meters to feet
+  // Downsample to max 60 points — chart is ~300px wide, more is invisible
+  const MAX_POINTS = 60;
+  const sampled = points.length <= MAX_POINTS
+    ? points
+    : Array.from({ length: MAX_POINTS }, (_, i) =>
+        points[Math.round((i / (MAX_POINTS - 1)) * (points.length - 1))],
+      );
+
+  const altitudes = sampled.map((wp) => wp.altitude! * 3.281); // meters to feet
   const maxAlt = Math.max(...altitudes);
   const minAlt = Math.min(...altitudes, 0);
   const range = maxAlt - minAlt || 1;

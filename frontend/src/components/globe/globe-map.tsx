@@ -30,6 +30,7 @@ export function GlobeMap({ viewState, onMove, styleMode, children }: GlobeMapPro
         attributionControl={false}
         minZoom={MIN_ZOOM}
         maxPitch={85}
+        maxTileCacheSize={50}
       >
         {children}
       </Map>

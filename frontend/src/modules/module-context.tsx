@@ -9,18 +9,22 @@ type DeselectFn = () => void;
 
 interface ModuleContextValue {
   enabledModules: Set<string>;
+  moduleCounts: Map<string, number>;
   pendingTarget: PendingTarget | null;
   toggle: (id: string) => void;
   focusTarget: (moduleId: string, targetId: number) => void;
   clearPendingTarget: () => void;
   registerDeselect: (moduleId: string, deselect: DeselectFn) => void;
   notifySelected: (moduleId: string) => void;
+  registerCount: (moduleId: string, count: number) => void;
+  unregisterCount: (moduleId: string) => void;
 }
 
 const ModuleContext = createContext<ModuleContextValue | null>(null);
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
+  const [moduleCounts, setModuleCounts] = useState<Map<string, number>>(new Map());
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
   const deselectMap = useRef(new Map<string, DeselectFn>());
 
@@ -53,8 +57,26 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const registerCount = useCallback((moduleId: string, count: number) => {
+    setModuleCounts((prev) => {
+      if (prev.get(moduleId) === count) return prev;
+      const next = new Map(prev);
+      next.set(moduleId, count);
+      return next;
+    });
+  }, []);
+
+  const unregisterCount = useCallback((moduleId: string) => {
+    setModuleCounts((prev) => {
+      if (!prev.has(moduleId)) return prev;
+      const next = new Map(prev);
+      next.delete(moduleId);
+      return next;
+    });
+  }, []);
+
   return (
-    <ModuleContext.Provider value={{ enabledModules, pendingTarget, toggle, focusTarget, clearPendingTarget, registerDeselect, notifySelected }}>
+    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, toggle, focusTarget, clearPendingTarget, registerDeselect, notifySelected, registerCount, unregisterCount }}>
       {children}
     </ModuleContext.Provider>
   );
