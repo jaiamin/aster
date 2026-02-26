@@ -4,6 +4,8 @@ import { PlaneTakeoff } from "lucide-react";
 import { useAirports } from "./use-airports";
 import { AirportSelectionProvider, useAirportSelection } from "./airport-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { AirportDetailCard } from "./airport-detail-card";
@@ -15,7 +17,7 @@ import type { Airport } from "@/types/airports";
 
 const MODULE_ID = "airports";
 
-function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(airports: Airport[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: airports.map((a) => ({
@@ -24,6 +26,7 @@ function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.Feat
       properties: {
         id: a.id,
         pinImage: a.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
+        inRegion: isInRegion(a.longitude, a.latitude),
       },
     })),
   };
@@ -32,11 +35,12 @@ function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.Feat
 function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirportSelection();
+  const { isInRegion, regionActive } = useRegion();
   const airportsRef = useRef(airports);
   airportsRef.current = airports;
 
   const selectedId = selected?.airport.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(airports, selectedId), [airports, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(airports, selectedId, isInRegion), [airports, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Transportation });
   useDeselectOnEmptyClick(selected, deselect);
@@ -57,12 +61,18 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} regionActive={regionActive} />;
 }
 
 export function AirportsLayer() {
   const airports = useAirports();
   useModuleCount("airports", airports?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!airports || !regionActive) return null;
+    return airports.filter((a) => isInRegion(a.longitude, a.latitude)).length;
+  }, [airports, regionActive, isInRegion]);
+  useRegionCount("airports", regionCount);
   return (
     <AirportSelectionProvider>
       <AirportsLayerInner airports={airports ?? []} />

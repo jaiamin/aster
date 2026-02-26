@@ -171,6 +171,8 @@ export function unregisterModulePins(
   map: maplibregl.Map,
   config: Pick<PinConfig, "moduleId" | "statusVariants">,
 ): void {
+  // Guard against map already destroyed (e.g. during HMR teardown)
+  if (!map.style) return;
   const { moduleId, statusVariants } = config;
   if (statusVariants && statusVariants.length > 0) {
     for (const { key } of statusVariants) {

@@ -4,7 +4,8 @@ import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModuleFilter } from "@/modules/module-context";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -17,7 +18,7 @@ import type { Volcano } from "@/types/volcanoes";
 
 const MODULE_ID = "volcanoes";
 
-function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: volcanoes.map((v) => ({
@@ -26,6 +27,7 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.Fea
       properties: {
         id: v.id,
         pinImage: v.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
+        inRegion: isInRegion(v.longitude, v.latitude),
       },
     })),
   };
@@ -37,8 +39,9 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const volcanoesRef = useRef(volcanoes);
   volcanoesRef.current = volcanoes;
 
+  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.volcano.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId), [volcanoes, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, isInRegion), [volcanoes, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Natural Events"] });
   useDeselectOnEmptyClick(selected, deselect);
@@ -59,7 +62,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} regionActive={regionActive} />;
 }
 
 export function VolcanoesLayer() {
@@ -70,6 +73,12 @@ export function VolcanoesLayer() {
     [volcanoes, timeFilter],
   );
   useModuleCount("volcanoes", filtered?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((v) => isInRegion(v.longitude, v.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
+  useRegionCount("volcanoes", regionCount);
   return (
     <VolcanoSelectionProvider>
       <VolcanoesLayerInner volcanoes={filtered ?? []} />

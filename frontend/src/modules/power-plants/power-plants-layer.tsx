@@ -4,6 +4,8 @@ import { Zap } from "lucide-react";
 import { usePowerPlants } from "./use-power-plants";
 import { PowerPlantSelectionProvider, usePowerPlantSelection } from "./power-plant-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { PowerPlantDetailCard } from "./power-plant-detail-card";
@@ -35,7 +37,7 @@ function fuelToStatusKey(fuel: string): string {
   return "other";
 }
 
-function toGeoJSON(plants: PowerPlant[], selectedId: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(plants: PowerPlant[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: plants.map((p) => {
@@ -47,6 +49,7 @@ function toGeoJSON(plants: PowerPlant[], selectedId: string | null): GeoJSON.Fea
         properties: {
           id: p.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+          inRegion: isInRegion(p.longitude, p.latitude),
         },
       };
     }),
@@ -56,11 +59,12 @@ function toGeoJSON(plants: PowerPlant[], selectedId: string | null): GeoJSON.Fea
 function PowerPlantsLayerInner({ plants }: { plants: PowerPlant[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePowerPlantSelection();
+  const { isInRegion, regionActive } = useRegion();
   const plantsRef = useRef(plants);
   plantsRef.current = plants;
 
   const selectedId = selected?.plant.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(plants, selectedId), [plants, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(plants, selectedId, isInRegion), [plants, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Zap, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -86,12 +90,18 @@ function PowerPlantsLayerInner({ plants }: { plants: PowerPlant[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} regionActive={regionActive} />;
 }
 
 export function PowerPlantsLayer() {
   const plants = usePowerPlants();
   useModuleCount("power-plants", plants?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!plants || !regionActive) return null;
+    return plants.filter((p) => isInRegion(p.longitude, p.latitude)).length;
+  }, [plants, regionActive, isInRegion]);
+  useRegionCount("power-plants", regionCount);
   return (
     <PowerPlantSelectionProvider>
       <PowerPlantsLayerInner plants={plants ?? []} />

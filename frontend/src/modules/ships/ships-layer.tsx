@@ -4,10 +4,12 @@ import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
 import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { useRegion } from "@/modules/module-context";
 import type { Ship } from "@/types/ships";
 
 const ICON_NORMAL = "ship-icon";
@@ -55,7 +57,7 @@ function createShipIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureCollection {
+function toGeoJSON(ships: Ship[], selectedMmsi: number | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: ships.map((s) => ({
@@ -66,6 +68,7 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null): GeoJSON.FeatureC
         name: s.name,
         course: s.course ?? 0,
         selected: s.mmsi === selectedMmsi,
+        inRegion: isInRegion(s.longitude, s.latitude),
       },
     })),
   };
@@ -75,6 +78,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
   const { selected, tracking, select, deselect } = useShipSelection();
+  const { isInRegion, regionActive } = useRegion();
   const shipsRef = useRef(ships);
   shipsRef.current = ships;
   const selectedRef = useRef(selected);
@@ -92,6 +96,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
       map.addImage(ICON_SELECTED, createShipIcon("#3d7ab5", "#ffffff"), { pixelRatio: DPR });
     }
     return () => {
+      if (!map.style) return;
       if (map.hasImage(ICON_NORMAL)) map.removeImage(ICON_NORMAL);
       if (map.hasImage(ICON_SELECTED)) map.removeImage(ICON_SELECTED);
     };
@@ -178,7 +183,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ships, selectedMmsi, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi), [sampled, selectedMmsi]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi, isInRegion), [sampled, selectedMmsi, isInRegion]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>
@@ -201,8 +206,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
           "icon-allow-overlap": true,
           "icon-ignore-placement": true,
         }}
-        paint={{}}
-
+        paint={{ "icon-opacity": regionActive ? ["case", ["get", "inRegion"], 1, 0.2] : 1 }}
       />
     </Source>
   );
@@ -210,7 +214,13 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
 
 export function ShipsLayer() {
   const ships = useShips();
+  const { isInRegion, regionActive } = useRegion();
   useModuleCount("ships", ships?.length ?? null);
+  const regionCount = useMemo(() => {
+    if (!ships || !regionActive) return null;
+    return ships.filter((s) => isInRegion(s.longitude, s.latitude)).length;
+  }, [ships, regionActive, isInRegion]);
+  useRegionCount("ships", regionCount);
   const resolved = ships ?? [];
   return (
     <ShipSelectionProvider ships={resolved}>

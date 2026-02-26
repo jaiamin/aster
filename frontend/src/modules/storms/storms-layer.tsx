@@ -4,7 +4,8 @@ import { CloudLightning } from "lucide-react";
 import { useStorms } from "./use-storms";
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModuleFilter } from "@/modules/module-context";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -37,7 +38,7 @@ export function stormAccentColor(cat: number): string {
   return "#22c55e";
 }
 
-function toGeoJSON(storms: Storm[], selectedId: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(storms: Storm[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: storms.map((s) => {
@@ -49,6 +50,7 @@ function toGeoJSON(storms: Storm[], selectedId: string | null): GeoJSON.FeatureC
         properties: {
           id: s.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+          inRegion: isInRegion(s.longitude, s.latitude),
         },
       };
     }),
@@ -89,8 +91,9 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
   const stormsRef = useRef(storms);
   stormsRef.current = storms;
 
+  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.storm.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(storms, selectedId), [storms, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(storms, selectedId, isInRegion), [storms, selectedId, isInRegion]);
 
   const pastTrackData = useMemo(
     () => (selected ? buildPastTrackGeoJSON(selected.storm) : EMPTY_FC),
@@ -161,7 +164,7 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
       </Source>
 
       {/* Storm pins */}
-      <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={4} />
+      <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={4} regionActive={regionActive} />
     </>
   );
 }
@@ -174,6 +177,12 @@ export function StormsLayer() {
     [storms, timeFilter],
   );
   useModuleCount("storms", filtered?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((s) => isInRegion(s.longitude, s.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
+  useRegionCount("storms", regionCount);
   return (
     <StormSelectionProvider>
       <StormsLayerInner storms={filtered ?? []} />

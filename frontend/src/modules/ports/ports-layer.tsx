@@ -4,6 +4,8 @@ import { Anchor } from "lucide-react";
 import { usePorts } from "./use-ports";
 import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { PortDetailCard } from "./port-detail-card";
@@ -15,7 +17,7 @@ import type { Port } from "@/types/ports";
 
 const MODULE_ID = "ports";
 
-function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCollection {
+function toGeoJSON(ports: Port[], selectedId: number | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: ports.map((p) => ({
@@ -24,6 +26,7 @@ function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCol
       properties: {
         id: p.id,
         pinImage: p.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
+        inRegion: isInRegion(p.longitude, p.latitude),
       },
     })),
   };
@@ -32,11 +35,12 @@ function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCol
 function PortsLayerInner({ ports }: { ports: Port[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePortSelection();
+  const { isInRegion, regionActive } = useRegion();
   const portsRef = useRef(ports);
   portsRef.current = ports;
 
   const selectedId = selected?.port.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(ports, selectedId), [ports, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(ports, selectedId, isInRegion), [ports, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Transportation });
   useDeselectOnEmptyClick(selected, deselect);
@@ -57,12 +61,18 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={13} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={13} regionActive={regionActive} />;
 }
 
 export function PortsLayer() {
   const ports = usePorts();
   useModuleCount("ports", ports?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!ports || !regionActive) return null;
+    return ports.filter((p) => isInRegion(p.longitude, p.latitude)).length;
+  }, [ports, regionActive, isInRegion]);
+  useRegionCount("ports", regionCount);
   return (
     <PortSelectionProvider>
       <PortsLayerInner ports={ports ?? []} />

@@ -4,10 +4,12 @@ import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
 import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { useRegion } from "@/modules/module-context";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
 const ICON_NORMAL = "plane-icon";
@@ -70,7 +72,7 @@ function createPlaneIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(flights: Flight[], selectedIcao: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(flights: Flight[], selectedIcao: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: flights.map((f) => ({
@@ -81,6 +83,7 @@ function toGeoJSON(flights: Flight[], selectedIcao: string | null): GeoJSON.Feat
         callsign: f.callsign,
         true_track: f.true_track ?? 0,
         selected: f.icao24 === selectedIcao,
+        inRegion: isInRegion(f.longitude, f.latitude),
       },
     })),
   };
@@ -118,6 +121,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
   const { selected, tracking, select, deselect } = useFlightSelection();
+  const { isInRegion, regionActive } = useRegion();
   const flightsRef = useRef(flights);
   flightsRef.current = flights;
   const selectedRef = useRef(selected);
@@ -135,6 +139,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
       map.addImage(ICON_SELECTED, createPlaneIcon("#3d7ab5", "#ffffff"), { pixelRatio: DPR });
     }
     return () => {
+      if (!map.style) return;
       if (map.hasImage(ICON_NORMAL)) map.removeImage(ICON_NORMAL);
       if (map.hasImage(ICON_SELECTED)) map.removeImage(ICON_SELECTED);
     };
@@ -217,7 +222,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [flights, selectedIcao, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao), [sampled, selectedIcao]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao, isInRegion), [sampled, selectedIcao, isInRegion]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],
@@ -296,7 +301,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
           }}
-          paint={{}}
+          paint={{ "icon-opacity": regionActive ? ["case", ["get", "inRegion"], 1, 0.2] : 1 }}
         />
       </Source>
     </>
@@ -305,7 +310,13 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
 
 export function FlightsLayer() {
   const flights = useFlights();
+  const { isInRegion, regionActive } = useRegion();
   useModuleCount("flights", flights?.length ?? null);
+  const regionCount = useMemo(() => {
+    if (!flights || !regionActive) return null;
+    return flights.filter((f) => isInRegion(f.longitude, f.latitude)).length;
+  }, [flights, regionActive, isInRegion]);
+  useRegionCount("flights", regionCount);
   const resolved = flights ?? [];
   return (
     <FlightSelectionProvider flights={resolved}>

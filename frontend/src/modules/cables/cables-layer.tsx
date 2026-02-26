@@ -5,19 +5,30 @@ import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
 import type { CableData, CableFeature } from "@/types/cables";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegion } from "@/modules/module-context";
 import { registerLayerClick } from "@/lib/layer-click";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
-function buildCablesGeoJSON(data: CableData | null, selectedId: string | null): GeoJSON.FeatureCollection {
+function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   if (!data) return EMPTY_FC;
-  const features = data.cables.features.map((f) => ({
-    ...f,
-    properties: {
-      ...f.properties,
-      selected: f.properties.id === selectedId,
-    },
-  }));
+  const features = data.cables.features.map((f) => {
+    const coords = (f.geometry as GeoJSON.MultiLineString).coordinates;
+    const firstLine = coords[0];
+    const lastLine = coords[coords.length - 1];
+    const first = firstLine?.[0];
+    const last = lastLine?.[lastLine.length - 1];
+    const inRegion = (first != null && isInRegion(first[0], first[1])) || (last != null && isInRegion(last[0], last[1]));
+    return {
+      ...f,
+      properties: {
+        ...f.properties,
+        selected: f.properties.id === selectedId,
+        inRegion,
+      },
+    };
+  });
   return { type: "FeatureCollection", features };
 }
 
@@ -30,7 +41,8 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
   selectedRef.current = selected;
 
   const selectedId = selected?.cable.properties.id ?? null;
-  const cablesGeojson = useMemo(() => buildCablesGeoJSON(data, selectedId), [data, selectedId]);
+  const { isInRegion, regionActive } = useRegion();
+  const cablesGeojson = useMemo(() => buildCablesGeoJSON(data, selectedId, isInRegion), [data, selectedId, isInRegion]);
   const landingPoints = data?.landingPoints ?? EMPTY_FC;
 
   // Click handler — selection via centralized dispatcher (register hit layer)
@@ -113,7 +125,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
           filter={["!", ["get", "selected"]]}
           paint={{
             "line-color": ["get", "color"],
-            "line-opacity": 0.6,
+            "line-opacity": regionActive ? ["case", ["get", "inRegion"], 0.6, 0.12] : 0.6,
             "line-width": [
               "interpolate", ["linear"], ["zoom"],
               1, 1,
@@ -198,6 +210,22 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 export function CablesLayer() {
   const data = useCables();
   useModuleCount("cables", data?.cables.features.length ?? null);
+
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!data || !regionActive) return null;
+    return data.cables.features.filter((f) => {
+      const coords = (f.geometry as GeoJSON.MultiLineString).coordinates;
+      const firstLine = coords[0];
+      const lastLine = coords[coords.length - 1];
+      if (!firstLine?.length || !lastLine?.length) return false;
+      const first = firstLine[0];
+      const last = lastLine[lastLine.length - 1];
+      return isInRegion(first[0], first[1]) || isInRegion(last[0], last[1]);
+    }).length;
+  }, [data, regionActive, isInRegion]);
+  useRegionCount("cables", regionCount);
+
   return (
     <CableSelectionProvider>
       <CablesLayerInner data={data} />

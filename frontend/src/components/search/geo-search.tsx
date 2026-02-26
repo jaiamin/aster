@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LocateFixed, Search, X } from "lucide-react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
-import { useModuleSelection, useModuleFilter } from "@/modules/module-context";
+import { useModuleSelection, useModuleFilter, useRegion } from "@/modules/module-context";
 
 interface NominatimResult {
   place_id: number;
@@ -303,6 +303,7 @@ export function GeoSearch() {
   const { current: mapRef } = useMap();
   const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const { searchQuery: urlSearchQuery, setSearchQuery: setUrlSearchQuery } = useModuleFilter();
+  const { setRegionBoundary, regionActive } = useRegion();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -386,8 +387,15 @@ export function GeoSearch() {
             },
           ],
         });
+        // Activate region filtering for polygon/multipolygon boundaries
+        if (result.geojson.type === "Polygon" || result.geojson.type === "MultiPolygon") {
+          setRegionBoundary(result.geojson);
+        } else {
+          setRegionBoundary(null);
+        }
       } else {
         setBoundary(EMPTY_FC);
+        setRegionBoundary(null);
       }
 
       // Set the place name as the input value and sync to URL
@@ -399,7 +407,7 @@ export function GeoSearch() {
       setOpen(false);
       inputRef.current?.blur();
     },
-    [mapRef, notifySelected, setUrlSearchQuery],
+    [mapRef, notifySelected, setUrlSearchQuery, setRegionBoundary],
   );
 
   const recenter = useCallback(() => {
@@ -419,11 +427,12 @@ export function GeoSearch() {
 
   const clearBoundary = useCallback(() => {
     setBoundary(EMPTY_FC);
+    setRegionBoundary(null);
     activeNameRef.current = "";
     savedBoundsRef.current = null;
     setQuery("");
     setUrlSearchQuery("");
-  }, [setUrlSearchQuery]);
+  }, [setUrlSearchQuery, setRegionBoundary]);
 
   // Register with global selection system so module pins can clear search
   useEffect(() => {
@@ -447,13 +456,17 @@ export function GeoSearch() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        inputRef.current?.blur();
-        setOpen(false);
+        if (open) {
+          inputRef.current?.blur();
+          setOpen(false);
+        } else if (regionActive) {
+          clearBoundary();
+        }
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [open, regionActive, clearBoundary]);
 
   // Keep a stable ref so the map click handler always calls the latest selectResult
   const selectResultRef = useRef(selectResult);

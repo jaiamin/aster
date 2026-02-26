@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
 import type { TimePreset } from "@/lib/time-filter";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 
 // ── Toggle Context ──────────────────────────────────────────────────────────
 
@@ -52,6 +53,39 @@ interface FilterContextValue {
 
 const FilterContext = createContext<FilterContextValue | null>(null);
 
+// ── Region Context ─────────────────────────────────────────────────────────
+
+type Bbox = [number, number, number, number]; // [west, south, east, north]
+
+function computeBbox(geometry: GeoJSON.Geometry): Bbox {
+  let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
+  const visit = (coords: unknown) => {
+    if (typeof (coords as number[])[0] === "number") {
+      const [lng, lat] = coords as number[];
+      if (lng < west) west = lng;
+      if (lng > east) east = lng;
+      if (lat < south) south = lat;
+      if (lat > north) north = lat;
+      return;
+    }
+    for (const c of coords as unknown[]) visit(c);
+  };
+  if ("coordinates" in geometry) visit((geometry as { coordinates: unknown }).coordinates);
+  return [west, south, east, north];
+}
+
+interface RegionContextValue {
+  regionBoundary: GeoJSON.Geometry | null;
+  regionActive: boolean;
+  isInRegion: (lng: number, lat: number) => boolean;
+  regionCounts: Map<string, number | null>;
+  registerRegionCount: (moduleId: string, count: number | null) => void;
+  unregisterRegionCount: (moduleId: string) => void;
+  setRegionBoundary: (geom: GeoJSON.Geometry | null) => void;
+}
+
+const RegionContext = createContext<RegionContextValue | null>(null);
+
 // ── Provider ────────────────────────────────────────────────────────────────
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
@@ -61,6 +95,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
   const [timeFilter, setTimeFilter] = useState<TimePreset>(getInitialTimeFilter);
   const deselectMap = useRef(new Map<string, DeselectFn>());
+  const [regionBoundary, setRegionBoundary] = useState<GeoJSON.Geometry | null>(null);
+  const [regionCounts, setRegionCounts] = useState<Map<string, number | null>>(new Map());
+  const bboxRef = useRef<Bbox | null>(null);
 
   // Toggle
   const toggle = useCallback((id: string) => {
@@ -116,12 +153,51 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Region
+  const regionActive = regionBoundary !== null;
+
+  const handleSetRegionBoundary = useCallback((geom: GeoJSON.Geometry | null) => {
+    setRegionBoundary(geom);
+    bboxRef.current = geom ? computeBbox(geom) : null;
+    if (!geom) setRegionCounts(new Map());
+  }, []);
+
+  const isInRegion = useCallback(
+    (lng: number, lat: number): boolean => {
+      if (!regionBoundary) return true;
+      const bbox = bboxRef.current;
+      if (bbox && (lng < bbox[0] || lng > bbox[2] || lat < bbox[1] || lat > bbox[3])) return false;
+      return booleanPointInPolygon([lng, lat], regionBoundary as GeoJSON.Polygon | GeoJSON.MultiPolygon);
+    },
+    [regionBoundary],
+  );
+
+  const registerRegionCount = useCallback((moduleId: string, count: number | null) => {
+    setRegionCounts((prev) => {
+      if (prev.get(moduleId) === count) return prev;
+      const next = new Map(prev);
+      next.set(moduleId, count);
+      return next;
+    });
+  }, []);
+
+  const unregisterRegionCount = useCallback((moduleId: string) => {
+    setRegionCounts((prev) => {
+      if (!prev.has(moduleId)) return prev;
+      const next = new Map(prev);
+      next.delete(moduleId);
+      return next;
+    });
+  }, []);
+
   return (
     <ToggleContext.Provider value={{ enabledModules, toggle, focusTarget }}>
       <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
         <SelectionContext.Provider value={{ pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected }}>
           <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
-            {children}
+            <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
+              {children}
+            </RegionContext.Provider>
           </FilterContext.Provider>
         </SelectionContext.Provider>
       </CountsContext.Provider>
@@ -155,12 +231,19 @@ export function useModuleFilter() {
   return ctx;
 }
 
+export function useRegion() {
+  const ctx = useContext(RegionContext);
+  if (!ctx) throw new Error("useRegion must be used within ModuleProvider");
+  return ctx;
+}
+
 /** Legacy hook — returns all fields for backward compatibility. Prefer specific hooks. */
 export function useModules() {
   const { enabledModules, toggle, focusTarget } = useModuleToggle();
   const { moduleCounts, registerCount, unregisterCount } = useModuleCounts();
   const { pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
   const { searchQuery, timeFilter, setSearchQuery, setTimeFilter } = useModuleFilter();
+  const region = useRegion();
 
   return {
     enabledModules, moduleCounts, pendingTarget, searchQuery, timeFilter,
@@ -168,5 +251,6 @@ export function useModules() {
     registerDeselect, unregisterDeselect, notifySelected,
     registerCount, unregisterCount,
     setSearchQuery, setTimeFilter,
+    ...region,
   };
 }

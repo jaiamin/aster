@@ -4,7 +4,8 @@ import { Rocket } from "lucide-react";
 import { useLaunches } from "./use-launches";
 import { LaunchSelectionProvider, useLaunchSelection } from "./launch-context";
 import { useModuleCount } from "@/hooks/use-module-count";
-import { useModuleFilter } from "@/modules/module-context";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -29,7 +30,7 @@ function statusToKey(status: string): string {
   return "go";
 }
 
-function toGeoJSON(launches: Launch[], selectedId: string | null): GeoJSON.FeatureCollection {
+function toGeoJSON(launches: Launch[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   // Group launches by pad coordinates so each site = one pin
   const sites = new Map<string, Launch[]>();
   for (const l of launches) {
@@ -51,6 +52,7 @@ function toGeoJSON(launches: Launch[], selectedId: string | null): GeoJSON.Featu
         properties: {
           id: first.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+          inRegion: isInRegion(first.longitude, first.latitude),
         },
       };
     }),
@@ -63,8 +65,9 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
   const launchesRef = useRef(launches);
   launchesRef.current = launches;
 
+  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.launch.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(launches, selectedId), [launches, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(launches, selectedId, isInRegion), [launches, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Rocket, bgColor: CATEGORY_COLORS.Space, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -85,7 +88,7 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={8} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={8} regionActive={regionActive} />;
 }
 
 export function LaunchesLayer() {
@@ -96,6 +99,12 @@ export function LaunchesLayer() {
     [launches, timeFilter],
   );
   useModuleCount("launches", filtered?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((l) => isInRegion(l.longitude, l.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
+  useRegionCount("launches", regionCount);
   return (
     <LaunchSelectionProvider>
       <LaunchesLayerInner launches={filtered ?? []} />

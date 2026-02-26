@@ -4,6 +4,8 @@ import { Radiation } from "lucide-react";
 import { useNuclear } from "./use-nuclear";
 import { NuclearSelectionProvider, useNuclearSelection } from "./nuclear-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { NuclearDetailCard } from "./nuclear-detail-card";
@@ -31,7 +33,7 @@ function statusToKey(status: string): string {
   return "gray";
 }
 
-function toGeoJSON(facilities: NuclearFacility[], selectedId: number | null): GeoJSON.FeatureCollection {
+function toGeoJSON(facilities: NuclearFacility[], selectedId: number | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: facilities.map((f) => {
@@ -43,6 +45,7 @@ function toGeoJSON(facilities: NuclearFacility[], selectedId: number | null): Ge
         properties: {
           id: f.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
+          inRegion: isInRegion(f.longitude, f.latitude),
         },
       };
     }),
@@ -52,11 +55,12 @@ function toGeoJSON(facilities: NuclearFacility[], selectedId: number | null): Ge
 function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useNuclearSelection();
+  const { isInRegion, regionActive } = useRegion();
   const facilitiesRef = useRef(facilities);
   facilitiesRef.current = facilities;
 
   const selectedId = selected?.facility.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(facilities, selectedId), [facilities, selectedId]);
+  const geojson = useMemo(() => toGeoJSON(facilities, selectedId, isInRegion), [facilities, selectedId, isInRegion]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Radiation, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -77,12 +81,18 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
 
   if (!ready) return null;
 
-  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} regionActive={regionActive} />;
 }
 
 export function NuclearLayer() {
   const facilities = useNuclear();
   useModuleCount("nuclear", facilities?.length ?? null);
+  const { isInRegion, regionActive } = useRegion();
+  const regionCount = useMemo(() => {
+    if (!facilities || !regionActive) return null;
+    return facilities.filter((f) => isInRegion(f.longitude, f.latitude)).length;
+  }, [facilities, regionActive, isInRegion]);
+  useRegionCount("nuclear", regionCount);
   return (
     <NuclearSelectionProvider>
       <NuclearLayerInner facilities={facilities ?? []} />
