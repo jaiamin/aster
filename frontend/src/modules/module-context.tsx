@@ -38,6 +38,7 @@ interface SelectionContextValue {
   registerDeselect: (moduleId: string, deselect: DeselectFn) => void;
   unregisterDeselect: (moduleId: string) => void;
   notifySelected: (moduleId: string) => void;
+  deselectAll: (exclude?: string) => void;
 }
 
 const SelectionContext = createContext<SelectionContextValue | null>(null);
@@ -153,6 +154,12 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const deselectAll = useCallback((exclude?: string) => {
+    for (const [id, deselect] of deselectMap.current) {
+      if (id !== exclude) deselect();
+    }
+  }, []);
+
   // Region
   const regionActive = regionBoundary !== null;
 
@@ -193,7 +200,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   return (
     <ToggleContext.Provider value={{ enabledModules, toggle, focusTarget }}>
       <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
-        <SelectionContext.Provider value={{ pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected }}>
+        <SelectionContext.Provider value={{ pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
           <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
             <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
               {children}
@@ -241,14 +248,14 @@ export function useRegion() {
 export function useModules() {
   const { enabledModules, toggle, focusTarget } = useModuleToggle();
   const { moduleCounts, registerCount, unregisterCount } = useModuleCounts();
-  const { pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, deselectAll } = useModuleSelection();
   const { searchQuery, timeFilter, setSearchQuery, setTimeFilter } = useModuleFilter();
   const region = useRegion();
 
   return {
     enabledModules, moduleCounts, pendingTarget, searchQuery, timeFilter,
     toggle, focusTarget, clearPendingTarget,
-    registerDeselect, unregisterDeselect, notifySelected,
+    registerDeselect, unregisterDeselect, notifySelected, deselectAll,
     registerCount, unregisterCount,
     setSearchQuery, setTimeFilter,
     ...region,

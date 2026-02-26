@@ -301,9 +301,9 @@ const GEO_SEARCH_ID = "geo-search";
 
 export function GeoSearch() {
   const { current: mapRef } = useMap();
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { registerDeselect, unregisterDeselect, notifySelected, deselectAll } = useModuleSelection();
   const { searchQuery: urlSearchQuery, setSearchQuery: setUrlSearchQuery } = useModuleFilter();
-  const { setRegionBoundary, regionActive } = useRegion();
+  const { setRegionBoundary, regionActive, isInRegion } = useRegion();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -459,18 +459,26 @@ export function GeoSearch() {
         if (open) {
           inputRef.current?.blur();
           setOpen(false);
-        } else if (regionActive) {
-          clearBoundary();
+        } else {
+          // Dismiss any open detail cards + clear region in one press
+          deselectAll();
+          if (regionActive) clearBoundary();
         }
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, regionActive, clearBoundary]);
+  }, [open, regionActive, clearBoundary, deselectAll]);
 
-  // Keep a stable ref so the map click handler always calls the latest selectResult
+  // Keep stable refs so the map click handler always uses the latest values
   const selectResultRef = useRef(selectResult);
   selectResultRef.current = selectResult;
+  const clearBoundaryRef = useRef(clearBoundary);
+  clearBoundaryRef.current = clearBoundary;
+  const regionActiveRef = useRef(regionActive);
+  regionActiveRef.current = regionActive;
+  const isInRegionRef = useRef(isInRegion);
+  isInRegionRef.current = isInRegion;
 
   // Restore search from URL on mount
   useEffect(() => {
@@ -563,6 +571,27 @@ export function GeoSearch() {
       map.off("styledata", refreshLabelLayerIds);
       labelAbortRef.current?.abort();
     };
+  }, [mapRef]);
+
+  // Click outside region boundary → clear region (runs after all other handlers)
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const handleClick = (e: maplibregl.MapMouseEvent) => {
+      // Run after rAF handlers (label click, satellite deselect) so _layerHandled is settled
+      setTimeout(() => {
+        if ((e.originalEvent as Record<string, unknown>)._layerHandled) return;
+        if (!regionActiveRef.current) return;
+        const { lng, lat } = e.lngLat;
+        if (!isInRegionRef.current(lng, lat)) {
+          clearBoundaryRef.current();
+        }
+      }, 0);
+    };
+
+    map.on("click", handleClick);
+    return () => { map.off("click", handleClick); };
   }, [mapRef]);
 
   const hasSelection = boundary.features.length > 0 || activeNameRef.current !== "";
