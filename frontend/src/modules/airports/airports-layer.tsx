@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useMemo, useRef } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { PlaneTakeoff } from "lucide-react";
 import { useAirports } from "./use-airports";
 import { AirportSelectionProvider, useAirportSelection } from "./airport-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { usePinRegistration } from "@/hooks/use-pin-registration";
+import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { AirportDetailCard } from "./airport-detail-card";
-import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Airport } from "@/types/airports";
+
 const MODULE_ID = "airports";
 
 function toGeoJSON(airports: Airport[], selectedId: string | null): GeoJSON.FeatureCollection {
@@ -31,23 +34,13 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const { selected, select, deselect } = useAirportSelection();
   const airportsRef = useRef(airports);
   airportsRef.current = airports;
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.airport.id ?? null;
   const geojson = useMemo(() => toGeoJSON(airports, selectedId), [airports, selectedId]);
 
-  // Register pin images
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const config = { moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Transportation };
-    registerModulePins(map, config).then(() => setReady(true));
-    return () => { unregisterModulePins(map, config); };
-  }, [mapRef]);
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Transportation });
+  useDeselectOnEmptyClick(selected, deselect);
 
-  // Click handler — selection via centralized dispatcher
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
@@ -62,50 +55,9 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
     });
   }, [mapRef, select]);
 
-  // Deselect on empty click
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
-    };
-
-    map.on("click", handleClick);
-    return () => { map.off("click", handleClick); };
-  }, [mapRef, deselect]);
-
-  // Pointer cursor
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
-    const onLeave = () => { map.getCanvas().style.cursor = ""; };
-    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
-    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    return () => {
-      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
-      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    };
-  }, [mapRef]);
-
   if (!ready) return null;
 
-  return (
-    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
-      <Layer
-        id={`${MODULE_ID}-pins`}
-        type="symbol"
-        layout={{
-          "icon-image": ["get", "pinImage"],
-          "icon-size": 1,
-          "icon-anchor": "bottom",
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        }}
-      />
-    </Source>
-  );
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
 }
 
 export function AirportsLayer() {

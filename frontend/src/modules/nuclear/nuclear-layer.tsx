@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useMemo, useRef } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Radiation } from "lucide-react";
 import { useNuclear } from "./use-nuclear";
 import { NuclearSelectionProvider, useNuclearSelection } from "./nuclear-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { usePinRegistration } from "@/hooks/use-pin-registration";
+import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { NuclearDetailCard } from "./nuclear-detail-card";
-import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { NuclearFacility } from "@/types/nuclear";
+
 const MODULE_ID = "nuclear";
 
 const STATUS_VARIANTS = [
@@ -51,23 +54,13 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
   const { selected, select, deselect } = useNuclearSelection();
   const facilitiesRef = useRef(facilities);
   facilitiesRef.current = facilities;
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.facility.id ?? null;
   const geojson = useMemo(() => toGeoJSON(facilities, selectedId), [facilities, selectedId]);
 
-  // Register pin images
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const config = { moduleId: MODULE_ID, icon: Radiation, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS };
-    registerModulePins(map, config).then(() => setReady(true));
-    return () => { unregisterModulePins(map, config); };
-  }, [mapRef]);
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Radiation, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS });
+  useDeselectOnEmptyClick(selected, deselect);
 
-  // Click handler — selection via centralized dispatcher
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
@@ -82,50 +75,9 @@ function NuclearLayerInner({ facilities }: { facilities: NuclearFacility[] }) {
     });
   }, [mapRef, select]);
 
-  // Deselect on empty click
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
-    };
-
-    map.on("click", handleClick);
-    return () => { map.off("click", handleClick); };
-  }, [mapRef, deselect]);
-
-  // Pointer cursor
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
-    const onLeave = () => { map.getCanvas().style.cursor = ""; };
-    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
-    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    return () => {
-      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
-      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    };
-  }, [mapRef]);
-
   if (!ready) return null;
 
-  return (
-    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
-      <Layer
-        id={`${MODULE_ID}-pins`}
-        type="symbol"
-        layout={{
-          "icon-image": ["get", "pinImage"],
-          "icon-size": 1,
-          "icon-anchor": "bottom",
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        }}
-      />
-    </Source>
-  );
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
 }
 
 export function NuclearLayer() {

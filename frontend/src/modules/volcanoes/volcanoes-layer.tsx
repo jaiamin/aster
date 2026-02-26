@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useMemo, useRef } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModules } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { usePinRegistration } from "@/hooks/use-pin-registration";
+import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { VolcanoDetailCard } from "./volcano-detail-card";
-import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Volcano } from "@/types/volcanoes";
+
 const MODULE_ID = "volcanoes";
 
 function toGeoJSON(volcanoes: Volcano[], selectedId: string | null): GeoJSON.FeatureCollection {
@@ -33,23 +36,13 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const { selected, select, deselect } = useVolcanoSelection();
   const volcanoesRef = useRef(volcanoes);
   volcanoesRef.current = volcanoes;
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.volcano.id ?? null;
   const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId), [volcanoes, selectedId]);
 
-  // Register pin images
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const config = { moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Natural Events"] };
-    registerModulePins(map, config).then(() => setReady(true));
-    return () => { unregisterModulePins(map, config); };
-  }, [mapRef]);
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Natural Events"] });
+  useDeselectOnEmptyClick(selected, deselect);
 
-  // Click handler — selection via centralized dispatcher
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
@@ -64,50 +57,9 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
     });
   }, [mapRef, select]);
 
-  // Deselect on empty click
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
-    };
-
-    map.on("click", handleClick);
-    return () => { map.off("click", handleClick); };
-  }, [mapRef, deselect]);
-
-  // Pointer cursor
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
-    const onLeave = () => { map.getCanvas().style.cursor = ""; };
-    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
-    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    return () => {
-      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
-      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    };
-  }, [mapRef]);
-
   if (!ready) return null;
 
-  return (
-    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
-      <Layer
-        id={`${MODULE_ID}-pins`}
-        type="symbol"
-        layout={{
-          "icon-image": ["get", "pinImage"],
-          "icon-size": 1,
-          "icon-anchor": "bottom",
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        }}
-      />
-    </Source>
-  );
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={12} />;
 }
 
 export function VolcanoesLayer() {

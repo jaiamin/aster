@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useMemo, useRef } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Anchor } from "lucide-react";
 import { usePorts } from "./use-ports";
 import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { usePinRegistration } from "@/hooks/use-pin-registration";
+import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { PortDetailCard } from "./port-detail-card";
-import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Port } from "@/types/ports";
+
 const MODULE_ID = "ports";
 
 function toGeoJSON(ports: Port[], selectedId: number | null): GeoJSON.FeatureCollection {
@@ -31,23 +34,13 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
   const { selected, select, deselect } = usePortSelection();
   const portsRef = useRef(ports);
   portsRef.current = ports;
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
-  const [ready, setReady] = useState(false);
 
   const selectedId = selected?.port.id ?? null;
   const geojson = useMemo(() => toGeoJSON(ports, selectedId), [ports, selectedId]);
 
-  // Register pin images
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const config = { moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Transportation };
-    registerModulePins(map, config).then(() => setReady(true));
-    return () => { unregisterModulePins(map, config); };
-  }, [mapRef]);
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Transportation });
+  useDeselectOnEmptyClick(selected, deselect);
 
-  // Click handler — selection via centralized dispatcher
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
@@ -62,50 +55,9 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
     });
   }, [mapRef, select]);
 
-  // Deselect on empty click
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
-    };
-
-    map.on("click", handleClick);
-    return () => { map.off("click", handleClick); };
-  }, [mapRef, deselect]);
-
-  // Pointer cursor
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-    const onEnter = () => { map.getCanvas().style.cursor = "pointer"; };
-    const onLeave = () => { map.getCanvas().style.cursor = ""; };
-    map.on("mouseenter", `${MODULE_ID}-pins`, onEnter);
-    map.on("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    return () => {
-      map.off("mouseenter", `${MODULE_ID}-pins`, onEnter);
-      map.off("mouseleave", `${MODULE_ID}-pins`, onLeave);
-    };
-  }, [mapRef]);
-
   if (!ready) return null;
 
-  return (
-    <Source id={`${MODULE_ID}-source`} type="geojson" data={geojson}>
-      <Layer
-        id={`${MODULE_ID}-pins`}
-        type="symbol"
-        layout={{
-          "icon-image": ["get", "pinImage"],
-          "icon-size": 1,
-          "icon-anchor": "bottom",
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        }}
-      />
-    </Source>
-  );
+  return <ClusteredPinSource moduleId={MODULE_ID} geojson={geojson} clusterMaxZoom={13} />;
 }
 
 export function PortsLayer() {
