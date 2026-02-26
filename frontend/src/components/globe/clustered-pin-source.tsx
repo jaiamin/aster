@@ -14,7 +14,7 @@ export function ClusteredPinSource({
   moduleId,
   geojson,
   clusterMaxZoom = 12,
-  clusterRadius = 50,
+  clusterRadius = 100,
 }: ClusteredPinSourceProps) {
   const { current: mapRef } = useMap();
   const pinsLayer = `${moduleId}-pins`;
