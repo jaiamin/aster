@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LocateFixed, Search, X } from "lucide-react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useModuleSelection, useModuleFilter, useRegion } from "@/modules/module-context";
+import { RegionDetailCard } from "./region-detail-card";
 
 interface NominatimResult {
   place_id: number;
@@ -682,6 +683,15 @@ export function GeoSearch() {
           }}
         />
       </Source>
+
+      {/* Region detail card */}
+      {regionActive && (
+        <RegionDetailCard
+          name={activeNameRef.current}
+          onRecenter={recenter}
+          onClose={clearBoundary}
+        />
+      )}
     </>
   );
 }

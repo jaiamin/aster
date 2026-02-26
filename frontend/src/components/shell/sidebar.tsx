@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
-import { useModuleToggle, useModuleCounts, useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
 import type { ModuleDefinition } from "@/types/modules";
 
@@ -9,13 +9,11 @@ function ModuleRow({
   def,
   enabled,
   count,
-  regionCount,
   onToggle,
 }: {
   def: ModuleDefinition;
   enabled: boolean;
   count: number | null | undefined;
-  regionCount: number | null | undefined;
   onToggle: () => void;
 }) {
   const { icon: Icon, name } = def;
@@ -31,12 +29,6 @@ function ModuleRow({
         <span className="text-[10px] tabular-nums text-muted/50">
           {count === null ? (
             <span className="inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
-          ) : regionCount != null ? (
-            <>
-              <span className="text-muted/70">{regionCount.toLocaleString()}</span>
-              {" / "}
-              {count.toLocaleString()}
-            </>
           ) : (
             count.toLocaleString()
           )}
@@ -58,7 +50,6 @@ function CategoryGroup({
   modules,
   enabledModules,
   moduleCounts,
-  regionCounts,
   open,
   onToggleOpen,
   onToggle,
@@ -67,7 +58,6 @@ function CategoryGroup({
   modules: ModuleDefinition[];
   enabledModules: Set<string>;
   moduleCounts: Map<string, number | null>;
-  regionCounts: Map<string, number | null>;
   open: boolean;
   onToggleOpen: () => void;
   onToggle: (id: string) => void;
@@ -102,7 +92,6 @@ function CategoryGroup({
               def={def}
               enabled={enabledModules.has(def.id)}
               count={moduleCounts.get(def.id)}
-              regionCount={regionCounts.get(def.id)}
               onToggle={() => onToggle(def.id)}
             />
           ))}
@@ -111,8 +100,6 @@ function CategoryGroup({
     </div>
   );
 }
-
-const EMPTY_REGION_COUNTS = new Map<string, number | null>();
 
 const PRESET_LABELS: Record<TimePreset, string> = {
   "1h": "1h", "6h": "6h", "24h": "24h", "3d": "3d", "7d": "7d", "30d": "30d", "all": "All",
@@ -144,7 +131,6 @@ export function Sidebar() {
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
   const { timeFilter, setTimeFilter } = useModuleFilter();
-  const { regionCounts, regionActive } = useRegion();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -246,7 +232,6 @@ export function Sidebar() {
                   modules={modules}
                   enabledModules={enabledModules}
                   moduleCounts={moduleCounts}
-                  regionCounts={regionActive ? regionCounts : EMPTY_REGION_COUNTS}
                   open={openCategories.has(category)}
                   onToggleOpen={() => toggleCategory(category)}
                   onToggle={toggle}
