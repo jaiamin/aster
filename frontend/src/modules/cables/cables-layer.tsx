@@ -5,6 +5,7 @@ import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
 import type { CableData, CableFeature } from "@/types/cables";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { registerLayerClick } from "@/lib/layer-click";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -32,45 +33,44 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
   const cablesGeojson = useMemo(() => buildCablesGeoJSON(data, selectedId), [data, selectedId]);
   const landingPoints = data?.landingPoints ?? EMPTY_FC;
 
-  // Click handler
+  // Click handler — selection via centralized dispatcher (register hit layer)
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const handler = (feature: maplibregl.GeoJSONFeature) => {
+      // Cables are too dense at globe zoom — skip below zoom 3
+      if (map.getZoom() < 3) return;
+      const id = feature.properties?.id;
+      const d = dataRef.current;
+      if (d) {
+        const cable = d.cables.features.find(
+          (f) => f.properties.id === id
+        ) as CableFeature | undefined;
+        if (cable) select(cable);
+      }
+    };
+
+    const cleanups = [
+      registerLayerClick("cables-hit", handler),
+      registerLayerClick("cables-line", handler),
+      registerLayerClick("cables-line-selected", handler),
+    ];
+    return () => { cleanups.forEach((fn) => fn()); };
+  }, [mapRef, select]);
+
+  // Deselect on empty click
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const consumed = (e.originalEvent as any)._layerHandled;
-      const zoom = map.getZoom();
-
-      // Cables are too dense at globe zoom — skip hit detection below zoom 3
-      if (zoom < 3) {
-        if (selectedRef.current && !consumed) deselect();
-        return;
-      }
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["cables-hit", "cables-line", "cables-line-selected"],
-      });
-
-      if (features.length > 0 && !consumed) {
-        (e.originalEvent as any)._layerHandled = true;
-        const id = features[0].properties?.id;
-        const d = dataRef.current;
-        if (d) {
-          const cable = d.cables.features.find(
-            (f) => f.properties.id === id
-          ) as CableFeature | undefined;
-          if (cable) {
-            select(cable);
-          }
-        }
-      } else if (selectedRef.current && !consumed) {
-        deselect();
-      }
+      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
     };
 
     map.on("click", handleClick);
     return () => { map.off("click", handleClick); };
-  }, [mapRef, select, deselect]);
+  }, [mapRef, deselect]);
 
   // Pointer cursor on hover
   useEffect(() => {

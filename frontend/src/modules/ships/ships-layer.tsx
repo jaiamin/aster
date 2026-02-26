@@ -4,6 +4,7 @@ import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Ship } from "@/types/ships";
 
@@ -93,44 +94,43 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     };
   }, [mapRef]);
 
-  // Click handler — select or deselect
+  // Click handler — selection via centralized dispatcher
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    return registerLayerClick("ships-layer", (feature) => {
+      const mmsi = feature.properties?.mmsi;
+      const ship = shipsRef.current.find((s) => s.mmsi === mmsi);
+      if (ship) {
+        flyingToRef.current = true;
+        select(ship);
+        map.flyTo({
+          center: [ship.longitude, ship.latitude],
+          zoom: FOCUS_ZOOM["ships"],
+          duration: 1500,
+        });
+        map.once("moveend", () => {
+          flyingToRef.current = false;
+        });
+      }
+    });
+  }, [mapRef, select]);
+
+  // Deselect on empty click
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["ships-layer"],
-      });
-
-      if (features.length > 0 && !consumed) {
-        (e.originalEvent as any)._layerHandled = true;
-        const mmsi = features[0].properties?.mmsi;
-        const ship = shipsRef.current.find((s) => s.mmsi === mmsi);
-        if (ship) {
-          flyingToRef.current = true;
-          select(ship);
-          map.flyTo({
-            center: [ship.longitude, ship.latitude],
-            zoom: FOCUS_ZOOM["ships"],
-            duration: 1500,
-          });
-          map.once("moveend", () => {
-            flyingToRef.current = false;
-          });
-        }
-      } else if (selectedRef.current) {
+      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) {
         deselect();
       }
     };
 
     map.on("click", handleClick);
-    return () => {
-      map.off("click", handleClick);
-    };
-  }, [mapRef, select, deselect]);
+    return () => { map.off("click", handleClick); };
+  }, [mapRef, deselect]);
 
   // Pointer cursor on hover
   useEffect(() => {

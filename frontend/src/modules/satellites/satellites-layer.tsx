@@ -64,13 +64,14 @@ function SatellitesLayerInner({
     const map = mapRef?.getMap();
     if (!map) return;
 
-    const handleClick = () => {
+    const handleClick = (e: maplibregl.MapMouseEvent) => {
       // Defer so deck.gl's onClick fires first and can set a flag
       requestAnimationFrame(() => {
         if (deckClickedRef.current) {
           deckClickedRef.current = false;
           return;
         }
+        if ((e.originalEvent as any)._layerHandled) return;
         if (selectedRef.current) deselect();
       });
     };

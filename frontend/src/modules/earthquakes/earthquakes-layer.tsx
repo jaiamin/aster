@@ -7,6 +7,7 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Earthquake } from "@/types/earthquakes";
 const MODULE_ID = "earthquakes";
@@ -64,31 +65,33 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
     return () => { unregisterModulePins(map, config); };
   }, [mapRef]);
 
-  // Click handler
+  // Click handler — selection via centralized dispatcher
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
+      const id = feature.properties?.id;
+      const quake = quakesRef.current.find((q) => q.id === id);
+      if (quake) {
+        select(quake);
+        map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500 });
+      }
+    });
+  }, [mapRef, select]);
+
+  // Deselect on empty click
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const consumed = (e.originalEvent as any)._layerHandled;
-      const features = map.queryRenderedFeatures(e.point, { layers: [`${MODULE_ID}-pins`] });
-
-      if (features.length > 0 && !consumed) {
-        (e.originalEvent as any)._layerHandled = true;
-        const id = features[0].properties?.id;
-        const quake = quakesRef.current.find((q) => q.id === id);
-        if (quake) {
-          select(quake);
-          map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500 });
-        }
-      } else if (selectedRef.current && !consumed) {
-        deselect();
-      }
+      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
     };
 
     map.on("click", handleClick);
     return () => { map.off("click", handleClick); };
-  }, [mapRef, select, deselect]);
+  }, [mapRef, deselect]);
 
   // Pointer cursor
   useEffect(() => {

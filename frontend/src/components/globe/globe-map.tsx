@@ -1,10 +1,21 @@
-import { useCallback, type ReactNode } from "react";
-import { Map, type MapRef } from "@vis.gl/react-maplibre";
+import { useCallback, useEffect, type ReactNode } from "react";
+import { Map, type MapRef, useMap } from "@vis.gl/react-maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { THEME, MIN_ZOOM } from "@/config/map";
 import type { MapStyleMode } from "@/config/map";
 import { useMapStyle } from "@/hooks/use-map-style";
+import { attachClickDispatcher } from "@/lib/layer-click";
 import type { MapViewState } from "@/types/map";
+
+function ClickDispatcher() {
+  const { current: mapRef } = useMap();
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    return attachClickDispatcher(map);
+  }, [mapRef]);
+  return null;
+}
 
 interface GlobeMapProps {
   viewState: MapViewState;
@@ -41,6 +52,7 @@ export function GlobeMap({ viewState, onMove, styleMode, onMapReady, children }:
         maxPitch={85}
         maxTileCacheSize={50}
       >
+        <ClickDispatcher />
         {children}
       </Map>
     </div>

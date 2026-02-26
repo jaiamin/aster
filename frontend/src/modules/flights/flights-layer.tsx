@@ -4,6 +4,7 @@ import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -136,44 +137,43 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     };
   }, [mapRef]);
 
-  // Click handler
+  // Click handler — selection via centralized dispatcher
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    return registerLayerClick("flights-layer", (feature, e) => {
+      const icao24 = feature.properties?.icao24;
+      const flight = flightsRef.current.find((f) => f.icao24 === icao24);
+      if (flight) {
+        flyingToRef.current = true;
+        select(flight);
+        map.flyTo({
+          center: [flight.longitude, flight.latitude],
+          zoom: FOCUS_ZOOM["flights"],
+          duration: 1500,
+        });
+        map.once("moveend", () => {
+          flyingToRef.current = false;
+        });
+      }
+    });
+  }, [mapRef, select]);
+
+  // Deselect on empty click
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const consumed = (e.originalEvent as any)._layerHandled;
-
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ["flights-layer"],
-      });
-
-      if (features.length > 0 && !consumed) {
-        (e.originalEvent as any)._layerHandled = true;
-        const icao24 = features[0].properties?.icao24;
-        const flight = flightsRef.current.find((f) => f.icao24 === icao24);
-        if (flight) {
-          flyingToRef.current = true;
-          select(flight);
-          map.flyTo({
-            center: [flight.longitude, flight.latitude],
-            zoom: FOCUS_ZOOM["flights"],
-            duration: 1500,
-          });
-          map.once("moveend", () => {
-            flyingToRef.current = false;
-          });
-        }
-      } else if (selectedRef.current && !consumed) {
+      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) {
         deselect();
       }
     };
 
     map.on("click", handleClick);
-    return () => {
-      map.off("click", handleClick);
-    };
-  }, [mapRef, select, deselect]);
+    return () => { map.off("click", handleClick); };
+  }, [mapRef, deselect]);
 
   // Pointer cursor on hover
   useEffect(() => {
