@@ -29,9 +29,9 @@ export function useMapState() {
 
   // Debounced URL sync — exposed for AppShell to call with full state
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string) => {
+  const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string, searchQuery?: string) => {
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => writeUrlState(vs, layers, style), 300);
+    timerRef.current = setTimeout(() => writeUrlState(vs, layers, style, searchQuery), 300);
   }, []);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);

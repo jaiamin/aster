@@ -254,10 +254,13 @@ function labelName(properties: Record<string, unknown>): string | null {
   return name && name.trim().length > 0 ? name.trim() : null;
 }
 
-/** Search Nominatim and return the best matching result. */
+/** Search Nominatim and return the best matching result.
+ *  If nearLngLat is provided, picks the closest result to that point
+ *  instead of the first (highest-ranked) result. */
 async function searchNominatim(
   query: string,
   signal: AbortSignal,
+  nearLngLat?: { lng: number; lat: number },
 ): Promise<NominatimResult | null> {
   const resp = await fetch(
     `https://nominatim.openstreetmap.org/search?` +
@@ -266,20 +269,39 @@ async function searchNominatim(
         format: "json",
         polygon_geojson: "1",
         dedupe: "1",
-        limit: "5",
+        limit: "10",
       }),
     { signal, headers: { "Accept-Language": "en" } },
   );
   const data: NominatimResult[] = await resp.json();
   const filtered = deduplicateResults(data.filter(isAllowedResult));
-  return filtered[0] ?? null;
+  if (filtered.length === 0) return null;
+
+  if (nearLngLat) {
+    // Pick the result closest to where the user clicked
+    let best = filtered[0];
+    let bestDist = haversineKm(
+      nearLngLat.lat, nearLngLat.lng,
+      parseFloat(best.lat), parseFloat(best.lon),
+    );
+    for (let i = 1; i < filtered.length; i++) {
+      const d = haversineKm(
+        nearLngLat.lat, nearLngLat.lng,
+        parseFloat(filtered[i].lat), parseFloat(filtered[i].lon),
+      );
+      if (d < bestDist) { best = filtered[i]; bestDist = d; }
+    }
+    return best;
+  }
+
+  return filtered[0];
 }
 
 const GEO_SEARCH_ID = "geo-search";
 
 export function GeoSearch() {
   const { current: mapRef } = useMap();
-  const { registerDeselect, unregisterDeselect, notifySelected } = useModules();
+  const { registerDeselect, unregisterDeselect, notifySelected, searchQuery: urlSearchQuery, setSearchQuery: setUrlSearchQuery } = useModules();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -367,15 +389,16 @@ export function GeoSearch() {
         setBoundary(EMPTY_FC);
       }
 
-      // Set the place name as the input value
+      // Set the place name as the input value and sync to URL
       const name = result.display_name.split(",")[0].trim();
       activeNameRef.current = name;
       setQuery(name);
+      setUrlSearchQuery(name);
       setResults([]);
       setOpen(false);
       inputRef.current?.blur();
     },
-    [mapRef, notifySelected],
+    [mapRef, notifySelected, setUrlSearchQuery],
   );
 
   const recenter = useCallback(() => {
@@ -398,7 +421,8 @@ export function GeoSearch() {
     activeNameRef.current = "";
     savedBoundsRef.current = null;
     setQuery("");
-  }, []);
+    setUrlSearchQuery("");
+  }, [setUrlSearchQuery]);
 
   // Register with global selection system so module pins can clear search
   useEffect(() => {
@@ -434,6 +458,19 @@ export function GeoSearch() {
   const selectResultRef = useRef(selectResult);
   selectResultRef.current = selectResult;
 
+  // Restore search from URL on mount
+  useEffect(() => {
+    if (!urlSearchQuery) return;
+    const controller = new AbortController();
+    searchNominatim(urlSearchQuery, controller.signal)
+      .then((result) => {
+        if (result) selectResultRef.current(result);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount only
+
   // Click-on-label: query symbol layers at click point, search Nominatim, auto-select
   useEffect(() => {
     const map = mapRef?.getMap();
@@ -460,12 +497,13 @@ export function GeoSearch() {
         // Mark as handled so no other handler fires
         (e.originalEvent as Record<string, unknown>)._layerHandled = true;
 
-        // Search Nominatim and auto-select the best result
+        // Search Nominatim and auto-select the closest result to the click point
         labelAbortRef.current?.abort();
         const controller = new AbortController();
         labelAbortRef.current = controller;
+        const clickLngLat = { lng: e.lngLat.lng, lat: e.lngLat.lat };
 
-        searchNominatim(name, controller.signal)
+        searchNominatim(name, controller.signal, clickLngLat)
           .then((result) => {
             if (result) selectResultRef.current(result);
           })
@@ -473,15 +511,34 @@ export function GeoSearch() {
       });
     };
 
-    // Pointer cursor on label hover
-    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+    // Pointer cursor on label hover — throttled and with cached layer IDs
+    let cachedLabelLayerIds: string[] | null = null;
+    let lastMoveTime = 0;
+    const THROTTLE_MS = 50;
+
+    const refreshLabelLayerIds = () => {
       const styleLayers = map.getStyle()?.layers ?? [];
-      const labelLayerIds = styleLayers
+      cachedLabelLayerIds = styleLayers
         .filter((l) => l.type === "symbol" && isLabelLayer(l.id))
         .map((l) => l.id);
-      if (labelLayerIds.length === 0) return;
-      const features = map.queryRenderedFeatures(e.point, { layers: labelLayerIds });
-      map.getCanvas().style.cursor = features.length > 0 ? "pointer" : "";
+    };
+
+    // Build cache once now and refresh when the style changes (e.g. dark ↔ satellite)
+    refreshLabelLayerIds();
+    map.on("styledata", refreshLabelLayerIds);
+
+    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+      const now = performance.now();
+      if (now - lastMoveTime < THROTTLE_MS) return;
+      lastMoveTime = now;
+
+      if (!cachedLabelLayerIds || cachedLabelLayerIds.length === 0) return;
+      // Don't override cursor if a data pin layer already set it
+      const canvas = map.getCanvas();
+      if (canvas.style.cursor === "pointer") return;
+
+      const features = map.queryRenderedFeatures(e.point, { layers: cachedLabelLayerIds });
+      canvas.style.cursor = features.length > 0 ? "pointer" : "";
     };
 
     map.on("click", handleLabelClick);
@@ -489,6 +546,7 @@ export function GeoSearch() {
     return () => {
       map.off("click", handleLabelClick);
       map.off("mousemove", onMouseMove);
+      map.off("styledata", refreshLabelLayerIds);
       labelAbortRef.current?.abort();
     };
   }, [mapRef]);

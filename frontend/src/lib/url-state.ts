@@ -5,6 +5,7 @@ interface UrlState {
   viewState: MapViewState;
   layers: string[];
   style: string;
+  searchQuery: string;
 }
 
 export function parseUrlState(): Partial<UrlState> {
@@ -40,6 +41,11 @@ export function parseUrlState(): Partial<UrlState> {
     result.style = style;
   }
 
+  const q = params.get("q");
+  if (q) {
+    result.searchQuery = q;
+  }
+
   return result;
 }
 
@@ -48,7 +54,7 @@ function round(n: number, decimals: number): number {
   return Math.round(n * f) / f;
 }
 
-export function writeUrlState(viewState: MapViewState, layers: Set<string>, style: string) {
+export function writeUrlState(viewState: MapViewState, layers: Set<string>, style: string, searchQuery?: string) {
   const parts = [
     round(viewState.zoom, 2),
     round(viewState.latitude, 4),
@@ -72,10 +78,18 @@ export function writeUrlState(viewState: MapViewState, layers: Set<string>, styl
     params.set("style", style);
   }
 
+  if (searchQuery) {
+    params.set("q", searchQuery);
+  }
+
   const newHash = "#" + params.toString();
   if (window.location.hash !== newHash) {
     window.history.replaceState(null, "", newHash);
   }
+}
+
+export function getInitialSearchQuery(): string {
+  return parseUrlState().searchQuery ?? "";
 }
 
 export function getInitialViewState(): MapViewState {

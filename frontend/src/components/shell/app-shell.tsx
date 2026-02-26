@@ -13,11 +13,11 @@ import type { MapStyleMode } from "@/config/map";
 export function AppShell() {
   const { viewState, status, onMove, syncUrl } = useMapState();
   const [styleMode, setStyleMode] = useState<MapStyleMode>(getInitialStyle);
-  const { enabledModules } = useModules();
+  const { enabledModules, searchQuery } = useModules();
 
   useEffect(() => {
-    syncUrl(viewState, enabledModules, styleMode);
-  }, [viewState, enabledModules, styleMode, syncUrl]);
+    syncUrl(viewState, enabledModules, styleMode, searchQuery);
+  }, [viewState, enabledModules, styleMode, searchQuery, syncUrl]);
 
   const activeLayers = MODULE_REGISTRY.filter((m) => enabledModules.has(m.id));
 

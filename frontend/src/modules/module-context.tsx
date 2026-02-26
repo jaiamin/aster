@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { getInitialLayers } from "@/lib/url-state";
+import { getInitialLayers, getInitialSearchQuery } from "@/lib/url-state";
 
 export interface PendingTarget {
   moduleId: string;
@@ -12,6 +12,7 @@ interface ModuleContextValue {
   enabledModules: Set<string>;
   moduleCounts: Map<string, number | null>;
   pendingTarget: PendingTarget | null;
+  searchQuery: string;
   toggle: (id: string) => void;
   focusTarget: (moduleId: string, targetId: number) => void;
   clearPendingTarget: () => void;
@@ -20,6 +21,7 @@ interface ModuleContextValue {
   notifySelected: (moduleId: string) => void;
   registerCount: (moduleId: string, count: number | null) => void;
   unregisterCount: (moduleId: string) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 const ModuleContext = createContext<ModuleContextValue | null>(null);
@@ -28,6 +30,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<Set<string>>(getInitialLayers);
   const [moduleCounts, setModuleCounts] = useState<Map<string, number | null>>(new Map());
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
+  const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
   const deselectMap = useRef(new Map<string, DeselectFn>());
 
   const toggle = useCallback((id: string) => {
@@ -82,7 +85,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, toggle, focusTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, registerCount, unregisterCount }}>
+    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, searchQuery, toggle, focusTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, registerCount, unregisterCount, setSearchQuery }}>
       {children}
     </ModuleContext.Provider>
   );
