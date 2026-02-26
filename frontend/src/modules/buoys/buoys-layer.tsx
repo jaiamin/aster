@@ -4,6 +4,8 @@ import { Navigation } from "lucide-react";
 import { useBuoys } from "./use-buoys";
 import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModules } from "@/modules/module-context";
+import { filterByTime } from "@/lib/time-filter";
 import { BuoyDetailCard } from "./buoy-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
@@ -110,10 +112,15 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 
 export function BuoysLayer() {
   const buoys = useBuoys();
-  useModuleCount("buoys", buoys?.length ?? null);
+  const { timeFilter } = useModules();
+  const filtered = useMemo(
+    () => buoys ? filterByTime(buoys, "buoys", timeFilter) : null,
+    [buoys, timeFilter],
+  );
+  useModuleCount("buoys", filtered?.length ?? null);
   return (
     <BuoySelectionProvider>
-      <BuoysLayerInner buoys={buoys ?? []} />
+      <BuoysLayerInner buoys={filtered ?? []} />
       <BuoyDetailCard />
     </BuoySelectionProvider>
   );

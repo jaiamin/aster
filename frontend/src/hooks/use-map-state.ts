@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { MapViewState, ProjectionMode, MapStatus } from "@/types/map";
 import { GLOBE_TRANSITION_ZOOM } from "@/config/map";
 import { getInitialViewState, writeUrlState } from "@/lib/url-state";
+import type { TimePreset } from "@/lib/time-filter";
 
 function getProjectionMode(zoom: number): ProjectionMode {
   if (zoom < GLOBE_TRANSITION_ZOOM.start) return "globe";
@@ -29,9 +30,9 @@ export function useMapState() {
 
   // Debounced URL sync — exposed for AppShell to call with full state
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string, searchQuery?: string) => {
+  const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string, searchQuery?: string, timeFilter?: TimePreset) => {
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => writeUrlState(vs, layers, style, searchQuery), 300);
+    timerRef.current = setTimeout(() => writeUrlState(vs, layers, style, searchQuery, timeFilter), 300);
   }, []);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);

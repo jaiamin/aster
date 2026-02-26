@@ -1,11 +1,14 @@
 import type { MapViewState } from "@/types/map";
 import { INITIAL_VIEW_STATE } from "@/config/map";
+import type { TimePreset } from "@/lib/time-filter";
+import { TIME_PRESETS } from "@/lib/time-filter";
 
 interface UrlState {
   viewState: MapViewState;
   layers: string[];
   style: string;
   searchQuery: string;
+  timeFilter: TimePreset;
 }
 
 export function parseUrlState(): Partial<UrlState> {
@@ -46,6 +49,11 @@ export function parseUrlState(): Partial<UrlState> {
     result.searchQuery = q;
   }
 
+  const time = params.get("time");
+  if (time && (TIME_PRESETS as readonly string[]).includes(time)) {
+    result.timeFilter = time as TimePreset;
+  }
+
   return result;
 }
 
@@ -54,7 +62,7 @@ function round(n: number, decimals: number): number {
   return Math.round(n * f) / f;
 }
 
-export function writeUrlState(viewState: MapViewState, layers: Set<string>, style: string, searchQuery?: string) {
+export function writeUrlState(viewState: MapViewState, layers: Set<string>, style: string, searchQuery?: string, timeFilter?: TimePreset) {
   const parts = [
     round(viewState.zoom, 2),
     round(viewState.latitude, 4),
@@ -82,6 +90,10 @@ export function writeUrlState(viewState: MapViewState, layers: Set<string>, styl
     params.set("q", searchQuery);
   }
 
+  if (timeFilter && timeFilter !== "all") {
+    params.set("time", timeFilter);
+  }
+
   const newHash = "#" + params.toString();
   if (window.location.hash !== newHash) {
     window.history.replaceState(null, "", newHash);
@@ -104,4 +116,8 @@ export function getInitialLayers(): Set<string> {
 export function getInitialStyle(): "dark" | "satellite" {
   const parsed = parseUrlState().style;
   return parsed === "satellite" ? "satellite" : "dark";
+}
+
+export function getInitialTimeFilter(): TimePreset {
+  return parseUrlState().timeFilter ?? "all";
 }

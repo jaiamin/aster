@@ -4,6 +4,8 @@ import { CloudLightning } from "lucide-react";
 import { useStorms } from "./use-storms";
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModules } from "@/modules/module-context";
+import { filterByTime } from "@/lib/time-filter";
 import { StormDetailCard } from "./storm-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
@@ -213,10 +215,15 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
 
 export function StormsLayer() {
   const storms = useStorms();
-  useModuleCount("storms", storms?.length ?? null);
+  const { timeFilter } = useModules();
+  const filtered = useMemo(
+    () => storms ? filterByTime(storms, "storms", timeFilter) : null,
+    [storms, timeFilter],
+  );
+  useModuleCount("storms", filtered?.length ?? null);
   return (
     <StormSelectionProvider>
-      <StormsLayerInner storms={storms ?? []} />
+      <StormsLayerInner storms={filtered ?? []} />
       <StormDetailCard />
     </StormSelectionProvider>
   );

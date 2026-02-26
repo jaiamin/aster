@@ -4,6 +4,8 @@ import { Wind } from "lucide-react";
 import { useAirQuality } from "./use-air-quality";
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModules } from "@/modules/module-context";
+import { filterByTime } from "@/lib/time-filter";
 import { AirQualityDetailCard } from "./air-quality-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
@@ -130,10 +132,15 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
 
 export function AirQualityLayer() {
   const stations = useAirQuality();
-  useModuleCount("air-quality", stations?.length ?? null);
+  const { timeFilter } = useModules();
+  const filtered = useMemo(
+    () => stations ? filterByTime(stations, "air-quality", timeFilter) : null,
+    [stations, timeFilter],
+  );
+  useModuleCount("air-quality", filtered?.length ?? null);
   return (
     <AirQualitySelectionProvider>
-      <AirQualityLayerInner stations={stations ?? []} />
+      <AirQualityLayerInner stations={filtered ?? []} />
       <AirQualityDetailCard />
     </AirQualitySelectionProvider>
   );

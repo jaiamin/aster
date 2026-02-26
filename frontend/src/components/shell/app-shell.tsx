@@ -17,11 +17,11 @@ export function AppShell() {
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const { enabledModules, searchQuery } = useModules();
+  const { enabledModules, searchQuery, timeFilter } = useModules();
 
   useEffect(() => {
-    syncUrl(viewState, enabledModules, styleMode, searchQuery);
-  }, [viewState, enabledModules, styleMode, searchQuery, syncUrl]);
+    syncUrl(viewState, enabledModules, styleMode, searchQuery, timeFilter);
+  }, [viewState, enabledModules, styleMode, searchQuery, timeFilter, syncUrl]);
 
   const activeLayers = MODULE_REGISTRY.filter((m) => enabledModules.has(m.id));
 

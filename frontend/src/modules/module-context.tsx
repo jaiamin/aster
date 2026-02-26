@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { getInitialLayers, getInitialSearchQuery } from "@/lib/url-state";
+import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
+import type { TimePreset } from "@/lib/time-filter";
 
 export interface PendingTarget {
   moduleId: string;
@@ -13,6 +14,7 @@ interface ModuleContextValue {
   moduleCounts: Map<string, number | null>;
   pendingTarget: PendingTarget | null;
   searchQuery: string;
+  timeFilter: TimePreset;
   toggle: (id: string) => void;
   focusTarget: (moduleId: string, targetId: number) => void;
   clearPendingTarget: () => void;
@@ -22,6 +24,7 @@ interface ModuleContextValue {
   registerCount: (moduleId: string, count: number | null) => void;
   unregisterCount: (moduleId: string) => void;
   setSearchQuery: (query: string) => void;
+  setTimeFilter: (preset: TimePreset) => void;
 }
 
 const ModuleContext = createContext<ModuleContextValue | null>(null);
@@ -31,6 +34,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [moduleCounts, setModuleCounts] = useState<Map<string, number | null>>(new Map());
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
   const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
+  const [timeFilter, setTimeFilter] = useState<TimePreset>(getInitialTimeFilter);
   const deselectMap = useRef(new Map<string, DeselectFn>());
 
   const toggle = useCallback((id: string) => {
@@ -85,7 +89,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, searchQuery, toggle, focusTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, registerCount, unregisterCount, setSearchQuery }}>
+    <ModuleContext.Provider value={{ enabledModules, moduleCounts, pendingTarget, searchQuery, timeFilter, toggle, focusTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, registerCount, unregisterCount, setSearchQuery, setTimeFilter }}>
       {children}
     </ModuleContext.Provider>
   );

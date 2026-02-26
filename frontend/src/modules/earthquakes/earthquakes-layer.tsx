@@ -4,6 +4,8 @@ import { Activity } from "lucide-react";
 import { useEarthquakes } from "./use-earthquakes";
 import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquake-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModules } from "@/modules/module-context";
+import { filterByTime } from "@/lib/time-filter";
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
@@ -128,10 +130,15 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 
 export function EarthquakesLayer() {
   const quakes = useEarthquakes();
-  useModuleCount("earthquakes", quakes?.length ?? null);
+  const { timeFilter } = useModules();
+  const filtered = useMemo(
+    () => quakes ? filterByTime(quakes, "earthquakes", timeFilter) : null,
+    [quakes, timeFilter],
+  );
+  useModuleCount("earthquakes", filtered?.length ?? null);
   return (
     <EarthquakeSelectionProvider>
-      <EarthquakesLayerInner quakes={quakes ?? []} />
+      <EarthquakesLayerInner quakes={filtered ?? []} />
       <EarthquakeDetailCard />
     </EarthquakeSelectionProvider>
   );

@@ -4,6 +4,8 @@ import { Flame } from "lucide-react";
 import { useWildfires } from "./use-wildfires";
 import { WildfireSelectionProvider, useWildfireSelection } from "./wildfire-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModules } from "@/modules/module-context";
+import { filterByTime } from "@/lib/time-filter";
 import { WildfireDetailCard } from "./wildfire-detail-card";
 import { registerModulePins, unregisterModulePins } from "@/lib/pin-icon";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
@@ -134,10 +136,15 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
 
 export function WildfiresLayer() {
   const fires = useWildfires();
-  useModuleCount("wildfires", fires?.length ?? null);
+  const { timeFilter } = useModules();
+  const filtered = useMemo(
+    () => fires ? filterByTime(fires, "wildfires", timeFilter) : null,
+    [fires, timeFilter],
+  );
+  useModuleCount("wildfires", filtered?.length ?? null);
   return (
     <WildfireSelectionProvider>
-      <WildfiresLayerInner fires={fires ?? []} />
+      <WildfiresLayerInner fires={filtered ?? []} />
       <WildfireDetailCard />
     </WildfireSelectionProvider>
   );
