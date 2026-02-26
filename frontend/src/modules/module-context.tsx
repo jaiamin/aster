@@ -10,7 +10,7 @@ type DeselectFn = () => void;
 
 interface ModuleContextValue {
   enabledModules: Set<string>;
-  moduleCounts: Map<string, number>;
+  moduleCounts: Map<string, number | null>;
   pendingTarget: PendingTarget | null;
   toggle: (id: string) => void;
   focusTarget: (moduleId: string, targetId: number) => void;
@@ -18,7 +18,7 @@ interface ModuleContextValue {
   registerDeselect: (moduleId: string, deselect: DeselectFn) => void;
   unregisterDeselect: (moduleId: string) => void;
   notifySelected: (moduleId: string) => void;
-  registerCount: (moduleId: string, count: number) => void;
+  registerCount: (moduleId: string, count: number | null) => void;
   unregisterCount: (moduleId: string) => void;
 }
 
@@ -26,7 +26,7 @@ const ModuleContext = createContext<ModuleContextValue | null>(null);
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<Set<string>>(getInitialLayers);
-  const [moduleCounts, setModuleCounts] = useState<Map<string, number>>(new Map());
+  const [moduleCounts, setModuleCounts] = useState<Map<string, number | null>>(new Map());
   const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
   const deselectMap = useRef(new Map<string, DeselectFn>());
 
@@ -63,7 +63,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const registerCount = useCallback((moduleId: string, count: number) => {
+  const registerCount = useCallback((moduleId: string, count: number | null) => {
     setModuleCounts((prev) => {
       if (prev.get(moduleId) === count) return prev;
       const next = new Map(prev);

@@ -12,7 +12,7 @@ function ModuleRow({
 }: {
   def: ModuleDefinition;
   enabled: boolean;
-  count: number | undefined;
+  count: number | null | undefined;
   onToggle: () => void;
 }) {
   const { icon: Icon, name } = def;
@@ -24,9 +24,13 @@ function ModuleRow({
     >
       <Icon size={14} />
       {name}
-      {count != null && (
+      {count !== undefined && (
         <span className="text-[10px] tabular-nums text-muted/50">
-          {count.toLocaleString()}
+          {count === null ? (
+            <span className="inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
+          ) : (
+            count.toLocaleString()
+          )}
         </span>
       )}
       <div
@@ -52,7 +56,7 @@ function CategoryGroup({
   category: string;
   modules: ModuleDefinition[];
   enabledModules: Set<string>;
-  moduleCounts: Map<string, number>;
+  moduleCounts: Map<string, number | null>;
   open: boolean;
   onToggleOpen: () => void;
   onToggle: (id: string) => void;
