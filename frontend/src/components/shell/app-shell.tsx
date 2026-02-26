@@ -6,6 +6,7 @@ import { StatusBar } from "@/components/shell/status-bar";
 import { useMapState } from "@/hooks/use-map-state";
 import { useModules } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
+import { GeoSearch } from "@/components/search/geo-search";
 import { getInitialStyle } from "@/lib/url-state";
 import type { MapStyleMode } from "@/config/map";
 
@@ -28,6 +29,7 @@ export function AppShell() {
           {activeLayers.map((m) => (
             <m.MapLayer key={m.id} />
           ))}
+          <GeoSearch />
         </GlobeMap>
         <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
           <GlobeControls
