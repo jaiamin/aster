@@ -53,12 +53,23 @@ export function ClusteredPinSource({
       const source = map.getSource(sourceId) as GeoJSONSource;
       if (!source) return;
       source.getClusterLeaves(clusterId, pointCount, 0).then((leaves) => {
+        if (leaves.length === 0) return;
         const bounds = new LngLatBounds();
         for (const leaf of leaves) {
           const [lng, lat] = (leaf.geometry as GeoJSON.Point).coordinates;
           bounds.extend([lng, lat]);
         }
-        map.fitBounds(bounds, { padding: 80, duration: 500 });
+        // If all points share the same coordinates, fitBounds won't zoom enough
+        // to break the cluster. Zoom past clusterMaxZoom to force individual pins.
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        const tooSmall = Math.abs(ne.lng - sw.lng) < 0.001 && Math.abs(ne.lat - sw.lat) < 0.001;
+        if (tooSmall) {
+          const center = bounds.getCenter();
+          map.flyTo({ center, zoom: clusterMaxZoom + 1, duration: 500 });
+        } else {
+          map.fitBounds(bounds, { padding: 80, duration: 500 });
+        }
       });
     };
 
