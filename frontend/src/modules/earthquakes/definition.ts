@@ -7,7 +7,7 @@ const EarthquakesLayer = lazy(() => import("./earthquakes-layer").then(m => ({ d
 export const earthquakesModule: ModuleDefinition = {
   id: "earthquakes",
   name: "Earthquakes",
-  category: "Natural Events",
+  category: "Events",
   icon: Activity,
   focusZoom: FOCUS_ZOOM["earthquakes"],
   MapLayer: EarthquakesLayer,

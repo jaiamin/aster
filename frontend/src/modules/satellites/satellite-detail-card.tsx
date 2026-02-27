@@ -149,7 +149,7 @@ export function SatelliteDetailCard() {
       <CardBody>
         <CardHeader
           icon={Satellite}
-          accentColor={CATEGORY_COLORS["Space"]}
+          accentColor={CATEGORY_COLORS["Tracking"]}
           name={gp.OBJECT_NAME}
           latitude={position.latitude}
           longitude={position.longitude}

@@ -67,7 +67,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
 
   const geojson = useMemo(() => toGeoJSON(fires, selectedIdx, isInRegion), [fires, selectedIdx, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Flame, bgColor: CATEGORY_COLORS["Natural Events"], statusVariants: STATUS_VARIANTS });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Flame, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

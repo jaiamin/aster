@@ -33,4 +33,4 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   flightsModule,
 ];
 
-export const CATEGORY_ORDER = ["Transportation", "Space", "Natural Events", "Environment", "Infrastructure"];
+export const CATEGORY_ORDER = ["Tracking", "Events", "Infrastructure", "Environment"];

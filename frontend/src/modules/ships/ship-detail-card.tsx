@@ -172,7 +172,7 @@ export function ShipDetailCard() {
       <CardBody>
         <CardHeader
           icon={ShipIcon}
-          accentColor={CATEGORY_COLORS["Transportation"]}
+          accentColor={CATEGORY_COLORS["Tracking"]}
           name={ship.name ? (typeLabel !== "Unknown" ? `${ship.name} (${typeLabel})` : ship.name) : `MMSI ${ship.mmsi}`}
           latitude={ship.latitude}
           longitude={ship.longitude}

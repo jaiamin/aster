@@ -91,7 +91,7 @@ export function EarthquakeDetailCard() {
       <CardBody>
         <CardHeader
           icon={Activity}
-          accentColor={CATEGORY_COLORS["Natural Events"]}
+          accentColor={CATEGORY_COLORS["Events"]}
           name={quake.place}
           latitude={quake.latitude}
           longitude={quake.longitude}

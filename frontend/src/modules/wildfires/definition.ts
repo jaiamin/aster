@@ -7,7 +7,7 @@ const WildfiresLayer = lazy(() => import("./wildfires-layer").then(m => ({ defau
 export const wildfiresModule: ModuleDefinition = {
   id: "wildfires",
   name: "Wildfires",
-  category: "Natural Events",
+  category: "Events",
   icon: Flame,
   focusZoom: FOCUS_ZOOM["wildfires"],
   MapLayer: WildfiresLayer,

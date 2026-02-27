@@ -105,7 +105,7 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
   );
   const trackColor = selected ? stormAccentColor(selected.storm.category) : "#ffffff";
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: CloudLightning, bgColor: CATEGORY_COLORS["Natural Events"], statusVariants: STATUS_VARIANTS });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: CloudLightning, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

@@ -53,7 +53,7 @@ export function PortDetailCard() {
       <CardBody>
         <CardHeader
           icon={Anchor}
-          accentColor={CATEGORY_COLORS["Transportation"]}
+          accentColor={CATEGORY_COLORS["Infrastructure"]}
           name={port.name}
           latitude={port.latitude}
           longitude={port.longitude}

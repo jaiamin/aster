@@ -7,7 +7,7 @@ const AirportsLayer = lazy(() => import("./airports-layer").then(m => ({ default
 export const airportsModule: ModuleDefinition = {
   id: "airports",
   name: "Airports",
-  category: "Transportation",
+  category: "Infrastructure",
   icon: PlaneTakeoff,
   focusZoom: FOCUS_ZOOM["airports"],
   MapLayer: AirportsLayer,

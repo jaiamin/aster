@@ -1,7 +1,6 @@
 export const CATEGORY_COLORS: Record<string, string> = {
-  Transportation: "#0088aa",
-  Space: "#ef4444",
-  "Natural Events": "#f97316",
-  Environment: "#0e8a9e",
-  Infrastructure: "#a78bfa",
+  Tracking: "#6e9ecf",
+  Events: "#c4884d",
+  Infrastructure: "#9589be",
+  Environment: "#5c9a72",
 };

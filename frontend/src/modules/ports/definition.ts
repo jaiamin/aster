@@ -7,7 +7,7 @@ const PortsLayer = lazy(() => import("./ports-layer").then(m => ({ default: m.Po
 export const portsModule: ModuleDefinition = {
   id: "ports",
   name: "Ports",
-  category: "Transportation",
+  category: "Infrastructure",
   icon: Anchor,
   focusZoom: FOCUS_ZOOM["ports"],
   MapLayer: PortsLayer,

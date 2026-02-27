@@ -7,7 +7,7 @@ const ShipsLayer = lazy(() => import("./ships-layer").then(m => ({ default: m.Sh
 export const shipsModule: ModuleDefinition = {
   id: "ships",
   name: "Vessels",
-  category: "Transportation",
+  category: "Tracking",
   icon: Ship,
   focusZoom: FOCUS_ZOOM["ships"],
   MapLayer: ShipsLayer,

@@ -63,7 +63,7 @@ export function VolcanoDetailCard() {
       <CardBody>
         <CardHeader
           icon={Mountain}
-          accentColor={CATEGORY_COLORS["Natural Events"]}
+          accentColor={CATEGORY_COLORS["Events"]}
           name={volcano.title}
           latitude={volcano.latitude}
           longitude={volcano.longitude}

@@ -7,7 +7,7 @@ const VolcanoesLayer = lazy(() => import("./volcanoes-layer").then(m => ({ defau
 export const volcanoesModule: ModuleDefinition = {
   id: "volcanoes",
   name: "Volcanoes",
-  category: "Natural Events",
+  category: "Events",
   icon: Mountain,
   focusZoom: FOCUS_ZOOM["volcanoes"],
   MapLayer: VolcanoesLayer,

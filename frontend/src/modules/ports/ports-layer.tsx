@@ -42,7 +42,7 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
   const selectedId = selected?.port.id ?? null;
   const geojson = useMemo(() => toGeoJSON(ports, selectedId, isInRegion), [ports, selectedId, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Transportation });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Infrastructure });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

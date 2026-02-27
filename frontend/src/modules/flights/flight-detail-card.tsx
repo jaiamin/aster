@@ -284,7 +284,7 @@ export function FlightDetailCard() {
       <CardBody>
         <CardHeader
           icon={Plane}
-          accentColor={CATEGORY_COLORS["Transportation"]}
+          accentColor={CATEGORY_COLORS["Tracking"]}
           name={flight.callsign || flight.icao24}
           latitude={flight.latitude}
           longitude={flight.longitude}

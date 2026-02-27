@@ -123,7 +123,7 @@ export function LaunchDetailCard() {
       <CardBody>
         <CardHeader
           icon={Rocket}
-          accentColor={CATEGORY_COLORS["Space"]}
+          accentColor={CATEGORY_COLORS["Events"]}
           name={launch.name}
           latitude={launch.latitude}
           longitude={launch.longitude}

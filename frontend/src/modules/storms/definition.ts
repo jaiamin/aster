@@ -7,7 +7,7 @@ const StormsLayer = lazy(() => import("./storms-layer").then(m => ({ default: m.
 export const stormsModule: ModuleDefinition = {
   id: "storms",
   name: "Storms",
-  category: "Natural Events",
+  category: "Events",
   icon: CloudLightning,
   focusZoom: FOCUS_ZOOM["storms"],
   MapLayer: StormsLayer,

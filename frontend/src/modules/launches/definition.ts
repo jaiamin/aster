@@ -7,7 +7,7 @@ const LaunchesLayer = lazy(() => import("./launches-layer").then(m => ({ default
 export const launchesModule: ModuleDefinition = {
   id: "launches",
   name: "Rocket Launch Sites",
-  category: "Space",
+  category: "Events",
   icon: Rocket,
   focusZoom: FOCUS_ZOOM["launches"],
   MapLayer: LaunchesLayer,

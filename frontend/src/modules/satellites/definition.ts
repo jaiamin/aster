@@ -7,7 +7,7 @@ const SatellitesLayer = lazy(() => import("./satellites-layer").then(m => ({ def
 export const satellitesModule: ModuleDefinition = {
   id: "satellites",
   name: "Satellites",
-  category: "Space",
+  category: "Tracking",
   icon: Satellite,
   focusZoom: FOCUS_ZOOM["satellites"],
   MapLayer: SatellitesLayer,

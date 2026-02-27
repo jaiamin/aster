@@ -43,7 +43,7 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const selectedId = selected?.volcano.id ?? null;
   const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, isInRegion), [volcanoes, selectedId, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Natural Events"] });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Events"] });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

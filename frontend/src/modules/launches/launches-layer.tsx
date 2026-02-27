@@ -69,7 +69,7 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
   const selectedId = selected?.launch.id ?? null;
   const geojson = useMemo(() => toGeoJSON(launches, selectedId, isInRegion), [launches, selectedId, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Rocket, bgColor: CATEGORY_COLORS.Space, statusVariants: STATUS_VARIANTS });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Rocket, bgColor: CATEGORY_COLORS.Events, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

@@ -61,7 +61,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
   const selectedId = selected?.quake.id ?? null;
   const geojson = useMemo(() => toGeoJSON(quakes, selectedId, isInRegion), [quakes, selectedId, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Activity, bgColor: CATEGORY_COLORS["Natural Events"], statusVariants: STATUS_VARIANTS });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Activity, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

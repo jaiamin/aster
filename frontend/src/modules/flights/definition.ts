@@ -7,7 +7,7 @@ const FlightsLayer = lazy(() => import("./flights-layer").then(m => ({ default: 
 export const flightsModule: ModuleDefinition = {
   id: "flights",
   name: "Flights",
-  category: "Transportation",
+  category: "Tracking",
   icon: Plane,
   focusZoom: FOCUS_ZOOM["flights"],
   MapLayer: FlightsLayer,

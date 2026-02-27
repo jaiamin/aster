@@ -81,7 +81,7 @@ export function WildfireDetailCard() {
       <CardBody>
         <CardHeader
           icon={Flame}
-          accentColor={CATEGORY_COLORS["Natural Events"]}
+          accentColor={CATEGORY_COLORS["Events"]}
           name="Fire Hotspot"
           latitude={fire.latitude}
           longitude={fire.longitude}

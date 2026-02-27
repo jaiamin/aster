@@ -42,7 +42,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const selectedId = selected?.airport.id ?? null;
   const geojson = useMemo(() => toGeoJSON(airports, selectedId, isInRegion), [airports, selectedId, isInRegion]);
 
-  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Transportation });
+  const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Infrastructure });
   useDeselectOnEmptyClick(selected, deselect);
 
   useEffect(() => {

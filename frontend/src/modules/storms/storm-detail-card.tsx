@@ -73,7 +73,7 @@ export function StormDetailCard() {
       <CardBody>
         <CardHeader
           icon={CloudLightning}
-          accentColor={CATEGORY_COLORS["Natural Events"]}
+          accentColor={CATEGORY_COLORS["Events"]}
           name={storm.name}
           latitude={storm.latitude}
           longitude={storm.longitude}
