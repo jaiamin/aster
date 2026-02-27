@@ -5,6 +5,7 @@ export interface Volcano {
   latitude: number;
   date: string | null;
   sourceUrl: string | null;
+  country?: string;
 }
 
 export interface SelectedVolcano {

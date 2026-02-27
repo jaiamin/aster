@@ -15,6 +15,7 @@ export interface Launch {
   image: string | null;
   probability: number | null;
   url: string;
+  country?: string;
 }
 
 export interface SelectedLaunch {

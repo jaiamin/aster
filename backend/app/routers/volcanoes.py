@@ -3,6 +3,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.geo.country_lookup import country_from_coords
+
 router = APIRouter()
 
 EONET_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
@@ -48,14 +50,17 @@ async def get_volcanoes():
             continue
         sources = event.get("sources") or []
         source_url = sources[0]["url"] if sources else None
+        lat = coords[1]
+        lng = coords[0]
         results.append(
             {
                 "id": event["id"],
                 "title": event.get("title", "Unknown"),
-                "longitude": coords[0],
-                "latitude": coords[1],
+                "longitude": lng,
+                "latitude": lat,
                 "date": latest.get("date"),
                 "sourceUrl": source_url,
+                "country": country_from_coords(lat, lng),
             }
         )
 

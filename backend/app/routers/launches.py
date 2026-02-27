@@ -3,6 +3,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.geo.country_lookup import country_from_coords
+
 router = APIRouter()
 
 UPCOMING_URL = "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=50&mode=detailed"
@@ -51,6 +53,7 @@ def _parse_launch(launch: dict) -> dict | None:
         "image": launch.get("image") or (rocket_config.get("image") if rocket_config else None),
         "probability": launch.get("probability"),
         "url": launch.get("url", ""),
+        "country": country_from_coords(lat, lng),
     }
 
 

@@ -7,6 +7,7 @@ export interface Wildfire {
   acqDate: string;
   acqTime: string;
   daynight: string;
+  country?: string;
 }
 
 export interface SelectedWildfire {

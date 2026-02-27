@@ -5,6 +5,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.geo.country_lookup import country_from_coords
+
 router = APIRouter()
 
 FIRMS_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_24h.csv"
@@ -66,6 +68,7 @@ async def get_wildfires():
                     "acqDate": acq_date,
                     "acqTime": acq_time,
                     "daynight": daynight,
+                    "country": country_from_coords(lat, lon),
                 }
             )
         except (ValueError, KeyError):

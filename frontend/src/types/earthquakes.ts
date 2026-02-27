@@ -13,6 +13,7 @@ export interface Earthquake {
   status: string | null;
   felt: number | null;
   url: string | null;
+  country?: string;
 }
 
 export interface SelectedEarthquake {

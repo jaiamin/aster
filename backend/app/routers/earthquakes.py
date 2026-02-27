@@ -3,6 +3,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.geo.country_lookup import country_from_coords
+
 router = APIRouter()
 
 USGS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
@@ -43,14 +45,16 @@ async def get_earthquakes():
         mag = props.get("mag")
         if mag is None:
             continue
+        lat = coords[1]
+        lng = coords[0]
         quakes.append(
             {
                 "id": f.get("id"),
                 "magnitude": mag,
                 "place": props.get("place"),
                 "time": props.get("time"),
-                "longitude": coords[0],
-                "latitude": coords[1],
+                "longitude": lng,
+                "latitude": lat,
                 "depth": coords[2],
                 "tsunami": bool(props.get("tsunami")),
                 "alert": props.get("alert"),
@@ -59,6 +63,7 @@ async def get_earthquakes():
                 "status": props.get("status"),
                 "felt": props.get("felt"),
                 "url": props.get("url"),
+                "country": country_from_coords(lat, lng),
             }
         )
 
