@@ -3,6 +3,9 @@ import {
   DetailCard,
   CardBanner,
   CardHeader,
+  CardSection,
+  CardGrid,
+  CardRow,
   CardCoordinates,
   CardSource,
   CardBody,
@@ -56,6 +59,14 @@ export function PortDetailCard() {
           longitude={port.longitude}
           onRecenter={recenter}
         />
+        {(port.country || port.state) && (
+          <CardSection title="Details">
+            <CardGrid>
+              {port.country && <CardRow label="Country" value={port.country} />}
+              {port.state && <CardRow label="State" value={port.state} />}
+            </CardGrid>
+          </CardSection>
+        )}
         <CardCoordinates latitude={port.latitude} longitude={port.longitude} />
         <CardSource name="World Port Index" url="https://msi.nga.mil/Publications/WPI" />
       </CardBody>

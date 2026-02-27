@@ -70,16 +70,19 @@ export function AirportDetailCard() {
         <CardHeader
           icon={PlaneTakeoff}
           accentColor={CATEGORY_COLORS["Transportation"]}
-          name={airport.name}
+          name={`[${airport.iata || airport.icao || airport.id}] ${airport.name}`}
           latitude={airport.latitude}
           longitude={airport.longitude}
           onRecenter={recenter}
         />
-        <CardSection title="Airport Details">
+        <CardSection title="Details">
           <CardGrid>
+            <CardRow label="Type" value={typeLabel(airport.type)} />
             {airport.iata && <CardRow label="IATA" value={airport.iata} />}
             {airport.icao && <CardRow label="ICAO" value={airport.icao} />}
-            <CardRow label="Type" value={typeLabel(airport.type)} />
+            {airport.municipality && <CardRow label="City" value={airport.municipality} />}
+            {airport.region && <CardRow label="Region" value={airport.region} />}
+            {airport.country && <CardRow label="Country" value={airport.country} />}
           </CardGrid>
         </CardSection>
         <CardCoordinates
