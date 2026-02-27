@@ -7,6 +7,8 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useModuleData } from "@/hooks/use-module-data";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { LaunchDetailCard } from "./launch-detail-card";
@@ -94,10 +96,19 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
 export function LaunchesLayer() {
   const launches = useLaunches();
   const { timeFilter } = useModuleFilter();
-  const filtered = useMemo(
+  const timeFiltered = useMemo(
     () => launches ? filterByTime(launches, "launches", timeFilter) : null,
     [launches, timeFilter],
   );
+
+  useModuleData("launches", timeFiltered);
+
+  const matchesFilters = useExplorerFilters("launches");
+  const filtered = useMemo(
+    () => timeFiltered ? timeFiltered.filter(matchesFilters) : null,
+    [timeFiltered, matchesFilters],
+  );
+
   useModuleCount("launches", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {

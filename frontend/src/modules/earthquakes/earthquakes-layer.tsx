@@ -7,6 +7,8 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useModuleData } from "@/hooks/use-module-data";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { EarthquakeDetailCard } from "./earthquake-detail-card";
@@ -86,10 +88,19 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
 export function EarthquakesLayer() {
   const quakes = useEarthquakes();
   const { timeFilter } = useModuleFilter();
-  const filtered = useMemo(
+  const timeFiltered = useMemo(
     () => quakes ? filterByTime(quakes, "earthquakes", timeFilter) : null,
     [quakes, timeFilter],
   );
+
+  useModuleData("earthquakes", timeFiltered);
+
+  const matchesFilters = useExplorerFilters("earthquakes");
+  const filtered = useMemo(
+    () => timeFiltered ? timeFiltered.filter(matchesFilters) : null,
+    [timeFiltered, matchesFilters],
+  );
+
   useModuleCount("earthquakes", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {

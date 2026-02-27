@@ -5,7 +5,9 @@ import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
 import type { CableData, CableFeature } from "@/types/cables";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { registerLayerClick } from "@/lib/layer-click";
 
@@ -209,12 +211,26 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
 
 export function CablesLayer() {
   const data = useCables();
-  useModuleCount("cables", data?.cables.features.length ?? null);
+  const features = useMemo(() => data?.cables.features ?? null, [data]);
+
+  useModuleData("cables", features);
+
+  const matchesFilters = useExplorerFilters("cables");
+  const filteredData = useMemo(() => {
+    if (!data) return null;
+    const filtered = data.cables.features.filter(matchesFilters);
+    return {
+      ...data,
+      cables: { ...data.cables, features: filtered },
+    } as CableData;
+  }, [data, matchesFilters]);
+
+  useModuleCount("cables", filteredData?.cables.features.length ?? null);
 
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
-    if (!data || !regionActive) return null;
-    return data.cables.features.filter((f) => {
+    if (!filteredData || !regionActive) return null;
+    return filteredData.cables.features.filter((f) => {
       const coords = (f.geometry as GeoJSON.MultiLineString).coordinates;
       const firstLine = coords[0];
       const lastLine = coords[coords.length - 1];
@@ -223,12 +239,12 @@ export function CablesLayer() {
       const last = lastLine[lastLine.length - 1];
       return isInRegion(first[0], first[1]) || isInRegion(last[0], last[1]);
     }).length;
-  }, [data, regionActive, isInRegion]);
+  }, [filteredData, regionActive, isInRegion]);
   useRegionCount("cables", regionCount);
 
   return (
     <CableSelectionProvider>
-      <CablesLayerInner data={data} />
+      <CablesLayerInner data={filteredData} />
       <CableDetailCard />
     </CableSelectionProvider>
   );

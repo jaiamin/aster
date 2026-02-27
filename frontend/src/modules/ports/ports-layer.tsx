@@ -4,7 +4,9 @@ import { Anchor } from "lucide-react";
 import { usePorts } from "./use-ports";
 import { PortSelectionProvider, usePortSelection } from "./port-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -66,16 +68,25 @@ function PortsLayerInner({ ports }: { ports: Port[] }) {
 
 export function PortsLayer() {
   const ports = usePorts();
-  useModuleCount("ports", ports?.length ?? null);
+
+  useModuleData("ports", ports);
+
+  const matchesFilters = useExplorerFilters("ports");
+  const filtered = useMemo(
+    () => ports ? ports.filter(matchesFilters) : null,
+    [ports, matchesFilters],
+  );
+
+  useModuleCount("ports", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
-    if (!ports || !regionActive) return null;
-    return ports.filter((p) => isInRegion(p.longitude, p.latitude)).length;
-  }, [ports, regionActive, isInRegion]);
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((p) => isInRegion(p.longitude, p.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
   useRegionCount("ports", regionCount);
   return (
     <PortSelectionProvider>
-      <PortsLayerInner ports={ports ?? []} />
+      <PortsLayerInner ports={filtered ?? []} />
       <PortDetailCard />
     </PortSelectionProvider>
   );

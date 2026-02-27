@@ -4,7 +4,9 @@ import { Zap } from "lucide-react";
 import { usePowerPlants } from "./use-power-plants";
 import { PowerPlantSelectionProvider, usePowerPlantSelection } from "./power-plant-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -95,16 +97,25 @@ function PowerPlantsLayerInner({ plants }: { plants: PowerPlant[] }) {
 
 export function PowerPlantsLayer() {
   const plants = usePowerPlants();
-  useModuleCount("power-plants", plants?.length ?? null);
+
+  useModuleData("power-plants", plants);
+
+  const matchesFilters = useExplorerFilters("power-plants");
+  const filtered = useMemo(
+    () => plants ? plants.filter(matchesFilters) : null,
+    [plants, matchesFilters],
+  );
+
+  useModuleCount("power-plants", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
-    if (!plants || !regionActive) return null;
-    return plants.filter((p) => isInRegion(p.longitude, p.latitude)).length;
-  }, [plants, regionActive, isInRegion]);
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((p) => isInRegion(p.longitude, p.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
   useRegionCount("power-plants", regionCount);
   return (
     <PowerPlantSelectionProvider>
-      <PowerPlantsLayerInner plants={plants ?? []} />
+      <PowerPlantsLayerInner plants={filtered ?? []} />
       <PowerPlantDetailCard />
     </PowerPlantSelectionProvider>
   );

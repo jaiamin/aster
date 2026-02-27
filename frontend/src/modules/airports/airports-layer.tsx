@@ -4,7 +4,9 @@ import { PlaneTakeoff } from "lucide-react";
 import { useAirports } from "./use-airports";
 import { AirportSelectionProvider, useAirportSelection } from "./airport-context";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
@@ -66,16 +68,25 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
 
 export function AirportsLayer() {
   const airports = useAirports();
-  useModuleCount("airports", airports?.length ?? null);
+
+  useModuleData("airports", airports);
+
+  const matchesFilters = useExplorerFilters("airports");
+  const filtered = useMemo(
+    () => airports ? airports.filter(matchesFilters) : null,
+    [airports, matchesFilters],
+  );
+
+  useModuleCount("airports", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
-    if (!airports || !regionActive) return null;
-    return airports.filter((a) => isInRegion(a.longitude, a.latitude)).length;
-  }, [airports, regionActive, isInRegion]);
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((a) => isInRegion(a.longitude, a.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
   useRegionCount("airports", regionCount);
   return (
     <AirportSelectionProvider>
-      <AirportsLayerInner airports={airports ?? []} />
+      <AirportsLayerInner airports={filtered ?? []} />
       <AirportDetailCard />
     </AirportSelectionProvider>
   );

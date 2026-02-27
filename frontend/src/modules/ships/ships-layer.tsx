@@ -4,7 +4,9 @@ import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
 import { ShipDetailCard } from "./ship-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
@@ -214,14 +216,23 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
 
 export function ShipsLayer() {
   const ships = useShips();
+
+  useModuleData("ships", ships);
+
+  const matchesFilters = useExplorerFilters("ships");
+  const filtered = useMemo(
+    () => ships ? ships.filter(matchesFilters) : null,
+    [ships, matchesFilters],
+  );
+
   const { isInRegion, regionActive } = useRegion();
-  useModuleCount("ships", ships?.length ?? null);
+  useModuleCount("ships", filtered?.length ?? null);
   const regionCount = useMemo(() => {
-    if (!ships || !regionActive) return null;
-    return ships.filter((s) => isInRegion(s.longitude, s.latitude)).length;
-  }, [ships, regionActive, isInRegion]);
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((s) => isInRegion(s.longitude, s.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
   useRegionCount("ships", regionCount);
-  const resolved = ships ?? [];
+  const resolved = filtered ?? [];
   return (
     <ShipSelectionProvider ships={resolved}>
       <ShipsLayerInner ships={resolved} />

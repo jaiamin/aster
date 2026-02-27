@@ -8,7 +8,9 @@ import { useSatellitePositions } from "./use-satellite-positions";
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
 import { SatelliteDetailCard } from "./satellite-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useSatelliteOrbit } from "./use-satellite-orbit";
 import type { SatellitePosition, GPRecord, OrbitPoint } from "@/types/satellites";
 import type { PickingInfo } from "@deck.gl/core";
@@ -175,18 +177,27 @@ function SatellitesLayerInner({
 export function SatellitesLayer() {
   const records = useSatellites();
   const positions = useSatellitePositions(records ?? []);
-  useModuleCount("satellites", records === null ? null : positions.length);
+
+  useModuleData("satellites", records === null ? null : positions);
+
+  const matchesFilters = useExplorerFilters("satellites");
+  const filtered = useMemo(
+    () => records === null ? positions : positions.filter(matchesFilters),
+    [records, positions, matchesFilters],
+  );
+
+  useModuleCount("satellites", records === null ? null : filtered.length);
 
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
     if (records === null || !regionActive) return null;
-    return positions.filter((p) => isInRegion(p.longitude, p.latitude)).length;
-  }, [records, positions, regionActive, isInRegion]);
+    return filtered.filter((p) => isInRegion(p.longitude, p.latitude)).length;
+  }, [records, filtered, regionActive, isInRegion]);
   useRegionCount("satellites", regionCount);
 
   return (
-    <SatelliteSelectionProvider positions={positions}>
-      <SatellitesLayerInner positions={positions} records={records ?? []} />
+    <SatelliteSelectionProvider positions={filtered}>
+      <SatellitesLayerInner positions={filtered} records={records ?? []} />
       <SatelliteDetailCard />
     </SatelliteSelectionProvider>
   );

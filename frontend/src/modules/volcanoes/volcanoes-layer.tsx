@@ -7,6 +7,8 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useModuleData } from "@/hooks/use-module-data";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { VolcanoDetailCard } from "./volcano-detail-card";
@@ -68,10 +70,19 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
 export function VolcanoesLayer() {
   const volcanoes = useVolcanoes();
   const { timeFilter } = useModuleFilter();
-  const filtered = useMemo(
+  const timeFiltered = useMemo(
     () => volcanoes ? filterByTime(volcanoes, "volcanoes", timeFilter) : null,
     [volcanoes, timeFilter],
   );
+
+  useModuleData("volcanoes", timeFiltered);
+
+  const matchesFilters = useExplorerFilters("volcanoes");
+  const filtered = useMemo(
+    () => timeFiltered ? timeFiltered.filter(matchesFilters) : null,
+    [timeFiltered, matchesFilters],
+  );
+
   useModuleCount("volcanoes", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {

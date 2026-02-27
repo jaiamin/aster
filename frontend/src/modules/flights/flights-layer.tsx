@@ -4,7 +4,9 @@ import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
 import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
@@ -258,14 +260,23 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
 
 export function FlightsLayer() {
   const flights = useFlights();
+
+  useModuleData("flights", flights);
+
+  const matchesFilters = useExplorerFilters("flights");
+  const filtered = useMemo(
+    () => flights ? flights.filter(matchesFilters) : null,
+    [flights, matchesFilters],
+  );
+
   const { isInRegion, regionActive } = useRegion();
-  useModuleCount("flights", flights?.length ?? null);
+  useModuleCount("flights", filtered?.length ?? null);
   const regionCount = useMemo(() => {
-    if (!flights || !regionActive) return null;
-    return flights.filter((f) => isInRegion(f.longitude, f.latitude)).length;
-  }, [flights, regionActive, isInRegion]);
+    if (!filtered || !regionActive) return null;
+    return filtered.filter((f) => isInRegion(f.longitude, f.latitude)).length;
+  }, [filtered, regionActive, isInRegion]);
   useRegionCount("flights", regionCount);
-  const resolved = flights ?? [];
+  const resolved = filtered ?? [];
   return (
     <FlightSelectionProvider flights={resolved}>
       <FlightsLayerInner flights={resolved} />

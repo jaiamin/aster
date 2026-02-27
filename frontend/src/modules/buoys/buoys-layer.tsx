@@ -7,6 +7,8 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useModuleFilter, useRegion } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useModuleData } from "@/hooks/use-module-data";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { BuoyDetailCard } from "./buoy-detail-card";
@@ -68,10 +70,19 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
 export function BuoysLayer() {
   const buoys = useBuoys();
   const { timeFilter } = useModuleFilter();
-  const filtered = useMemo(
+  const timeFiltered = useMemo(
     () => buoys ? filterByTime(buoys, "buoys", timeFilter) : null,
     [buoys, timeFilter],
   );
+
+  useModuleData("buoys", timeFiltered);
+
+  const matchesFilters = useExplorerFilters("buoys");
+  const filtered = useMemo(
+    () => timeFiltered ? timeFiltered.filter(matchesFilters) : null,
+    [timeFiltered, matchesFilters],
+  );
+
   useModuleCount("buoys", filtered?.length ?? null);
   const { isInRegion, regionActive } = useRegion();
   const regionCount = useMemo(() => {
