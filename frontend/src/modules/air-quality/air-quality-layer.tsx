@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { Wind } from "lucide-react";
 import { useAirQuality } from "./use-air-quality";
@@ -11,6 +11,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { AirQualityDetailCard } from "./air-quality-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -58,6 +59,14 @@ function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, isI
 function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirQualitySelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["air-quality"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("air-quality", selectFromExplorer);
   const { isInRegion, regionActive } = useRegion();
   const stationsRef = useRef(stations);
   stationsRef.current = stations;

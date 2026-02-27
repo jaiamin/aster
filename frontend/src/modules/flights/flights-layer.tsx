@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useFlights } from "./use-flights";
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
@@ -12,6 +12,7 @@ import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { useRegion } from "@/modules/module-context";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
 const ICON_NORMAL = "plane-icon";
@@ -105,13 +106,26 @@ function trackToGeoJSON(track: FlightTrack): GeoJSON.Feature {
 function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
-  const { selected, tracking, select, deselect } = useFlightSelection();
+  const { selected, tracking, select, deselect, pauseTracking } = useFlightSelection();
   const { isInRegion, regionActive } = useRegion();
   const flightsRef = useRef(flights);
   flightsRef.current = flights;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const trackingRef = useRef(tracking);
+  trackingRef.current = tracking;
   const flyingToRef = useRef(false);
+
+  const selectFromExplorer = useCallback((flight: Flight) => {
+    flyingToRef.current = true;
+    select(flight);
+    const map = mapRef?.getMap();
+    if (map) {
+      map.flyTo({ center: [flight.longitude, flight.latitude], zoom: FOCUS_ZOOM["flights"], duration: 1500 });
+      map.once("moveend", () => { flyingToRef.current = false; });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("flights", selectFromExplorer);
 
   // Register plane icon variants
   useEffect(() => {
@@ -183,6 +197,24 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
       map.off("mouseleave", "flights-layer", onLeave);
     };
   }, [mapRef]);
+
+  // Pause tracking on user-initiated map interaction
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const handleUserMove = () => {
+      if (flyingToRef.current || !selectedRef.current || !trackingRef.current) return;
+      pauseTracking();
+    };
+
+    map.on("dragstart", handleUserMove);
+    map.on("wheel", handleUserMove);
+    return () => {
+      map.off("dragstart", handleUserMove);
+      map.off("wheel", handleUserMove);
+    };
+  }, [mapRef, pauseTracking]);
 
   // Camera follow
   useEffect(() => {

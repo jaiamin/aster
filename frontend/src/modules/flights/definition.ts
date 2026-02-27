@@ -21,6 +21,6 @@ export const flightsModule: ModuleDefinition = {
   listColumns: [
     { key: "callsign", label: "Callsign" },
     { key: "origin_country", label: "Country" },
-    { key: "baro_altitude", label: "Alt (ft)", width: "72px" },
+    { key: "baro_altitude", label: "Alt (ft)", width: "72px", align: "right" },
   ],
 };

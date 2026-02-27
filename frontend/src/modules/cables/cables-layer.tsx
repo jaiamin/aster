@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useCables } from "./use-cables";
 import { CableSelectionProvider, useCableSelection } from "./cable-context";
@@ -10,6 +10,8 @@ import { useRegionCount } from "@/hooks/use-region-count";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { registerLayerClick } from "@/lib/layer-click";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { useModuleSelect } from "@/hooks/use-module-select";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -37,6 +39,14 @@ function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, i
 function CablesLayerInner({ data }: { data: CableData | null }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useCableSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["cables"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("cables", selectFromExplorer);
   const dataRef = useRef(data);
   dataRef.current = data;
   const selectedRef = useRef(selected);

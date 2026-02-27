@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { useShips } from "./use-ships";
 import { ShipSelectionProvider, useShipSelection } from "./ship-context";
@@ -12,6 +12,7 @@ import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { useRegion } from "@/modules/module-context";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Ship } from "@/types/ships";
 
 const ICON_NORMAL = "ship-icon";
@@ -79,13 +80,26 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null, isInRegion: (lng:
 function ShipsLayerInner({ ships }: { ships: Ship[] }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
-  const { selected, tracking, select, deselect } = useShipSelection();
+  const { selected, tracking, select, deselect, pauseTracking } = useShipSelection();
   const { isInRegion, regionActive } = useRegion();
   const shipsRef = useRef(ships);
   shipsRef.current = ships;
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const trackingRef = useRef(tracking);
+  trackingRef.current = tracking;
   const flyingToRef = useRef(false);
+
+  const selectFromExplorer = useCallback((ship: Ship) => {
+    flyingToRef.current = true;
+    select(ship);
+    const map = mapRef?.getMap();
+    if (map) {
+      map.flyTo({ center: [ship.longitude, ship.latitude], zoom: FOCUS_ZOOM["ships"], duration: 1500 });
+      map.once("moveend", () => { flyingToRef.current = false; });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("ships", selectFromExplorer);
 
   // Register ship icon variants
   useEffect(() => {
@@ -161,6 +175,24 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
       map.off("mouseleave", "ships-layer", onLeave);
     };
   }, [mapRef]);
+
+  // Pause tracking on user-initiated map interaction
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const handleUserMove = () => {
+      if (flyingToRef.current || !selectedRef.current || !trackingRef.current) return;
+      pauseTracking();
+    };
+
+    map.on("dragstart", handleUserMove);
+    map.on("wheel", handleUserMove);
+    return () => {
+      map.off("dragstart", handleUserMove);
+      map.off("wheel", handleUserMove);
+    };
+  }, [mapRef, pauseTracking]);
 
   // Camera lock — follow selected ship
   useEffect(() => {

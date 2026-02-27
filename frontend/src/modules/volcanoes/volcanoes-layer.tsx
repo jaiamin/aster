@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { Mountain } from "lucide-react";
 import { useVolcanoes } from "./use-volcanoes";
@@ -11,6 +11,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { VolcanoDetailCard } from "./volcano-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -38,6 +39,14 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, isInRegion: 
 function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useVolcanoSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["volcanoes"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("volcanoes", selectFromExplorer);
   const volcanoesRef = useRef(volcanoes);
   volcanoesRef.current = volcanoes;
 

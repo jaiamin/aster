@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, SlidersHorizontal, Search } from "lucide-react";
-import { useMap } from "@vis.gl/react-maplibre";
+import { ChevronLeft, ChevronUp, ChevronDown, X, Filter, Search, ExternalLink } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useExplorer, useExplorerFilters, type FilterValue } from "@/modules/explorer-context";
 import { useModuleToggle } from "@/modules/module-context";
@@ -19,12 +18,13 @@ export function ExplorerPanel() {
     getSearch,
     setSearch,
     moduleData,
+    selectItem,
   } = useExplorer();
 
   const { enabledModules, toggle } = useModuleToggle();
-  const { current: mapRef } = useMap();
-
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const def = useMemo(
     () => MODULE_REGISTRY.find((m) => m.id === openModuleId) ?? null,
@@ -32,6 +32,13 @@ export function ExplorerPanel() {
   );
 
   const filterPredicate = useExplorerFilters(openModuleId ?? "");
+
+  // Reset sort and selection when module changes
+  useEffect(() => {
+    setSort(null);
+    setSelectedIndex(null);
+    setFiltersOpen(false);
+  }, [openModuleId]);
 
   // Auto-enable layer when panel opens
   useEffect(() => {
@@ -69,17 +76,42 @@ export function ExplorerPanel() {
     });
   }, [rawData, filterPredicate, search, def?.nameKey]);
 
-  // Fly to item on click
+  // Sort filtered items
+  const sortedItems = useMemo(() => {
+    if (!sort) return filteredItems;
+    const { key, dir } = sort;
+    return [...filteredItems].sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === "number" && typeof bv === "number")
+        return dir === "asc" ? av - bv : bv - av;
+      const as = String(av).toLowerCase();
+      const bs = String(bv).toLowerCase();
+      return dir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
+    });
+  }, [filteredItems, sort]);
+
+  const toggleSort = useCallback((key: string) => {
+    setSort((prev) => {
+      if (prev?.key === key) {
+        if (prev.dir === "asc") return { key, dir: "desc" };
+        return null; // third click clears
+      }
+      return { key, dir: "asc" };
+    });
+    setSelectedIndex(null);
+  }, []);
+
+  // Select item — each layer's useModuleSelect handler handles flyTo + zoom
   const handleRowClick = useCallback(
-    (item: any) => {
-      const map = mapRef?.getMap();
-      if (!map || !def) return;
-      const lng = item.longitude as number;
-      const lat = item.latitude as number;
-      if (typeof lng !== "number" || typeof lat !== "number") return;
-      map.flyTo({ center: [lng, lat], zoom: def.focusZoom, duration: 1500 });
+    (item: any, index: number) => {
+      setSelectedIndex(index);
+      if (moduleId) selectItem(moduleId, item);
     },
-    [mapRef, def],
+    [moduleId, selectItem],
   );
 
   if (!openModuleId || !def) return null;
@@ -89,9 +121,9 @@ export function ExplorerPanel() {
   const filtersActive = hasActiveFilters(moduleId);
 
   return (
-    <div className="flex h-full w-80 flex-col border-r border-panel-border bg-panel animate-slide-in-left">
+    <div className="flex h-full w-[420px] flex-col border-r border-panel-border bg-panel">
       {/* Header */}
-      <div className="flex h-12 shrink-0 items-center gap-3 px-4 bg-accent">
+      <div className="flex h-12 shrink-0 items-center gap-2 px-3 bg-accent">
         <div
           className="flex shrink-0 items-center justify-center"
           style={{
@@ -103,12 +135,12 @@ export function ExplorerPanel() {
         >
           <Icon size={12} className="text-white" />
         </div>
-        <span className="text-[13px] font-medium text-white translate-y-px">
+        <span className="text-[14px] font-medium text-white translate-y-px">
           {def.name}
-          <span className="ml-1 tabular-nums text-white/60">
+          <span className="tabular-nums">
             {filteredItems.length !== rawData.length
-              ? `${filteredItems.length.toLocaleString()} / ${rawData.length.toLocaleString()}`
-              : rawData.length.toLocaleString()}
+              ? ` (${filteredItems.length.toLocaleString()} / ${rawData.length.toLocaleString()})`
+              : ` (${rawData.length.toLocaleString()})`}
           </span>
         </span>
         <button
@@ -116,19 +148,74 @@ export function ExplorerPanel() {
           aria-label="Close explorer"
           className="ml-auto flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
         >
-          <X size={14} />
+          <ChevronLeft size={14} />
         </button>
       </div>
 
+      {/* Active filter summaries */}
+      {filtersActive && (
+        <div className="shrink-0 border-b border-panel-border px-3 py-2 space-y-1.5">
+          {(def.filters ?? []).map((field) => {
+            const val = activeFilters[field.key];
+            if (!val) return null;
+            return (
+              <ActiveFilterRow
+                key={field.key}
+                field={field}
+                value={val}
+                onRemove={() => {
+                  const next = { ...activeFilters };
+                  delete next[field.key];
+                  clearFilters(moduleId);
+                  for (const [k, v] of Object.entries(next)) {
+                    setFilter(moduleId, k, v);
+                  }
+                }}
+              />
+            );
+          })}
+          <button
+            onClick={() => clearFilters(moduleId)}
+            className="flex w-full items-center justify-center gap-2 pt-2 pb-1.5 text-[12px] font-medium text-accent hover:text-accent/80 transition-colors"
+          >
+            <Filter size={13} fill="currentColor" />
+            Remove All Filters
+          </button>
+        </div>
+      )}
+
+      {/* Filter controls */}
+      {filtersOpen && def.filters && def.filters.length > 0 && (
+        <div className="shrink-0 space-y-3 border-b border-panel-border px-3 pt-2 pb-3">
+          {def.filters.map((field) => (
+            <FilterControl
+              key={field.key}
+              field={field}
+              value={activeFilters[field.key]}
+              data={rawData}
+              onChange={(val) => setFilter(moduleId, field.key, val)}
+              onClear={() => {
+                const next = { ...activeFilters };
+                delete next[field.key];
+                clearFilters(moduleId);
+                for (const [k, v] of Object.entries(next)) {
+                  setFilter(moduleId, k, v);
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Search bar + filter toggle */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-panel-border px-3 py-2">
-        <div className="flex flex-1 items-center gap-2 rounded bg-panel-hover px-2 py-1">
+      <div className="flex shrink-0 items-center gap-2 px-3 py-2">
+        <div className="flex h-7 flex-1 items-center gap-2 bg-panel-hover px-2">
           <Search size={12} className="shrink-0 text-muted" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(moduleId, e.target.value)}
-            placeholder={`Search ${def.name.toLowerCase()}...`}
+            placeholder={`Search by ${def.nameKey ?? "name"}...`}
             className="w-full bg-transparent text-[11px] text-foreground placeholder:text-muted/50 outline-none"
           />
         </div>
@@ -142,7 +229,7 @@ export function ExplorerPanel() {
                 : "text-muted hover:bg-panel-hover hover:text-foreground"
             }`}
           >
-            <SlidersHorizontal size={13} />
+            <Filter size={13} fill="currentColor" />
             {filtersActive && (
               <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent" />
             )}
@@ -150,71 +237,37 @@ export function ExplorerPanel() {
         )}
       </div>
 
-      {/* Filter controls */}
-      {filtersOpen && def.filters && def.filters.length > 0 && (
-        <div className="shrink-0 space-y-3 border-b border-panel-border px-3 py-3">
-          {def.filters.map((field) => (
-            <FilterControl
-              key={field.key}
-              field={field}
-              value={activeFilters[field.key]}
-              data={rawData}
-              onChange={(val) => setFilter(moduleId, field.key, val)}
-              onClear={() => {
-                const next = { ...activeFilters };
-                delete next[field.key];
-                // Rebuild filters without this key
-                clearFilters(moduleId);
-                for (const [k, v] of Object.entries(next)) {
-                  setFilter(moduleId, k, v);
-                }
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Active filter chips */}
-      {filtersActive && (
-        <ActiveFilterChips
-          filters={activeFilters}
-          schema={def.filters ?? []}
-          onRemove={(key) => {
-            const next = { ...activeFilters };
-            delete next[key];
-            clearFilters(moduleId);
-            for (const [k, v] of Object.entries(next)) {
-              setFilter(moduleId, k, v);
-            }
-          }}
-          onClearAll={() => clearFilters(moduleId)}
-        />
-      )}
-
       {/* Item list */}
       <div className="flex-1 min-h-0 flex flex-col">
         {def.listColumns && def.listColumns.length > 0 && (
           <div className="flex shrink-0 items-center border-b border-panel-border px-3 py-1.5">
             {def.listColumns.map((col) => (
-              <span
+              <button
                 key={col.key}
-                className="text-[10px] uppercase tracking-wider text-muted/60"
+                onClick={() => toggleSort(col.key)}
+                className={`flex items-center gap-0.5 text-[10px] uppercase tracking-wider text-muted/60 hover:text-muted transition-colors ${col.align === "right" ? "justify-end" : ""}`}
                 style={{ width: col.width ?? undefined, flex: col.width ? undefined : 1 }}
               >
                 {col.label}
-              </span>
+                {sort?.key === col.key && (
+                  sort.dir === "asc"
+                    ? <ChevronUp size={10} className="shrink-0" />
+                    : <ChevronDown size={10} className="shrink-0" />
+                )}
+              </button>
             ))}
           </div>
         )}
 
-        {filteredItems.length === 0 ? (
+        {sortedItems.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <span className="text-[11px] text-muted/60">No items match current filters</span>
           </div>
         ) : (
           <VirtualizedList
-            items={filteredItems}
+            items={sortedItems}
             columns={def.listColumns ?? []}
+            selectedIndex={selectedIndex}
             onRowClick={handleRowClick}
           />
         )}
@@ -222,22 +275,20 @@ export function ExplorerPanel() {
 
       {/* Source footer */}
       {def.source && (
-        <div className="shrink-0 border-t border-panel-border px-3 py-2">
-          <span className="text-[10px] text-muted/50">
-            Source:{" "}
-            {def.source.url ? (
-              <a
-                href={def.source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-muted/30 hover:text-muted"
-              >
-                {def.source.name}
-              </a>
-            ) : (
-              def.source.name
-            )}
-          </span>
+        <div className="shrink-0 flex items-center justify-between border-t border-muted/20 px-3 py-2">
+          <span className="text-[11px] font-medium text-muted/50">Source</span>
+          {def.source.url ? (
+            <a
+              href={def.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[11px] text-muted/50 hover:text-foreground transition-colors"
+            >
+              {def.source.name} <ExternalLink size={10} />
+            </a>
+          ) : (
+            <span className="text-[11px] text-muted/50">{def.source.name}</span>
+          )}
         </div>
       )}
     </div>
@@ -249,11 +300,13 @@ export function ExplorerPanel() {
 function VirtualizedList({
   items,
   columns,
+  selectedIndex,
   onRowClick,
 }: {
   items: any[];
-  columns: { key: string; label: string; width?: string }[];
-  onRowClick: (item: any) => void;
+  columns: { key: string; label: string; width?: string; align?: "left" | "right"; labelMap?: Record<string, string> }[];
+  selectedIndex: number | null;
+  onRowClick: (item: any, index: number) => void;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -271,11 +324,16 @@ function VirtualizedList({
       >
         {virtualizer.getVirtualItems().map((vRow) => {
           const item = items[vRow.index];
+          const isSelected = vRow.index === selectedIndex;
           return (
             <button
               key={vRow.key}
-              onClick={() => onRowClick(item)}
-              className="absolute left-0 flex w-full items-center px-3 text-[11px] text-white/70 transition-colors hover:bg-panel-hover hover:text-white"
+              onClick={() => onRowClick(item, vRow.index)}
+              className={`absolute left-0 flex w-full items-center px-3 text-[11px] transition-colors ${
+                isSelected
+                  ? "bg-accent/15 text-white"
+                  : "text-white/70 hover:bg-panel-hover hover:text-white"
+              }`}
               style={{
                 height: `${vRow.size}px`,
                 top: `${vRow.start}px`,
@@ -283,16 +341,17 @@ function VirtualizedList({
             >
               {columns.map((col) => {
                 const val = item[col.key];
-                const display =
+                const raw =
                   val === null || val === undefined
                     ? "\u2014"
                     : typeof val === "number"
                       ? val.toLocaleString(undefined, { maximumFractionDigits: 2 })
                       : String(val);
+                const display = col.labelMap?.[String(val)] ?? raw;
                 return (
                   <span
                     key={col.key}
-                    className="truncate tabular-nums"
+                    className={`truncate tabular-nums ${col.align === "right" ? "text-right" : "text-left"}`}
                     style={{
                       width: col.width ?? undefined,
                       flex: col.width ? undefined : 1,
@@ -317,7 +376,7 @@ function FilterControl({
   value,
   data,
   onChange,
-  onClear: _onClear,
+  onClear,
 }: {
   field: FilterField;
   value: FilterValue | undefined;
@@ -325,13 +384,14 @@ function FilterControl({
   onChange: (val: FilterValue) => void;
   onClear: () => void;
 }) {
+  const isActive = value !== undefined;
   switch (field.type) {
     case "range":
-      return <RangeFilter field={field} value={value} onChange={onChange} />;
+      return <RangeFilter field={field} value={value} onChange={onChange} isActive={isActive} onClear={onClear} />;
     case "enum":
-      return <EnumFilter field={field} value={value} data={data} onChange={onChange} />;
+      return <EnumFilter field={field} value={value} data={data} onChange={onChange} isActive={isActive} onClear={onClear} />;
     case "boolean":
-      return <BooleanFilter field={field} value={value} onChange={onChange} />;
+      return <BooleanFilter field={field} value={value} onChange={onChange} isActive={isActive} onClear={onClear} />;
     default:
       return null;
   }
@@ -341,57 +401,66 @@ function RangeFilter({
   field,
   value,
   onChange,
+  isActive,
+  onClear,
 }: {
   field: Extract<FilterField, { type: "range" }>;
   value: FilterValue | undefined;
   onChange: (val: FilterValue) => void;
+  isActive: boolean;
+  onClear: () => void;
 }) {
   const min = value?.type === "range" ? value.min : field.min;
   const max = value?.type === "range" ? value.max : field.max;
   const unit = field.unit ?? "";
   const step = (field.max - field.min) <= 10 ? 0.1 : 1;
+  const range = field.max - field.min;
+  const minPct = ((min - field.min) / range) * 100;
+  const maxPct = ((max - field.min) / range) * 100;
 
   return (
     <div>
-      <label className="text-[11px] text-muted">{field.label}</label>
-      <div className="mt-1 flex items-center gap-2">
-        <span className="w-10 text-right text-[10px] tabular-nums text-white/60">
-          {min}{unit}
+      <div className="flex items-baseline justify-between">
+        <label className="text-[11px] font-semibold text-white">{field.label}</label>
+        <span className="text-[10px] tabular-nums text-white/50">
+          {min}{unit} — {max}{unit}
         </span>
+      </div>
+      <div className="relative mt-2 h-4">
+        {/* Track background */}
+        <div className="absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 rounded-full bg-panel-border" />
+        {/* Active range fill */}
+        <div
+          className="absolute top-1/2 h-[3px] -translate-y-1/2 bg-accent"
+          style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }}
+        />
+        {/* Min thumb input */}
         <input
           type="range"
           min={field.min}
           max={field.max}
           step={step}
           value={min}
-          onChange={(e) =>
-            onChange({
-              type: "range",
-              min: Math.min(parseFloat(e.target.value), max),
-              max,
-            })
-          }
-          className="h-1 flex-1 cursor-pointer appearance-none rounded bg-panel-border accent-accent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent"
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onChange({ type: "range", min: Math.min(v, max), max });
+          }}
+          className="range-thumb absolute inset-0 w-full cursor-pointer appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
+          style={{ zIndex: min > field.min + range * 0.9 ? 4 : 3 }}
         />
-      </div>
-      <div className="mt-1 flex items-center gap-2">
-        <span className="w-10 text-right text-[10px] tabular-nums text-white/60">
-          {max}{unit}
-        </span>
+        {/* Max thumb input */}
         <input
           type="range"
           min={field.min}
           max={field.max}
           step={step}
           value={max}
-          onChange={(e) =>
-            onChange({
-              type: "range",
-              min,
-              max: Math.max(parseFloat(e.target.value), min),
-            })
-          }
-          className="h-1 flex-1 cursor-pointer appearance-none rounded bg-panel-border accent-accent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent"
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onChange({ type: "range", min, max: Math.max(v, min) });
+          }}
+          className="range-thumb absolute inset-0 w-full cursor-pointer appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
+          style={{ zIndex: 3 }}
         />
       </div>
     </div>
@@ -403,14 +472,19 @@ function EnumFilter({
   value,
   data,
   onChange,
+  isActive,
+  onClear,
 }: {
   field: Extract<FilterField, { type: "enum" }>;
   value: FilterValue | undefined;
   data: any[];
   onChange: (val: FilterValue) => void;
+  isActive: boolean;
+  onClear: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const selected = value?.type === "enum" ? value.selected : new Set<string>();
+  const hasSelection = selected.size > 0;
 
   // Derive options from data if not explicitly provided
   const options = useMemo(() => {
@@ -437,7 +511,7 @@ function EnumFilter({
 
   return (
     <div>
-      <label className="text-[11px] text-muted">{field.label}</label>
+      <label className="text-[11px] font-semibold text-white">{field.label}</label>
       <div className="mt-1 flex flex-wrap gap-1">
         {visible.map((opt) => (
           <button
@@ -449,7 +523,7 @@ function EnumFilter({
                 : "bg-panel-border text-white/60 hover:text-white/80"
             }`}
           >
-            {opt}
+            {field.labelMap?.[opt] ?? opt}
           </button>
         ))}
         {remaining > 0 && !expanded && (
@@ -469,90 +543,92 @@ function BooleanFilter({
   field,
   value,
   onChange,
+  isActive,
+  onClear,
 }: {
   field: Extract<FilterField, { type: "boolean" }>;
   value: FilterValue | undefined;
   onChange: (val: FilterValue) => void;
+  isActive: boolean;
+  onClear: () => void;
 }) {
   const checked = value?.type === "boolean" ? value.value : false;
 
   return (
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange({ type: "boolean", value: e.target.checked })}
-        className="h-3 w-3 rounded border-muted/40 bg-transparent accent-accent"
-      />
-      <span className="text-[11px] text-muted">{field.label}</span>
-    </label>
-  );
-}
-
-// ── Active Filter Chips ───────────────────────────────────────────────────────
-
-function ActiveFilterChips({
-  filters,
-  schema,
-  onRemove,
-  onClearAll,
-}: {
-  filters: Record<string, FilterValue>;
-  schema: FilterField[];
-  onRemove: (key: string) => void;
-  onClearAll: () => void;
-}) {
-  const fieldMap = useMemo(() => new Map(schema.map((f) => [f.key, f])), [schema]);
-
-  const chips = useMemo(() => {
-    return Object.entries(filters).map(([key, val]) => {
-      const field = fieldMap.get(key);
-      const label = field?.label ?? key;
-      let display = "";
-      switch (val.type) {
-        case "range": {
-          const unit = field?.type === "range" ? (field.unit ?? "") : "";
-          display = `${val.min}${unit}\u2013${val.max}${unit}`;
-          break;
-        }
-        case "enum":
-          display = val.selected.size <= 2
-            ? Array.from(val.selected).join(", ")
-            : `${val.selected.size} selected`;
-          break;
-        case "boolean":
-          display = val.value ? "Yes" : "No";
-          break;
-        case "text":
-          display = `"${val.value}"`;
-          break;
-      }
-      return { key, label, display };
-    });
-  }, [filters, fieldMap]);
-
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-panel-border px-3 py-2">
-      {chips.map((chip) => (
-        <button
-          key={chip.key}
-          onClick={() => onRemove(chip.key)}
-          className="flex items-center gap-1 rounded bg-accent/20 px-2 py-0.5 text-[10px] text-accent transition-colors hover:bg-accent/30"
-        >
-          {chip.label}: {chip.display}
-          <X size={10} className="shrink-0" />
-        </button>
-      ))}
-      {chips.length > 1 && (
-        <button
-          onClick={onClearAll}
-          className="px-1 text-[10px] text-muted/50 hover:text-muted"
-        >
-          Clear all
-        </button>
-      )}
+    <div className="flex items-center gap-2">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange({ type: "boolean", value: e.target.checked })}
+          className="h-3 w-3 rounded border-muted/40 bg-transparent accent-accent"
+        />
+        <span className="text-[11px] font-semibold text-white">{field.label}</span>
+      </label>
     </div>
   );
 }
+
+// ── Active Filter Summary Row ────────────────────────────────────────────────
+
+function ActiveFilterRow({
+  field,
+  value,
+  onRemove,
+}: {
+  field: FilterField;
+  value: FilterValue;
+  onRemove: () => void;
+}) {
+  let ontology = "";
+  let chips: string[] = [];
+
+  switch (value.type) {
+    case "enum": {
+      const lm = field.type === "enum" ? field.labelMap : undefined;
+      chips = Array.from(value.selected).map((v) => lm?.[v] ?? v);
+      ontology = chips.length === 1 ? "is" : "is one of";
+      break;
+    }
+    case "range": {
+      const unit = field.type === "range" ? (field.unit ?? "") : "";
+      ontology = "between";
+      chips = [`${value.min}${unit} — ${value.max}${unit}`];
+      break;
+    }
+    case "boolean": {
+      ontology = "is";
+      chips = [value.value ? "Yes" : "No"];
+      break;
+    }
+    case "text": {
+      ontology = "contains";
+      chips = [value.value];
+      break;
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span className="shrink-0 text-[11px] font-semibold text-white">{field.label}</span>
+      <span className="shrink-0 text-[11px] text-white">{ontology}</span>
+      <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+        {chips.map((chip) => (
+          <span
+            key={chip}
+            className="truncate rounded bg-accent/15 px-1.5 py-px text-[10px] text-accent"
+          >
+            {chip}
+          </span>
+        ))}
+      </div>
+      <button
+        onClick={onRemove}
+        className="ml-auto shrink-0 flex items-center justify-center h-5 w-5 text-white/60 hover:text-white transition-colors"
+      >
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+

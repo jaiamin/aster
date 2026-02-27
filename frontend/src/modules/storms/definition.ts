@@ -12,6 +12,7 @@ export const stormsModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["storms"],
   MapLayer: StormsLayer,
   source: { name: "NOAA NHC", url: "https://www.nhc.noaa.gov" },
+  nameKey: "name",
   filters: [
     { key: "category", label: "Category", type: "range", min: 0, max: 5 },
     { key: "basin", label: "Basin", type: "enum" },
@@ -19,7 +20,7 @@ export const stormsModule: ModuleDefinition = {
   ],
   listColumns: [
     { key: "name", label: "Name" },
-    { key: "category", label: "Cat", width: "40px" },
-    { key: "windSpeed", label: "Wind", width: "56px" },
+    { key: "category", label: "Cat", width: "40px", align: "right" },
+    { key: "windSpeed", label: "Wind", width: "56px", align: "right" },
   ],
 };

@@ -12,6 +12,7 @@ export const airportsModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["airports"],
   MapLayer: AirportsLayer,
   source: { name: "OurAirports", url: "https://ourairports.com" },
+  nameKey: "name",
   filters: [
     { key: "type", label: "Type", type: "enum" },
     { key: "country", label: "Country", type: "enum" },

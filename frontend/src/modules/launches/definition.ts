@@ -12,6 +12,7 @@ export const launchesModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["launches"],
   MapLayer: LaunchesLayer,
   source: { name: "Launch Library", url: "https://thespacedevs.com" },
+  nameKey: "name",
   filters: [
     { key: "status", label: "Status", type: "enum" },
     { key: "provider", label: "Provider", type: "enum" },

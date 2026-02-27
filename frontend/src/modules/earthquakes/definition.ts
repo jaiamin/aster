@@ -21,7 +21,7 @@ export const earthquakesModule: ModuleDefinition = {
   ],
   listColumns: [
     { key: "place", label: "Location" },
-    { key: "magnitude", label: "Mag", width: "48px" },
-    { key: "depth", label: "Depth", width: "64px" },
+    { key: "magnitude", label: "Mag", width: "48px", align: "right" },
+    { key: "depth", label: "Depth", width: "64px", align: "right" },
   ],
 };

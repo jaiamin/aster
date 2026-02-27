@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { Navigation } from "lucide-react";
 import { useBuoys } from "./use-buoys";
@@ -11,6 +11,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { BuoyDetailCard } from "./buoy-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -38,6 +39,14 @@ function toGeoJSON(buoys: Buoy[], selectedId: string | null, isInRegion: (lng: n
 function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useBuoySelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("buoys", selectFromExplorer);
   const buoysRef = useRef(buoys);
   buoysRef.current = buoys;
 

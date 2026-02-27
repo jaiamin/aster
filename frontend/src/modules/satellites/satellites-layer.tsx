@@ -12,6 +12,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { useSatelliteOrbit } from "./use-satellite-orbit";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import type { SatellitePosition, GPRecord, OrbitPoint } from "@/types/satellites";
 import type { PickingInfo } from "@deck.gl/core";
 
@@ -38,7 +39,22 @@ function SatellitesLayerInner({
   trackingRef.current = tracking;
   const recordsRef = useRef(records);
   recordsRef.current = records;
+
   const flyingToRef = useRef(false);
+
+  const selectFromExplorer = useCallback((item: any) => {
+    const gp = recordsRef.current.find((r) => r.NORAD_CAT_ID === item.id);
+    if (gp) {
+      flyingToRef.current = true;
+      select(item, gp);
+      const map = mapRef?.getMap();
+      if (map) {
+        map.flyTo({ center: [item.longitude, item.latitude], zoom: zoomForAltitude(item.altitude ?? 400_000), duration: 1500 });
+        map.once("moveend", () => { flyingToRef.current = false; });
+      }
+    }
+  }, [select, mapRef]);
+  useModuleSelect("satellites", selectFromExplorer);
   const { isInRegion, regionActive, regionBoundary } = useRegion();
 
   // Deselect when clicking empty map space (deck.gl onClick only fires on layer objects)

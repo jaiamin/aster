@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { CloudLightning } from "lucide-react";
 import { useStorms } from "./use-storms";
@@ -11,6 +11,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { StormDetailCard } from "./storm-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -90,6 +91,14 @@ function buildForecastTrackGeoJSON(storm: Storm): GeoJSON.FeatureCollection {
 function StormsLayerInner({ storms }: { storms: Storm[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useStormSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("storms", selectFromExplorer);
   const stormsRef = useRef(storms);
   stormsRef.current = storms;
 

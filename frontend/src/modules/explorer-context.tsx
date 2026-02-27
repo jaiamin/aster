@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { MODULE_REGISTRY } from "@/modules/registry";
 import type { FilterField } from "@/types/modules";
 
@@ -30,6 +30,9 @@ interface ExplorerContextValue {
   moduleData: Map<string, any[]>;
   registerData: (moduleId: string, data: any[]) => void;
   unregisterData: (moduleId: string) => void;
+
+  registerSelect: (moduleId: string, handler: (item: any) => void) => () => void;
+  selectItem: (moduleId: string, item: any) => void;
 }
 
 const ExplorerContext = createContext<ExplorerContextValue | null>(null);
@@ -117,6 +120,18 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Select handler registry (ref-based to avoid re-renders)
+  const selectHandlers = useRef<Map<string, (item: any) => void>>(new Map());
+
+  const registerSelect = useCallback((moduleId: string, handler: (item: any) => void) => {
+    selectHandlers.current.set(moduleId, handler);
+    return () => { selectHandlers.current.delete(moduleId); };
+  }, []);
+
+  const selectItem = useCallback((moduleId: string, item: any) => {
+    selectHandlers.current.get(moduleId)?.(item);
+  }, []);
+
   return (
     <ExplorerContext.Provider
       value={{
@@ -132,6 +147,8 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
         moduleData,
         registerData,
         unregisterData,
+        registerSelect,
+        selectItem,
       }}
     >
       {children}

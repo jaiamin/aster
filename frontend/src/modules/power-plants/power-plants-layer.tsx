@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { Zap } from "lucide-react";
 import { usePowerPlants } from "./use-power-plants";
@@ -10,6 +10,7 @@ import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { PowerPlantDetailCard } from "./power-plant-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -61,6 +62,14 @@ function toGeoJSON(plants: PowerPlant[], selectedId: string | null, isInRegion: 
 function PowerPlantsLayerInner({ plants }: { plants: PowerPlant[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePowerPlantSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["power-plants"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("power-plants", selectFromExplorer);
   const { isInRegion, regionActive } = useRegion();
   const plantsRef = useRef(plants);
   plantsRef.current = plants;

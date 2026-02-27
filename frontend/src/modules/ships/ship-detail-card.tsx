@@ -16,47 +16,7 @@ import { useMap } from "@vis.gl/react-maplibre";
 import { useShipSelection } from "./ship-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-
-const SHIP_TYPE_LABELS: Record<number, string> = {
-  20: "Wing in Ground",
-  30: "Fishing",
-  31: "Towing",
-  32: "Towing (large)",
-  33: "Dredging",
-  34: "Diving Ops",
-  35: "Military Ops",
-  36: "Sailing",
-  37: "Pleasure Craft",
-  40: "High-Speed Craft",
-  50: "Pilot Vessel",
-  51: "Search & Rescue",
-  52: "Tug",
-  53: "Port Tender",
-  54: "Anti-Pollution",
-  55: "Law Enforcement",
-  58: "Medical Transport",
-  59: "Special Craft",
-  60: "Passenger",
-  70: "Cargo",
-  80: "Tanker",
-  90: "Other",
-};
-
-const NAV_STATUS_LABELS: Record<number, string> = {
-  0: "Underway (Engine)",
-  1: "At Anchor",
-  2: "Not Under Command",
-  3: "Restricted Maneuverability",
-  4: "Constrained by Draught",
-  5: "Moored",
-  6: "Aground",
-  7: "Fishing",
-  8: "Underway (Sailing)",
-  11: "Towing (Astern)",
-  12: "Towing/Pushing",
-  14: "AIS-SART",
-  15: "Undefined",
-};
+import { SHIP_TYPE_LABELS, NAV_STATUS_LABELS } from "./ship-labels";
 
 interface PortLocation {
   name: string;

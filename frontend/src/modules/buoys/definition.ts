@@ -20,7 +20,7 @@ export const buoysModule: ModuleDefinition = {
   ],
   listColumns: [
     { key: "id", label: "Buoy ID" },
-    { key: "waveHeight", label: "Waves (m)", width: "72px" },
-    { key: "windSpeed", label: "Wind", width: "56px" },
+    { key: "waveHeight", label: "Waves (m)", width: "72px", align: "right" },
+    { key: "windSpeed", label: "Wind", width: "56px", align: "right" },
   ],
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { PlaneTakeoff } from "lucide-react";
 import { useAirports } from "./use-airports";
@@ -10,6 +10,7 @@ import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { AirportDetailCard } from "./airport-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -37,6 +38,14 @@ function toGeoJSON(airports: Airport[], selectedId: string | null, isInRegion: (
 function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirportSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("airports", selectFromExplorer);
   const { isInRegion, regionActive } = useRegion();
   const airportsRef = useRef(airports);
   airportsRef.current = airports;

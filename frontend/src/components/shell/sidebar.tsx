@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
+import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown, Eye, EyeOff, Search } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import { useExplorer } from "@/modules/explorer-context";
@@ -27,21 +27,17 @@ function ModuleRow({
 }) {
   const { icon: Icon, name, category } = def;
   const color = CATEGORY_COLORS[category] ?? "#8892b0";
+  const EyeIcon = enabled ? Eye : EyeOff;
 
   return (
     <div
       className={`flex w-full items-center text-xs transition-colors ${
-        isExploring
-          ? "bg-panel-hover text-white"
-          : "text-white/70 hover:bg-panel-hover hover:text-white"
+        isExploring ? "text-white" : "text-white/70"
       }`}
     >
-      <button
-        onClick={onExplore}
-        className="flex flex-1 items-center gap-3 px-2 py-1.5 min-w-0"
-      >
+      <div className="flex flex-1 items-center gap-3 px-2 py-1.5 min-w-0">
         <div
-          className="flex shrink-0 items-center justify-center"
+          className={`flex shrink-0 items-center justify-center transition-opacity ${enabled ? "" : "opacity-40"}`}
           style={{
             width: 22,
             height: 22,
@@ -51,7 +47,7 @@ function ModuleRow({
         >
           <Icon size={12} className="text-white" />
         </div>
-        <span className="text-[13px] truncate">
+        <span className={`text-[13px] truncate transition-opacity ${enabled ? "" : "opacity-40"}`}>
           {name}
           {count !== undefined && (
             count === null ? (
@@ -61,22 +57,34 @@ function ModuleRow({
             )
           )}
         </span>
-      </button>
-      <button
-        onClick={onToggle}
-        className="flex shrink-0 items-center gap-1.5 px-2 py-1.5"
-      >
+      </div>
+      <div className="flex shrink-0 items-center gap-1 pr-1">
         {hasActiveFilters && (
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
         )}
-        <div
-          className={`h-3 w-3 border transition-colors ${
+        <button
+          onClick={onToggle}
+          aria-label={enabled ? "Hide layer" : "Show layer"}
+          className={`flex h-6 w-6 items-center justify-center transition-colors ${
             enabled
-              ? "border-accent bg-accent"
-              : "border-muted/40 bg-transparent"
+              ? "text-white/70 hover:bg-white/10 hover:text-white"
+              : "text-muted/40 hover:bg-white/10 hover:text-white/60"
           }`}
-        />
-      </button>
+        >
+          <EyeIcon size={16} />
+        </button>
+        <button
+          onClick={onExplore}
+          aria-label="Explore layer"
+          className={`flex h-6 w-6 items-center justify-center transition-colors ${
+            isExploring
+              ? "bg-accent/20 text-accent hover:bg-accent/30"
+              : "text-muted/40 hover:bg-white/10 hover:text-white/60"
+          }`}
+        >
+          <Search size={15} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -205,6 +213,11 @@ export function Sidebar() {
     }
   }, [enabledModules, toggle, clearFilters, openModuleId, closeExplorer]);
 
+  const handleExplore = useCallback((moduleId: string) => {
+    if (openModuleId === moduleId) closeExplorer();
+    else openExplorer(moduleId);
+  }, [openModuleId, closeExplorer, openExplorer]);
+
   const toggleCategory = useCallback((category: string) => {
     setOpenCategories((prev) => {
       const next = new Set(prev);
@@ -254,7 +267,7 @@ export function Sidebar() {
       {modulesOpen && (
         <>
           <div className="h-full w-72 border-r border-panel-border bg-panel">
-            <div className="flex h-12 items-center gap-3 px-4 bg-accent">
+            <div className="flex h-12 items-center gap-2 px-4 bg-accent">
               <Layers size={16} className="text-white" />
               <span className="text-[14px] font-medium text-white translate-y-px">
                 Data Layers
@@ -290,7 +303,7 @@ export function Sidebar() {
                   open={openCategories.has(category)}
                   onToggleOpen={() => toggleCategory(category)}
                   onToggle={handleToggle}
-                  onExplore={openExplorer}
+                  onExplore={handleExplore}
                   explorerModuleId={openModuleId}
                   hasActiveFilters={hasActiveFilters}
                 />

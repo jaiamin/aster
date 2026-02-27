@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { Rocket } from "lucide-react";
 import { useLaunches } from "./use-launches";
@@ -11,6 +11,7 @@ import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { useModuleSelect } from "@/hooks/use-module-select";
 import { LaunchDetailCard } from "./launch-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
@@ -64,6 +65,14 @@ function toGeoJSON(launches: Launch[], selectedId: string | null, isInRegion: (l
 function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useLaunchSelection();
+  const selectFromExplorer = useCallback((item: any) => {
+    select(item);
+    const map = mapRef?.getMap();
+    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["launches"], duration: 1500 });
+    }
+  }, [select, mapRef]);
+  useModuleSelect("launches", selectFromExplorer);
   const launchesRef = useRef(launches);
   launchesRef.current = launches;
 

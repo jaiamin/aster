@@ -12,6 +12,7 @@ export const portsModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["ports"],
   MapLayer: PortsLayer,
   source: { name: "World Port Index", url: "https://msi.nga.mil/Publications/WPI" },
+  nameKey: "name",
   filters: [
     { key: "country", label: "Country", type: "enum" },
   ],

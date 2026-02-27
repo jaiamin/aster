@@ -600,9 +600,9 @@ export function GeoSearch() {
   return (
     <>
       {/* Search input */}
-      <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2" data-geo-search>
+      <div className="absolute left-3 top-2.25 z-20" data-geo-search>
         <div className="relative">
-          <div className="flex h-10 items-center gap-2 border border-panel-border bg-panel/95 backdrop-blur-sm px-3 shadow-lg min-w-[280px]">
+          <div className="flex h-8 items-center gap-2 border border-panel-border bg-panel/95 backdrop-blur-sm px-2.5 shadow-lg min-w-[280px]">
             <Search size={14} className="shrink-0 text-muted" />
             <input
               ref={inputRef}

@@ -2,7 +2,7 @@ import type { ComponentType, LucideIcon } from "lucide-react";
 
 export type FilterField =
   | { key: string; label: string; type: "range"; min: number; max: number; unit?: string }
-  | { key: string; label: string; type: "enum"; options?: string[] }
+  | { key: string; label: string; type: "enum"; options?: string[]; labelMap?: Record<string, string> }
   | { key: string; label: string; type: "boolean" }
   | { key: string; label: string; type: "text" };
 
@@ -10,6 +10,8 @@ export interface ListColumn {
   key: string;
   label: string;
   width?: string;
+  align?: "left" | "right";
+  labelMap?: Record<string, string>;
 }
 
 export interface ModuleDefinition {
