@@ -16,6 +16,7 @@ import { BuoyDetailCard } from "./buoy-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Buoy } from "@/types/buoys";
 
@@ -43,7 +44,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("buoys", selectFromExplorer);
@@ -66,7 +67,7 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
       const buoy = buoysRef.current.find((b) => b.id === id);
       if (buoy) {
         select(buoy);
-        map.flyTo({ center: [buoy.longitude, buoy.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500 });
+        map.flyTo({ center: [buoy.longitude, buoy.latitude], zoom: FOCUS_ZOOM["buoys"], duration: 1500, padding: DETAIL_CARD_PADDING });
       }
     });
   }, [mapRef, select]);

@@ -13,6 +13,7 @@ import { useRegionCount } from "@/hooks/use-region-count";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { useSatelliteOrbit } from "./use-satellite-orbit";
 import { useModuleSelect } from "@/hooks/use-module-select";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import type { SatellitePosition, GPRecord, OrbitPoint } from "@/types/satellites";
 import type { PickingInfo } from "@deck.gl/core";
 
@@ -49,7 +50,7 @@ function SatellitesLayerInner({
       select(item, gp);
       const map = mapRef?.getMap();
       if (map) {
-        map.flyTo({ center: [item.longitude, item.latitude], zoom: zoomForAltitude(item.altitude ?? 400_000), duration: 1500 });
+        map.flyTo({ center: [item.longitude, item.latitude], zoom: zoomForAltitude(item.altitude ?? 400_000), duration: 1500, padding: DETAIL_CARD_PADDING });
         map.once("moveend", () => { flyingToRef.current = false; });
       }
     }
@@ -102,6 +103,7 @@ function SatellitesLayerInner({
     mapRef.easeTo({
       center: [selected.position.longitude, selected.position.latitude],
       duration: 1000,
+      padding: DETAIL_CARD_PADDING,
     });
   }, [selected?.position.longitude, selected?.position.latitude, mapRef, tracking]);
 
@@ -125,6 +127,7 @@ function SatellitesLayerInner({
             center: [sat.longitude, sat.latitude],
             zoom: zoomForAltitude(sat.altitude),
             duration: 1500,
+            padding: DETAIL_CARD_PADDING,
           });
           map.once("moveend", () => {
             flyingToRef.current = false;

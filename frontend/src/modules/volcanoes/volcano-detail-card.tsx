@@ -11,6 +11,7 @@ import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-b
 import { useMap } from "@vis.gl/react-maplibre";
 import { useVolcanoSelection } from "./volcano-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const VOLCANO_COLOR = "#e85d04";
@@ -43,6 +44,7 @@ export function VolcanoDetailCard() {
       center: [volcano.longitude, volcano.latitude],
       zoom: FOCUS_ZOOM["volcanoes"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

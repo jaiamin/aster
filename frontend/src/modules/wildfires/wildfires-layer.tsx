@@ -16,6 +16,7 @@ import { WildfireDetailCard } from "./wildfire-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Wildfire } from "@/types/wildfires";
 
@@ -59,7 +60,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("wildfires", selectFromExplorer);
@@ -90,7 +91,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
       const fire = firesRef.current[idx];
       if (fire) {
         select(fire);
-        map.flyTo({ center: [fire.longitude, fire.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500 });
+        map.flyTo({ center: [fire.longitude, fire.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500, padding: DETAIL_CARD_PADDING });
       }
     });
   }, [mapRef, select]);

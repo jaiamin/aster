@@ -14,6 +14,7 @@ import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-b
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePortSelection } from "./port-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const PORT_COLOR = "#38bdf8";
@@ -33,6 +34,7 @@ export function PortDetailCard() {
       center: [port.longitude, port.latitude],
       zoom: FOCUS_ZOOM["ports"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

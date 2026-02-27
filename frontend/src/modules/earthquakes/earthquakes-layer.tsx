@@ -16,6 +16,7 @@ import { EarthquakeDetailCard } from "./earthquake-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Earthquake } from "@/types/earthquakes";
 
@@ -61,7 +62,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect(MODULE_ID, selectFromExplorer);
@@ -84,7 +85,7 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
       const quake = quakesRef.current.find((q) => q.id === id);
       if (quake) {
         select(quake);
-        map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500 });
+        map.flyTo({ center: [quake.longitude, quake.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500, padding: DETAIL_CARD_PADDING });
       }
     });
   }, [mapRef, select]);

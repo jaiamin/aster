@@ -14,6 +14,7 @@ import { useMap } from "@vis.gl/react-maplibre";
 import { useStormSelection } from "./storm-context";
 import { stormAccentColor } from "./storms-layer";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function categoryLabel(category: number, stormType: string): string {
@@ -44,6 +45,7 @@ export function StormDetailCard() {
       center: [storm.longitude, storm.latitude],
       zoom: FOCUS_ZOOM["storms"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

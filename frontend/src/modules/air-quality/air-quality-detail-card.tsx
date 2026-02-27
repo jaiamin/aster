@@ -13,6 +13,7 @@ import {
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirQualitySelection } from "./air-quality-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function aqiCategory(pm25: number): { label: string; color: string } {
@@ -69,6 +70,7 @@ export function AirQualityDetailCard() {
       center: [station.longitude, station.latitude],
       zoom: FOCUS_ZOOM["air-quality"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

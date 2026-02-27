@@ -13,6 +13,7 @@ import {
 import { useMap } from "@vis.gl/react-maplibre";
 import { useBuoySelection } from "./buoy-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const BUOY_COLOR = "#22d3ee";
@@ -56,6 +57,7 @@ export function BuoyDetailCard() {
       center: [buoy.longitude, buoy.latitude],
       zoom: FOCUS_ZOOM["buoys"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

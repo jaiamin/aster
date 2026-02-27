@@ -15,6 +15,7 @@ import { useMap } from "@vis.gl/react-maplibre";
 import { useSatelliteSelection } from "./satellite-context";
 import { zoomForAltitude } from "./satellites-layer";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 
 const ISS_NORAD_ID = 25544;
 const ISS_LIVE_URL = "https://www.youtube.com/embed/aB1yRz0HhdY?autoplay=1&mute=1&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1";
@@ -111,6 +112,7 @@ export function SatelliteDetailCard() {
       center: [position.longitude, position.latitude],
       zoom: zoomForAltitude(position.altitude),
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
     map.once("moveend", () => resumeTracking());
   };

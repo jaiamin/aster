@@ -16,6 +16,7 @@ import { useMap } from "@vis.gl/react-maplibre";
 import { useFlightSelection } from "./flight-context";
 import type { Airport, Flight, FlightTrack } from "@/types/flights";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -256,6 +257,7 @@ export function FlightDetailCard() {
       center: [flight.longitude, flight.latitude],
       zoom: 7,
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
     map.once("moveend", () => resumeTracking());
   };
@@ -451,6 +453,7 @@ function RouteRow({
       center: [airport.longitude, airport.latitude],
       zoom: 14,
       duration: 2000,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

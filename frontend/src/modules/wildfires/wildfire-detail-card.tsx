@@ -13,6 +13,7 @@ import {
 import { useMap } from "@vis.gl/react-maplibre";
 import { useWildfireSelection } from "./wildfire-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function frpColor(frp: number): string {
@@ -59,6 +60,7 @@ export function WildfireDetailCard() {
       center: [fire.longitude, fire.latitude],
       zoom: FOCUS_ZOOM["wildfires"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

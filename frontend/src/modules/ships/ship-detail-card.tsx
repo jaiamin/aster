@@ -15,6 +15,7 @@ import {
 import { useMap } from "@vis.gl/react-maplibre";
 import { useShipSelection } from "./ship-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { SHIP_TYPE_LABELS, NAV_STATUS_LABELS } from "./ship-labels";
 
@@ -108,6 +109,7 @@ export function ShipDetailCard() {
       center: [ship.longitude, ship.latitude],
       zoom: FOCUS_ZOOM["ships"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
     map.once("moveend", () => resumeTracking());
   };
@@ -119,6 +121,7 @@ export function ShipDetailCard() {
       center: [port.longitude, port.latitude],
       zoom: 14,
       duration: 2000,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

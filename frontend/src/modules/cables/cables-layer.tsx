@@ -11,6 +11,7 @@ import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegion } from "@/modules/module-context";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useModuleSelect } from "@/hooks/use-module-select";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -43,7 +44,7 @@ function CablesLayerInner({ data }: { data: CableData | null }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["cables"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["cables"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("cables", selectFromExplorer);

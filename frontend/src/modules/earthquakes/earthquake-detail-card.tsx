@@ -13,6 +13,7 @@ import {
 import { useMap } from "@vis.gl/react-maplibre";
 import { useEarthquakeSelection } from "./earthquake-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function magColor(mag: number): string {
@@ -58,6 +59,7 @@ export function EarthquakeDetailCard() {
       center: [quake.longitude, quake.latitude],
       zoom: FOCUS_ZOOM["earthquakes"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

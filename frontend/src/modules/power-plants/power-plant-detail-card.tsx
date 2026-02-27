@@ -14,6 +14,7 @@ import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-b
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePowerPlantSelection } from "./power-plant-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function fuelColor(fuel: string): string {
@@ -48,6 +49,7 @@ export function PowerPlantDetailCard() {
       center: [plant.longitude, plant.latitude],
       zoom: FOCUS_ZOOM["power-plants"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

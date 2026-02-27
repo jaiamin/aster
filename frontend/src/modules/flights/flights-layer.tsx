@@ -11,6 +11,7 @@ import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useRegion } from "@/modules/module-context";
 import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
@@ -121,7 +122,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     select(flight);
     const map = mapRef?.getMap();
     if (map) {
-      map.flyTo({ center: [flight.longitude, flight.latitude], zoom: FOCUS_ZOOM["flights"], duration: 1500 });
+      map.flyTo({ center: [flight.longitude, flight.latitude], zoom: FOCUS_ZOOM["flights"], duration: 1500, padding: DETAIL_CARD_PADDING });
       map.once("moveend", () => { flyingToRef.current = false; });
     }
   }, [select, mapRef]);
@@ -159,6 +160,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
           center: [flight.longitude, flight.latitude],
           zoom: FOCUS_ZOOM["flights"],
           duration: 1500,
+          padding: DETAIL_CARD_PADDING,
         });
         map.once("moveend", () => {
           flyingToRef.current = false;
@@ -222,6 +224,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     mapRef.easeTo({
       center: [selected.flight.longitude, selected.flight.latitude],
       duration: 1000,
+      padding: DETAIL_CARD_PADDING,
     });
   }, [selected?.flight.longitude, selected?.flight.latitude, mapRef, tracking]);
 

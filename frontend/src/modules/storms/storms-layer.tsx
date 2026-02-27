@@ -16,6 +16,7 @@ import { StormDetailCard } from "./storm-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Storm } from "@/types/storms";
 
@@ -95,7 +96,7 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("storms", selectFromExplorer);
@@ -128,7 +129,7 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
       const storm = stormsRef.current.find((s) => s.id === id);
       if (storm) {
         select(storm);
-        map.flyTo({ center: [storm.longitude, storm.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500 });
+        map.flyTo({ center: [storm.longitude, storm.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500, padding: DETAIL_CARD_PADDING });
       }
     });
   }, [mapRef, select]);

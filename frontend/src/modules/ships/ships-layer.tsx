@@ -11,6 +11,7 @@ import { useMapZoom } from "@/hooks/use-map-zoom";
 import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useRegion } from "@/modules/module-context";
 import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Ship } from "@/types/ships";
@@ -95,7 +96,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     select(ship);
     const map = mapRef?.getMap();
     if (map) {
-      map.flyTo({ center: [ship.longitude, ship.latitude], zoom: FOCUS_ZOOM["ships"], duration: 1500 });
+      map.flyTo({ center: [ship.longitude, ship.latitude], zoom: FOCUS_ZOOM["ships"], duration: 1500, padding: DETAIL_CARD_PADDING });
       map.once("moveend", () => { flyingToRef.current = false; });
     }
   }, [select, mapRef]);
@@ -133,6 +134,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
           center: [ship.longitude, ship.latitude],
           zoom: FOCUS_ZOOM["ships"],
           duration: 1500,
+          padding: DETAIL_CARD_PADDING,
         });
         map.once("moveend", () => {
           flyingToRef.current = false;
@@ -200,6 +202,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     mapRef.easeTo({
       center: [selected.ship.longitude, selected.ship.latitude],
       duration: 1000,
+      padding: DETAIL_CARD_PADDING,
     });
   }, [selected?.ship.longitude, selected?.ship.latitude, mapRef, tracking]);
 

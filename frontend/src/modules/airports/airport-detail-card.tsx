@@ -14,6 +14,7 @@ import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-b
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirportSelection } from "./airport-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function typeLabel(type: string): string {
@@ -49,6 +50,7 @@ export function AirportDetailCard() {
       center: [airport.longitude, airport.latitude],
       zoom: FOCUS_ZOOM["airports"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 

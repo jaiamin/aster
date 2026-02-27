@@ -15,6 +15,7 @@ import { AirportDetailCard } from "./airport-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
 import type { Airport } from "@/types/airports";
 
@@ -42,7 +43,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
     select(item);
     const map = mapRef?.getMap();
     if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500 });
+      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("airports", selectFromExplorer);
@@ -65,7 +66,7 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
       const airport = airportsRef.current.find((a) => a.id === id);
       if (airport) {
         select(airport);
-        map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500 });
+        map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500, padding: DETAIL_CARD_PADDING });
       }
     });
   }, [mapRef, select]);

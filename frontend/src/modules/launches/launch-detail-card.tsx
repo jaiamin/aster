@@ -15,6 +15,7 @@ import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-b
 import { useMap } from "@vis.gl/react-maplibre";
 import { useLaunchSelection } from "./launch-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function LaunchImage({ src, alt }: { src: string; alt: string }) {
@@ -87,6 +88,7 @@ export function LaunchDetailCard() {
       center: [launch.longitude, launch.latitude],
       zoom: FOCUS_ZOOM["launches"],
       duration: 1500,
+      padding: DETAIL_CARD_PADDING,
     });
   };
 
