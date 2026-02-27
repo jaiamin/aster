@@ -1,5 +1,6 @@
 import { PlaneTakeoff, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
+import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirportSelection } from "./airport-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
@@ -46,20 +47,27 @@ export function AirportDetailCard() {
       <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* Banner */}
         <div className="relative">
-          <div
-            className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-            style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-          >
-            <PlaneTakeoff size={48} strokeWidth={1.5} style={{ color }} />
-            {codes && (
-              <span className="text-2xl font-bold tracking-wider" style={{ color }}>
-                {codes}
-              </span>
-            )}
-            <span className="text-xs font-medium text-muted">
-              {typeLabel(airport.type)}
-            </span>
-          </div>
+          <SpinningAerialBanner
+            latitude={airport.latitude}
+            longitude={airport.longitude}
+            zoom={15}
+            fallback={
+              <div
+                className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
+                style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
+              >
+                <PlaneTakeoff size={48} strokeWidth={1.5} style={{ color }} />
+                {codes && (
+                  <span className="text-2xl font-bold tracking-wider" style={{ color }}>
+                    {codes}
+                  </span>
+                )}
+                <span className="text-xs font-medium text-muted">
+                  {typeLabel(airport.type)}
+                </span>
+              </div>
+            }
+          />
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}

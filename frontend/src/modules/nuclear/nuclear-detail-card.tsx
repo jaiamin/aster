@@ -1,5 +1,6 @@
 import { Radiation, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
+import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useNuclearSelection } from "./nuclear-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
@@ -49,18 +50,25 @@ export function NuclearDetailCard() {
       <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* Banner */}
         <div className="relative">
-          <div
-            className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-            style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-          >
-            <Radiation size={48} strokeWidth={1.5} style={{ color }} />
-            <span
-              className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5"
-              style={{ color, borderColor: color, border: "1px solid" }}
-            >
-              {facility.status}
-            </span>
-          </div>
+          <SpinningAerialBanner
+            latitude={facility.latitude}
+            longitude={facility.longitude}
+            zoom={15}
+            fallback={
+              <div
+                className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
+                style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
+              >
+                <Radiation size={48} strokeWidth={1.5} style={{ color }} />
+                <span
+                  className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5"
+                  style={{ color, borderColor: color, border: "1px solid" }}
+                >
+                  {facility.status}
+                </span>
+              </div>
+            }
+          />
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}

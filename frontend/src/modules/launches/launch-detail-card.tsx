@@ -1,5 +1,6 @@
 import { Rocket, LocateFixed, X, ExternalLink } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
+import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useLaunchSelection } from "./launch-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
@@ -66,12 +67,19 @@ export function LaunchDetailCard() {
               className="w-full h-[140px] object-cover"
             />
           ) : (
-            <div
-              className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-              style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-            >
-              <Rocket size={48} strokeWidth={1.5} style={{ color }} />
-            </div>
+            <SpinningAerialBanner
+              latitude={launch.latitude}
+              longitude={launch.longitude}
+              zoom={14}
+              fallback={
+                <div
+                  className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
+                  style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
+                >
+                  <Rocket size={48} strokeWidth={1.5} style={{ color }} />
+                </div>
+              }
+            />
           )}
           <div className="absolute top-2 left-2">
             <span

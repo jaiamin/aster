@@ -1,5 +1,6 @@
 import { Anchor, LocateFixed, X } from "lucide-react";
 import { LocationFooter } from "@/components/detail-card/location-footer";
+import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePortSelection } from "./port-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
@@ -28,18 +29,25 @@ export function PortDetailCard() {
       <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
         {/* Banner */}
         <div className="relative">
-          <div
-            className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-            style={{ background: `linear-gradient(135deg, ${PORT_COLOR}18, ${PORT_COLOR}08)` }}
-          >
-            <Anchor size={48} strokeWidth={1.5} style={{ color: PORT_COLOR }} />
-            <span className="text-2xl font-bold tracking-wider" style={{ color: PORT_COLOR }}>
-              {port.name}
-            </span>
-            <span className="text-xs font-medium text-muted">
-              Maritime Port
-            </span>
-          </div>
+          <SpinningAerialBanner
+            latitude={port.latitude}
+            longitude={port.longitude}
+            zoom={16}
+            fallback={
+              <div
+                className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
+                style={{ background: `linear-gradient(135deg, ${PORT_COLOR}18, ${PORT_COLOR}08)` }}
+              >
+                <Anchor size={48} strokeWidth={1.5} style={{ color: PORT_COLOR }} />
+                <span className="text-2xl font-bold tracking-wider" style={{ color: PORT_COLOR }}>
+                  {port.name}
+                </span>
+                <span className="text-xs font-medium text-muted">
+                  Maritime Port
+                </span>
+              </div>
+            }
+          />
           <div className="absolute top-2 right-2 flex gap-1">
             <button
               onClick={recenter}
