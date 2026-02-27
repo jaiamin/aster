@@ -39,12 +39,18 @@ async def _ensure_port_cache():
 
     raw: list[dict] = resp.json()
     results = []
+    seen_coords: set[tuple[float, float]] = set()
     for i, entry in enumerate(raw):
         try:
             lat = float(entry["LATITUDE"])
             lng = float(entry["LONGITUDE"])
         except (ValueError, KeyError, TypeError):
             continue
+
+        coord = (round(lat, 4), round(lng, 4))
+        if coord in seen_coords:
+            continue
+        seen_coords.add(coord)
 
         city = entry.get("CITY") or "Unknown"
         state = entry.get("STATE") or None
