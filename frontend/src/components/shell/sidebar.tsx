@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
+import { useExplorer } from "@/modules/explorer-context";
+import { ExplorerPanel } from "@/components/shell/explorer-panel";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
 import type { ModuleDefinition } from "@/types/modules";
@@ -11,49 +13,71 @@ function ModuleRow({
   enabled,
   count,
   onToggle,
+  onExplore,
+  isExploring,
+  hasActiveFilters,
 }: {
   def: ModuleDefinition;
   enabled: boolean;
   count: number | null | undefined;
   onToggle: () => void;
+  onExplore: () => void;
+  isExploring: boolean;
+  hasActiveFilters: boolean;
 }) {
   const { icon: Icon, name, category } = def;
   const color = CATEGORY_COLORS[category] ?? "#8892b0";
 
   return (
-    <button
-      onClick={onToggle}
-      className="flex w-full items-center gap-3 px-2 py-1.5 text-xs text-white/70 transition-colors hover:bg-panel-hover hover:text-white"
+    <div
+      className={`flex w-full items-center text-xs transition-colors ${
+        isExploring
+          ? "bg-panel-hover text-white"
+          : "text-white/70 hover:bg-panel-hover hover:text-white"
+      }`}
     >
-      <div
-        className="flex shrink-0 items-center justify-center"
-        style={{
-          width: 22,
-          height: 22,
-          backgroundColor: color,
-          border: "1px solid rgba(255,255,255,0.8)",
-        }}
+      <button
+        onClick={onExplore}
+        className="flex flex-1 items-center gap-3 px-2 py-1.5 min-w-0"
       >
-        <Icon size={12} className="text-white" />
-      </div>
-      <span className="text-[13px]">
-        {name}
-        {count !== undefined && (
-          count === null ? (
-            <span className="ml-1 inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
-          ) : (
-            <span className="tabular-nums"> ({count.toLocaleString()})</span>
-          )
+        <div
+          className="flex shrink-0 items-center justify-center"
+          style={{
+            width: 22,
+            height: 22,
+            backgroundColor: color,
+            border: "1px solid rgba(255,255,255,0.8)",
+          }}
+        >
+          <Icon size={12} className="text-white" />
+        </div>
+        <span className="text-[13px] truncate">
+          {name}
+          {count !== undefined && (
+            count === null ? (
+              <span className="ml-1 inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
+            ) : (
+              <span className="tabular-nums"> ({count.toLocaleString()})</span>
+            )
+          )}
+        </span>
+      </button>
+      <button
+        onClick={onToggle}
+        className="flex shrink-0 items-center gap-1.5 px-2 py-1.5"
+      >
+        {hasActiveFilters && (
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
         )}
-      </span>
-      <div
-        className={`ml-auto h-3 w-3 border transition-colors ${
-          enabled
-            ? "border-accent bg-accent"
-            : "border-muted/40 bg-transparent"
-        }`}
-      />
-    </button>
+        <div
+          className={`h-3 w-3 border transition-colors ${
+            enabled
+              ? "border-accent bg-accent"
+              : "border-muted/40 bg-transparent"
+          }`}
+        />
+      </button>
+    </div>
   );
 }
 
@@ -65,6 +89,9 @@ function CategoryGroup({
   open,
   onToggleOpen,
   onToggle,
+  onExplore,
+  explorerModuleId,
+  hasActiveFilters,
 }: {
   category: string;
   modules: ModuleDefinition[];
@@ -73,6 +100,9 @@ function CategoryGroup({
   open: boolean;
   onToggleOpen: () => void;
   onToggle: (id: string) => void;
+  onExplore: (moduleId: string) => void;
+  explorerModuleId: string | null;
+  hasActiveFilters: (moduleId: string) => boolean;
 }) {
   const activeCount = modules.filter((m) => enabledModules.has(m.id)).length;
 
@@ -105,6 +135,9 @@ function CategoryGroup({
               enabled={enabledModules.has(def.id)}
               count={moduleCounts.get(def.id)}
               onToggle={() => onToggle(def.id)}
+              onExplore={() => onExplore(def.id)}
+              isExploring={explorerModuleId === def.id}
+              hasActiveFilters={hasActiveFilters(def.id)}
             />
           ))}
         </div>
@@ -143,6 +176,7 @@ export function Sidebar() {
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
   const { timeFilter, setTimeFilter } = useModuleFilter();
+  const { openModuleId, openExplorer, hasActiveFilters } = useExplorer();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -247,10 +281,15 @@ export function Sidebar() {
                   open={openCategories.has(category)}
                   onToggleOpen={() => toggleCategory(category)}
                   onToggle={toggle}
+                  onExplore={openExplorer}
+                  explorerModuleId={openModuleId}
+                  hasActiveFilters={hasActiveFilters}
                 />
               ))}
             </div>
           </div>
+
+          {openModuleId && <ExplorerPanel />}
 
           {/* Click-away backdrop */}
           <div
@@ -259,6 +298,8 @@ export function Sidebar() {
           />
         </>
       )}
+
+      {!modulesOpen && openModuleId && <ExplorerPanel />}
     </div>
   );
 }
