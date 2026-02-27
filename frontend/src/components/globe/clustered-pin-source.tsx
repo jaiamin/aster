@@ -17,7 +17,7 @@ export function ClusteredPinSource({
   moduleId,
   geojson,
   clusterMaxZoom = 12,
-  clusterRadius = 100,
+  clusterRadius = 50,
   regionActive = false,
 }: ClusteredPinSourceProps) {
   const { current: mapRef } = useMap();
