@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from app.geo.country_lookup import country_from_coords
+from app.http_client import get_client
 
 router = APIRouter()
 
@@ -66,18 +67,18 @@ async def get_launches():
         return _cache
 
     results = []
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        for url in (UPCOMING_URL, PREVIOUS_URL):
-            try:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                raw = resp.json()
-                for launch in raw.get("results", []):
-                    parsed = _parse_launch(launch)
-                    if parsed:
-                        results.append(parsed)
-            except (httpx.HTTPStatusError, httpx.RequestError):
-                pass
+    client = get_client()
+    for url in (UPCOMING_URL, PREVIOUS_URL):
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            raw = resp.json()
+            for launch in raw.get("results", []):
+                parsed = _parse_launch(launch)
+                if parsed:
+                    results.append(parsed)
+        except (httpx.HTTPStatusError, httpx.RequestError):
+            pass
 
     if not results and _cache is not None:
         return _cache

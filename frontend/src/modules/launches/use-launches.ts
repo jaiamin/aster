@@ -1,33 +1,6 @@
-import { useEffect, useState } from "react";
+import { usePolledData } from "@/hooks/use-polled-data";
 import type { Launch } from "@/types/launches";
 
-const POLL_INTERVAL = 600_000; // 10 min
-
 export function useLaunches() {
-  const [launches, setLaunches] = useState<Launch[] | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function fetchLaunches() {
-      try {
-        const res = await fetch("/api/launches", { signal: controller.signal });
-        if (!res.ok) return;
-        const data: Launch[] = await res.json();
-        setLaunches(data);
-      } catch {
-        // aborted or network error
-      }
-    }
-
-    fetchLaunches();
-    const id = setInterval(fetchLaunches, POLL_INTERVAL);
-
-    return () => {
-      controller.abort();
-      clearInterval(id);
-    };
-  }, []);
-
-  return launches;
+  return usePolledData<Launch[]>({ endpoint: "/api/launches", interval: 600_000 });
 }

@@ -4,6 +4,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.http_client import get_client
+
 router = APIRouter()
 
 NHC_BASE = "https://mapservices.weather.noaa.gov/tropical/rest/services/tropical/NHC_tropical_weather_summary/MapServer"
@@ -18,7 +20,7 @@ CACHE_TTL = 300.0
 
 
 async def _fetch_layer(client: httpx.AsyncClient, layer: int) -> list:
-    resp = await client.get(f"{NHC_BASE}/{layer}/query", params=QUERY_PARAMS)
+    resp = await client.get(f"{NHC_BASE}/{layer}/query", params=QUERY_PARAMS, timeout=20.0)
     resp.raise_for_status()
     data = resp.json()
     return data.get("features") or []
@@ -48,21 +50,21 @@ async def get_storms():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        try:
-            forecast_pts, past_tracks, forecast_tracks = await asyncio.gather(
-                _fetch_layer(client, LAYER_FORECAST_POINTS),
-                _fetch_layer(client, LAYER_PAST_TRACK),
-                _fetch_layer(client, LAYER_FORECAST_TRACK),
-            )
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=e.response.status_code, detail="NHC API error")
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=502, detail="Failed to reach NHC API")
+    client = get_client()
+    try:
+        forecast_pts, past_tracks, forecast_tracks = await asyncio.gather(
+            _fetch_layer(client, LAYER_FORECAST_POINTS),
+            _fetch_layer(client, LAYER_PAST_TRACK),
+            _fetch_layer(client, LAYER_FORECAST_TRACK),
+        )
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=e.response.status_code, detail="NHC API error")
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=502, detail="Failed to reach NHC API")
 
     # Group forecast points by storm name
     storms_map: dict[str, dict] = {}

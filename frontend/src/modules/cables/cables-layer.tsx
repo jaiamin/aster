@@ -40,11 +40,12 @@ function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, i
 function CablesLayerInner({ data }: { data: CableData | null }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useCableSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const cable = item as CableFeature;
+    select(cable);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["cables"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof (cable as any).longitude === "number" && typeof (cable as any).latitude === "number") {
+      map.flyTo({ center: [(cable as any).longitude, (cable as any).latitude], zoom: FOCUS_ZOOM["cables"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("cables", selectFromExplorer);

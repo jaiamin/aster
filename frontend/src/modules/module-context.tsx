@@ -179,13 +179,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const toggleValue = useMemo(() => ({ enabledModules, toggle }), [enabledModules, toggle]);
+  const countsValue = useMemo(() => ({ moduleCounts, registerCount, unregisterCount }), [moduleCounts, registerCount, unregisterCount]);
+  const selectionValue = useMemo(() => ({ registerDeselect, unregisterDeselect, notifySelected, deselectAll }), [registerDeselect, unregisterDeselect, notifySelected, deselectAll]);
+  const filterValue = useMemo(() => ({ searchQuery, timeFilter, setSearchQuery, setTimeFilter }), [searchQuery, timeFilter, setSearchQuery, setTimeFilter]);
+  const regionValue = useMemo(() => ({ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }), [regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, handleSetRegionBoundary]);
+
   return (
     <ExplorerProvider>
-      <ToggleContext.Provider value={{ enabledModules, toggle }}>
-        <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
-          <SelectionContext.Provider value={{ registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
-            <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
-              <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
+      <ToggleContext.Provider value={toggleValue}>
+        <CountsContext.Provider value={countsValue}>
+          <SelectionContext.Provider value={selectionValue}>
+            <FilterContext.Provider value={filterValue}>
+              <RegionContext.Provider value={regionValue}>
                 {children}
               </RegionContext.Provider>
             </FilterContext.Provider>

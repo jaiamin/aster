@@ -43,14 +43,15 @@ function SatellitesLayerInner({
 
   const flyingToRef = useRef(false);
 
-  const selectFromExplorer = useCallback((item: any) => {
-    const gp = recordsRef.current.find((r) => r.NORAD_CAT_ID === item.id);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const sat = item as SatellitePosition;
+    const gp = recordsRef.current.find((r) => r.NORAD_CAT_ID === sat.id);
     if (gp) {
       flyingToRef.current = true;
-      select(item, gp);
+      select(sat, gp);
       const map = mapRef?.getMap();
       if (map) {
-        map.flyTo({ center: [item.longitude, item.latitude], zoom: zoomForAltitude(item.altitude ?? 400_000), duration: 1500, padding: DETAIL_CARD_PADDING });
+        map.flyTo({ center: [sat.longitude, sat.latitude], zoom: zoomForAltitude(sat.altitude ?? 400_000), duration: 1500, padding: DETAIL_CARD_PADDING });
         map.once("moveend", () => { flyingToRef.current = false; });
       }
     }

@@ -2,8 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import settings
+from app.http_client import close_client
 from app.routers import air_quality, airports, buoys, cables, earthquakes, flights, health, launches, map_config, ports, power_plants, satellites, ships, storms, volcanoes, wildfires
 
 
@@ -12,10 +14,12 @@ async def lifespan(app: FastAPI):
     ships.start_ws()
     yield
     ships.stop_ws()
+    await close_client()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

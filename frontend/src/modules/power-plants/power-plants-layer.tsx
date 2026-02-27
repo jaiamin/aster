@@ -63,11 +63,12 @@ function toGeoJSON(plants: PowerPlant[], selectedId: string | null, isInRegion: 
 function PowerPlantsLayerInner({ plants }: { plants: PowerPlant[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePowerPlantSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const plant = item as PowerPlant;
+    select(plant);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["power-plants"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof plant.longitude === "number" && typeof plant.latitude === "number") {
+      map.flyTo({ center: [plant.longitude, plant.latitude], zoom: FOCUS_ZOOM["power-plants"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("power-plants", selectFromExplorer);

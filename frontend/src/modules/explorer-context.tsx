@@ -27,12 +27,12 @@ interface ExplorerContextValue {
   getSearch: (moduleId: string) => string;
   setSearch: (moduleId: string, query: string) => void;
 
-  moduleData: Map<string, any[]>;
-  registerData: (moduleId: string, data: any[]) => void;
+  moduleData: Map<string, unknown[]>;
+  registerData: (moduleId: string, data: unknown[]) => void;
   unregisterData: (moduleId: string) => void;
 
-  registerSelect: (moduleId: string, handler: (item: any) => void) => () => void;
-  selectItem: (moduleId: string, item: any) => void;
+  registerSelect: (moduleId: string, handler: (item: unknown) => void) => () => void;
+  selectItem: (moduleId: string, item: unknown) => void;
 }
 
 const ExplorerContext = createContext<ExplorerContextValue | null>(null);
@@ -43,7 +43,7 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
   const [openModuleId, setOpenModuleId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Map<string, ActiveFilters>>(new Map());
   const [allSearch, setAllSearch] = useState<Map<string, string>>(new Map());
-  const [moduleData, setModuleData] = useState<Map<string, any[]>>(new Map());
+  const [moduleData, setModuleData] = useState<Map<string, unknown[]>>(new Map());
 
   const openExplorer = useCallback((moduleId: string) => {
     setOpenModuleId(moduleId);
@@ -102,7 +102,7 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Data registry
-  const registerData = useCallback((moduleId: string, data: any[]) => {
+  const registerData = useCallback((moduleId: string, data: unknown[]) => {
     setModuleData((prev) => {
       if (prev.get(moduleId) === data) return prev;
       const next = new Map(prev);
@@ -121,36 +121,36 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Select handler registry (ref-based to avoid re-renders)
-  const selectHandlers = useRef<Map<string, (item: any) => void>>(new Map());
+  const selectHandlers = useRef<Map<string, (item: unknown) => void>>(new Map());
 
-  const registerSelect = useCallback((moduleId: string, handler: (item: any) => void) => {
+  const registerSelect = useCallback((moduleId: string, handler: (item: unknown) => void) => {
     selectHandlers.current.set(moduleId, handler);
     return () => { selectHandlers.current.delete(moduleId); };
   }, []);
 
-  const selectItem = useCallback((moduleId: string, item: any) => {
+  const selectItem = useCallback((moduleId: string, item: unknown) => {
     selectHandlers.current.get(moduleId)?.(item);
   }, []);
 
+  const value = useMemo(() => ({
+    openModuleId,
+    openExplorer,
+    closeExplorer,
+    getFilters,
+    setFilter,
+    clearFilters,
+    hasActiveFilters,
+    getSearch,
+    setSearch,
+    moduleData,
+    registerData,
+    unregisterData,
+    registerSelect,
+    selectItem,
+  }), [openModuleId, openExplorer, closeExplorer, getFilters, setFilter, clearFilters, hasActiveFilters, getSearch, setSearch, moduleData, registerData, unregisterData, registerSelect, selectItem]);
+
   return (
-    <ExplorerContext.Provider
-      value={{
-        openModuleId,
-        openExplorer,
-        closeExplorer,
-        getFilters,
-        setFilter,
-        clearFilters,
-        hasActiveFilters,
-        getSearch,
-        setSearch,
-        moduleData,
-        registerData,
-        unregisterData,
-        registerSelect,
-        selectItem,
-      }}
-    >
+    <ExplorerContext.Provider value={value}>
       {children}
     </ExplorerContext.Provider>
   );
@@ -166,7 +166,7 @@ export function useExplorer() {
 
 // ── Filter predicate hook ────────────────────────────────────────────────────
 
-function matchesFilter(item: any, field: FilterField, value: FilterValue): boolean {
+function matchesFilter(item: Record<string, unknown>, field: FilterField, value: FilterValue): boolean {
   const raw = item[field.key];
 
   switch (value.type) {
@@ -189,7 +189,7 @@ function matchesFilter(item: any, field: FilterField, value: FilterValue): boole
   }
 }
 
-export function useExplorerFilters(moduleId: string): (item: any) => boolean {
+export function useExplorerFilters(moduleId: string): (item: unknown) => boolean {
   const { getFilters } = useExplorer();
   const active = getFilters(moduleId);
   const moduleDef = MODULE_REGISTRY.find((m) => m.id === moduleId);
@@ -201,11 +201,12 @@ export function useExplorerFilters(moduleId: string): (item: any) => boolean {
 
     const fieldMap = new Map(schema.map((f) => [f.key, f]));
 
-    return (item: any): boolean => {
+    return (item: unknown): boolean => {
+      const record = item as Record<string, unknown>;
       for (const [key, value] of entries) {
         const field = fieldMap.get(key);
         if (!field) continue;
-        if (!matchesFilter(item, field, value)) return false;
+        if (!matchesFilter(record, field, value)) return false;
       }
       return true;
     };

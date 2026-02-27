@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useExplorer } from "@/modules/explorer-context";
 
-export function useModuleData(moduleId: string, data: any[] | null) {
+export function useModuleData(moduleId: string, data: unknown[] | null) {
   const { registerData, unregisterData } = useExplorer();
 
   useEffect(() => {

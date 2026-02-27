@@ -4,6 +4,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.http_client import get_client
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ _cache_time: float = 0
 CACHE_TTL = 86400.0  # 24 hours — static dataset
 
 _lookup_cache: dict[str, dict | None] = {}
+LOOKUP_CACHE_MAX = 5000
+LOOKUP_CACHE_EVICT = 1000
 
 
 async def _ensure_port_cache():
@@ -24,18 +28,18 @@ async def _ensure_port_cache():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            resp = await client.get(DATA_URL)
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=e.response.status_code, detail="Port data source error")
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=502, detail="Failed to fetch port data")
+    client = get_client()
+    try:
+        resp = await client.get(DATA_URL)
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=e.response.status_code, detail="Port data source error")
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=502, detail="Failed to fetch port data")
 
     raw: list[dict] = resp.json()
     results = []
@@ -104,26 +108,27 @@ def _search_ports(ports: list[dict], query: str) -> dict | None:
 async def _nominatim_lookup(query: str) -> dict | None:
     """Forward geocode via Nominatim as fallback."""
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={
-                    "q": f"{query} port",
-                    "format": "json",
-                    "limit": "1",
-                    "addressdetails": "1",
-                },
-                headers={"User-Agent": "aster-app", "Accept-Language": "en"},
-            )
-            resp.raise_for_status()
-            results = resp.json()
-            if results:
-                hit = results[0]
-                return {
-                    "name": hit.get("display_name", query).split(",")[0],
-                    "latitude": float(hit["lat"]),
-                    "longitude": float(hit["lon"]),
-                }
+        client = get_client()
+        resp = await client.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={
+                "q": f"{query} port",
+                "format": "json",
+                "limit": "1",
+                "addressdetails": "1",
+            },
+            headers={"User-Agent": "aster-app", "Accept-Language": "en"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        results = resp.json()
+        if results:
+            hit = results[0]
+            return {
+                "name": hit.get("display_name", query).split(",")[0],
+                "latitude": float(hit["lat"]),
+                "longitude": float(hit["lon"]),
+            }
     except Exception:
         logger.debug("Nominatim lookup failed for %r", query)
     return None
@@ -143,6 +148,10 @@ async def lookup_port(q: str = ""):
 
     if q in _lookup_cache:
         return _lookup_cache[q]
+
+    if len(_lookup_cache) >= LOOKUP_CACHE_MAX:
+        for key in list(_lookup_cache)[:LOOKUP_CACHE_EVICT]:
+            del _lookup_cache[key]
 
     ports = await _ensure_port_cache()
 

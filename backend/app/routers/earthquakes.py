@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from app.geo.country_lookup import country_from_coords
+from app.http_client import get_client
 
 router = APIRouter()
 
@@ -22,18 +23,18 @@ async def get_earthquakes():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        try:
-            resp = await client.get(USGS_URL)
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=e.response.status_code, detail="USGS API error")
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=502, detail="Failed to reach USGS API")
+    client = get_client()
+    try:
+        resp = await client.get(USGS_URL, timeout=15.0)
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=e.response.status_code, detail="USGS API error")
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=502, detail="Failed to reach USGS API")
 
     data = resp.json()
     quakes = []

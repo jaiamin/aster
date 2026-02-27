@@ -39,11 +39,12 @@ function toGeoJSON(ports: Port[], selectedId: number | null, isInRegion: (lng: n
 function PortsLayerInner({ ports }: { ports: Port[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePortSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const port = item as Port;
+    select(port);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["ports"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof port.longitude === "number" && typeof port.latitude === "number") {
+      map.flyTo({ center: [port.longitude, port.latitude], zoom: FOCUS_ZOOM["ports"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("ports", selectFromExplorer);

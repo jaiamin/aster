@@ -16,6 +16,7 @@ _ws_task: asyncio.Task | None = None
 
 PRUNE_INTERVAL = 50  # prune every N messages
 STALE_SECONDS = 600  # 10 minutes
+MAX_SHIPS = 50_000
 
 
 async def _connect_aisstream():
@@ -133,6 +134,11 @@ async def _connect_aisstream():
                         ]
                         for k in stale:
                             del _ships[k]
+
+                        if len(_ships) > MAX_SHIPS:
+                            by_age = sorted(_ships, key=lambda k: _ships[k]["timestamp"])
+                            for k in by_age[: len(_ships) - MAX_SHIPS]:
+                                del _ships[k]
 
         except asyncio.CancelledError:
             return

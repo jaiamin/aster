@@ -66,11 +66,12 @@ function toGeoJSON(launches: Launch[], selectedId: string | null, isInRegion: (l
 function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useLaunchSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const launch = item as Launch;
+    select(launch);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["launches"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof launch.longitude === "number" && typeof launch.latitude === "number") {
+      map.flyTo({ center: [launch.longitude, launch.latitude], zoom: FOCUS_ZOOM["launches"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("launches", selectFromExplorer);

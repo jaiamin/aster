@@ -67,9 +67,10 @@ export function ExplorerPanel() {
     const nameKey = def?.nameKey;
     const q = search.toLowerCase();
     return rawData.filter((item) => {
-      if (!filterPredicate(item)) return false;
+      const rec = item as Record<string, unknown>;
+      if (!filterPredicate(rec)) return false;
       if (q && nameKey) {
-        const name = String(item[nameKey] ?? "").toLowerCase();
+        const name = String(rec[nameKey] ?? "").toLowerCase();
         if (!name.includes(q)) return false;
       }
       return true;
@@ -81,8 +82,8 @@ export function ExplorerPanel() {
     if (!sort) return filteredItems;
     const { key, dir } = sort;
     return [...filteredItems].sort((a, b) => {
-      const av = a[key];
-      const bv = b[key];
+      const av = (a as Record<string, unknown>)[key];
+      const bv = (b as Record<string, unknown>)[key];
       if (av == null && bv == null) return 0;
       if (av == null) return 1;
       if (bv == null) return -1;
@@ -107,7 +108,7 @@ export function ExplorerPanel() {
 
   // Select item — each layer's useModuleSelect handler handles flyTo + zoom
   const handleRowClick = useCallback(
-    (item: any, index: number) => {
+    (item: unknown, index: number) => {
       setSelectedIndex(index);
       if (moduleId) selectItem(moduleId, item);
     },
@@ -303,10 +304,10 @@ function VirtualizedList({
   selectedIndex,
   onRowClick,
 }: {
-  items: any[];
+  items: unknown[];
   columns: { key: string; label: string; width?: string; align?: "left" | "right"; labelMap?: Record<string, string> }[];
   selectedIndex: number | null;
-  onRowClick: (item: any, index: number) => void;
+  onRowClick: (item: unknown, index: number) => void;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -323,7 +324,7 @@ function VirtualizedList({
         style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}
       >
         {virtualizer.getVirtualItems().map((vRow) => {
-          const item = items[vRow.index];
+          const item = items[vRow.index] as Record<string, unknown>;
           const isSelected = vRow.index === selectedIndex;
           return (
             <button
@@ -380,7 +381,7 @@ function FilterControl({
 }: {
   field: FilterField;
   value: FilterValue | undefined;
-  data: any[];
+  data: unknown[];
   onChange: (val: FilterValue) => void;
   onClear: () => void;
 }) {
@@ -477,7 +478,7 @@ function EnumFilter({
 }: {
   field: Extract<FilterField, { type: "enum" }>;
   value: FilterValue | undefined;
-  data: any[];
+  data: unknown[];
   onChange: (val: FilterValue) => void;
   isActive: boolean;
   onClear: () => void;
@@ -491,7 +492,7 @@ function EnumFilter({
     if (field.options && field.options.length > 0) return field.options;
     const unique = new Set<string>();
     for (const item of data) {
-      const val = item[field.key];
+      const val = (item as Record<string, unknown>)[field.key];
       if (val !== null && val !== undefined && val !== "") {
         unique.add(String(val));
       }

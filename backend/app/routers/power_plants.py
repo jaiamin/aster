@@ -5,6 +5,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.http_client import get_client
+
 router = APIRouter()
 
 DATA_URL = "https://raw.githubusercontent.com/wri/global-power-plant-database/master/output_database/global_power_plant_database.csv"
@@ -32,18 +34,18 @@ async def get_power_plants():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        try:
-            resp = await client.get(DATA_URL)
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=e.response.status_code, detail="WRI data error")
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=502, detail="Failed to fetch power plant data")
+    client = get_client()
+    try:
+        resp = await client.get(DATA_URL, timeout=60.0)
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=e.response.status_code, detail="WRI data error")
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=502, detail="Failed to fetch power plant data")
 
     reader = csv.DictReader(io.StringIO(resp.text))
     results = []

@@ -3,6 +3,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.http_client import get_client
+
 router = APIRouter()
 
 _cache: list | None = None
@@ -20,22 +22,22 @@ async def get_satellites():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            resp = await client.get(CELESTRAK_URL)
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(
-                status_code=e.response.status_code, detail="CelesTrak API error"
-            )
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(
-                status_code=502, detail="Failed to reach CelesTrak API"
-            )
+    client = get_client()
+    try:
+        resp = await client.get(CELESTRAK_URL)
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(
+            status_code=e.response.status_code, detail="CelesTrak API error"
+        )
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(
+            status_code=502, detail="Failed to reach CelesTrak API"
+        )
 
     result = resp.json()
     _cache = result
@@ -60,28 +62,28 @@ async def get_satellite_detail(norad_id: int):
 
     satcat = None
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.get(
-                SATCAT_URL, params={"CATNR": norad_id, "FORMAT": "json"}
-            )
-            if resp.status_code == 200:
-                records = resp.json()
-                if isinstance(records, list) and len(records) > 0:
-                    r = records[0]
-                    satcat = {
-                        "objectType": r.get("OBJECT_TYPE"),
-                        "owner": r.get("OWNER"),
-                        "launchDate": r.get("LAUNCH_DATE"),
-                        "launchSite": r.get("LAUNCH_SITE"),
-                        "decayDate": r.get("DECAY_DATE") or None,
-                        "period": r.get("PERIOD"),
-                        "apogee": r.get("APOGEE"),
-                        "perigee": r.get("PERIGEE"),
-                        "rcs": r.get("RCS"),
-                    }
-        except (httpx.RequestError, ValueError):
-            pass
+    client = get_client()
+    try:
+        resp = await client.get(
+            SATCAT_URL, params={"CATNR": norad_id, "FORMAT": "json"}, timeout=10.0
+        )
+        if resp.status_code == 200:
+            records = resp.json()
+            if isinstance(records, list) and len(records) > 0:
+                r = records[0]
+                satcat = {
+                    "objectType": r.get("OBJECT_TYPE"),
+                    "owner": r.get("OWNER"),
+                    "launchDate": r.get("LAUNCH_DATE"),
+                    "launchSite": r.get("LAUNCH_SITE"),
+                    "decayDate": r.get("DECAY_DATE") or None,
+                    "period": r.get("PERIOD"),
+                    "apogee": r.get("APOGEE"),
+                    "perigee": r.get("PERIGEE"),
+                    "rcs": r.get("RCS"),
+                }
+    except (httpx.RequestError, ValueError):
+        pass
 
     result = {"satcat": satcat}
     _detail_cache[norad_id] = (now, result)

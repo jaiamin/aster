@@ -39,11 +39,12 @@ function toGeoJSON(airports: Airport[], selectedId: string | null, isInRegion: (
 function AirportsLayerInner({ airports }: { airports: Airport[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirportSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const airport = item as Airport;
+    select(airport);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof airport.longitude === "number" && typeof airport.latitude === "number") {
+      map.flyTo({ center: [airport.longitude, airport.latitude], zoom: FOCUS_ZOOM["airports"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("airports", selectFromExplorer);

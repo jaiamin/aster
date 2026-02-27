@@ -60,11 +60,12 @@ function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, isI
 function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirQualitySelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const station = item as AirQualityStation;
+    select(station);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["air-quality"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof station.longitude === "number" && typeof station.latitude === "number") {
+      map.flyTo({ center: [station.longitude, station.latitude], zoom: FOCUS_ZOOM["air-quality"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("air-quality", selectFromExplorer);

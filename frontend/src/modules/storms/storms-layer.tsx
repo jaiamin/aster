@@ -92,11 +92,12 @@ function buildForecastTrackGeoJSON(storm: Storm): GeoJSON.FeatureCollection {
 function StormsLayerInner({ storms }: { storms: Storm[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useStormSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const st = item as Storm;
+    select(st);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof st.longitude === "number" && typeof st.latitude === "number") {
+      map.flyTo({ center: [st.longitude, st.latitude], zoom: FOCUS_ZOOM["storms"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("storms", selectFromExplorer);

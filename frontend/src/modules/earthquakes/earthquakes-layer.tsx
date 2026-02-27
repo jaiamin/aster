@@ -58,11 +58,12 @@ function toGeoJSON(quakes: Earthquake[], selectedId: string | null, isInRegion: 
 function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useEarthquakeSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const eq = item as Earthquake;
+    select(eq);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof eq.longitude === "number" && typeof eq.latitude === "number") {
+      map.flyTo({ center: [eq.longitude, eq.latitude], zoom: FOCUS_ZOOM["earthquakes"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect(MODULE_ID, selectFromExplorer);

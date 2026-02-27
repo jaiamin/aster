@@ -40,11 +40,12 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, isInRegion: 
 function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useVolcanoSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const vol = item as Volcano;
+    select(vol);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["volcanoes"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof vol.longitude === "number" && typeof vol.latitude === "number") {
+      map.flyTo({ center: [vol.longitude, vol.latitude], zoom: FOCUS_ZOOM["volcanoes"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("volcanoes", selectFromExplorer);

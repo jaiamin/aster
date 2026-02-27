@@ -11,6 +11,17 @@ export default defineConfig({
     },
     dedupe: ["react", "react-dom"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-maplibre": ["maplibre-gl", "@vis.gl/react-maplibre"],
+          "vendor-deckgl": ["@deck.gl/core", "@deck.gl/layers", "@deck.gl/mapbox"],
+          "vendor-satellite": ["satellite.js"],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       "/api": {

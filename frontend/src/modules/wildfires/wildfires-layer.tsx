@@ -56,11 +56,12 @@ function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, isInRegion: (l
 function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useWildfireSelection();
-  const selectFromExplorer = useCallback((item: any) => {
-    select(item);
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const wf = item as Wildfire;
+    select(wf);
     const map = mapRef?.getMap();
-    if (map && typeof item.longitude === "number" && typeof item.latitude === "number") {
-      map.flyTo({ center: [item.longitude, item.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500, padding: DETAIL_CARD_PADDING });
+    if (map && typeof wf.longitude === "number" && typeof wf.latitude === "number") {
+      map.flyTo({ center: [wf.longitude, wf.latitude], zoom: FOCUS_ZOOM["wildfires"], duration: 1500, padding: DETAIL_CARD_PADDING });
     }
   }, [select, mapRef]);
   useModuleSelect("wildfires", selectFromExplorer);

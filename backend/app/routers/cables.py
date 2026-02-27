@@ -3,6 +3,8 @@ import time as _time
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.http_client import get_client
+
 router = APIRouter()
 
 CABLES_URL = "https://www.submarinecablemap.com/api/v3/cable/cable-geo.json"
@@ -21,17 +23,17 @@ async def get_cables():
     if _cache is not None and (now - _cache_time) < CACHE_TTL:
         return _cache
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            cables_resp, points_resp = await _fetch_both(client)
-        except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=e.response.status_code, detail="Cable data error")
-        except httpx.RequestError:
-            if _cache is not None:
-                return _cache
-            raise HTTPException(status_code=502, detail="Failed to fetch cable data")
+    client = get_client()
+    try:
+        cables_resp, points_resp = await _fetch_both(client)
+    except httpx.HTTPStatusError as e:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=e.response.status_code, detail="Cable data error")
+    except httpx.RequestError:
+        if _cache is not None:
+            return _cache
+        raise HTTPException(status_code=502, detail="Failed to fetch cable data")
 
     cables_geo = cables_resp.json()
     points_geo = points_resp.json()
