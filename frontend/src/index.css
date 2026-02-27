@@ -45,6 +45,15 @@ body {
   animation: slide-in-right 0.3s ease-out;
 }
 
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.2s ease-out;
+}
+
 @keyframes plane-drift {
   0%, 100% { transform: translateX(-3px) translateY(1px); }
   50% { transform: translateX(3px) translateY(-1px); }

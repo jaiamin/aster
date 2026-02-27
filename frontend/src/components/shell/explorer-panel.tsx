@@ -89,7 +89,7 @@ export function ExplorerPanel() {
   const filtersActive = hasActiveFilters(moduleId);
 
   return (
-    <div className="flex h-full w-80 flex-col border-r border-panel-border bg-panel">
+    <div className="flex h-full w-80 flex-col border-r border-panel-border bg-panel animate-slide-in-left">
       {/* Header */}
       <div className="flex h-12 shrink-0 items-center gap-3 px-4 bg-accent">
         <div

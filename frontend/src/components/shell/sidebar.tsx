@@ -176,7 +176,7 @@ export function Sidebar() {
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
   const { timeFilter, setTimeFilter } = useModuleFilter();
-  const { openModuleId, openExplorer, hasActiveFilters } = useExplorer();
+  const { openModuleId, openExplorer, closeExplorer, clearFilters, hasActiveFilters } = useExplorer();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -195,6 +195,15 @@ export function Sidebar() {
   const toggleAll = useCallback(() => {
     setOpenCategories(allExpanded ? new Set() : new Set(grouped.map((g) => g.category)));
   }, [allExpanded, grouped]);
+
+  const handleToggle = useCallback((id: string) => {
+    const willDisable = enabledModules.has(id);
+    toggle(id);
+    if (willDisable) {
+      clearFilters(id);
+      if (openModuleId === id) closeExplorer();
+    }
+  }, [enabledModules, toggle, clearFilters, openModuleId, closeExplorer]);
 
   const toggleCategory = useCallback((category: string) => {
     setOpenCategories((prev) => {
@@ -280,7 +289,7 @@ export function Sidebar() {
                   moduleCounts={moduleCounts}
                   open={openCategories.has(category)}
                   onToggleOpen={() => toggleCategory(category)}
-                  onToggle={toggle}
+                  onToggle={handleToggle}
                   onExplore={openExplorer}
                   explorerModuleId={openModuleId}
                   hasActiveFilters={hasActiveFilters}
