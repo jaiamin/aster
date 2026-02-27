@@ -11,4 +11,5 @@ export const buoysModule: ModuleDefinition = {
   icon: Navigation,
   focusZoom: FOCUS_ZOOM["buoys"],
   MapLayer: BuoysLayer,
+  source: { name: "NOAA NDBC", url: "https://www.ndbc.noaa.gov" },
 };

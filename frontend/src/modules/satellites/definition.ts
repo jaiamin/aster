@@ -11,4 +11,5 @@ export const satellitesModule: ModuleDefinition = {
   icon: Satellite,
   focusZoom: FOCUS_ZOOM["satellites"],
   MapLayer: SatellitesLayer,
+  source: { name: "CelesTrak", url: "https://celestrak.org" },
 };

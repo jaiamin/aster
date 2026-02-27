@@ -16,6 +16,8 @@ FIELD_BARO_ALTITUDE = 7
 FIELD_ON_GROUND = 8
 FIELD_VELOCITY = 9
 FIELD_TRUE_TRACK = 10
+FIELD_VERTICAL_RATE = 11
+FIELD_SQUAWK = 14
 
 _cache: dict | None = None
 _cache_time: float = 0
@@ -70,6 +72,8 @@ def _parse_states(data: dict) -> dict:
                 "baro_altitude": s[FIELD_BARO_ALTITUDE],
                 "velocity": s[FIELD_VELOCITY],
                 "true_track": s[FIELD_TRUE_TRACK],
+                "vertical_rate": s[FIELD_VERTICAL_RATE],
+                "squawk": s[FIELD_SQUAWK],
             }
         )
     return {"time": data.get("time"), "flights": flights}
@@ -180,11 +184,18 @@ async def get_flight_detail(icao24: str, callsign: str = ""):
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         aircraft_resp = await client.get(f"{HEXDB_BASE}/aircraft/{icao24}")
+        photo_resp = await client.get(
+            f"https://hexdb.io/hex-image-thumb?hex={icao24}"
+        )
         route_resp = (
             await client.get(f"{HEXDB_BASE}/route/icao/{callsign}")
             if callsign
             else None
         )
+
+    photo_url = None
+    if photo_resp.status_code == 200 and photo_resp.text.startswith("http"):
+        photo_url = photo_resp.text.strip()
 
     aircraft = None
     if aircraft_resp.status_code == 200:
@@ -223,6 +234,6 @@ async def get_flight_detail(icao24: str, callsign: str = ""):
             "destination": airports.get("destination"),
         }
 
-    result = {"aircraft": aircraft, "route": route}
+    result = {"aircraft": aircraft, "route": route, "photoUrl": photo_url}
     _detail_cache[cache_key] = (now, result)
     return result

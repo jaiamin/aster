@@ -11,4 +11,5 @@ export const launchesModule: ModuleDefinition = {
   icon: Rocket,
   focusZoom: FOCUS_ZOOM["launches"],
   MapLayer: LaunchesLayer,
+  source: { name: "Launch Library", url: "https://thespacedevs.com" },
 };

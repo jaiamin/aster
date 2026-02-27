@@ -1,4 +1,11 @@
-import { MapPin, LocateFixed, X } from "lucide-react";
+import { MapPin } from "lucide-react";
+import {
+  DetailCard,
+  CardBanner,
+  CardSection,
+  CardBody,
+  ScrollText,
+} from "@/components/detail-card/detail-card";
 import { MODULE_REGISTRY } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useRegion } from "@/modules/module-context";
 
@@ -15,7 +22,6 @@ export function RegionDetailCard({ name, onRecenter, onClose }: RegionDetailCard
 
   const color = "#3d7ab5";
 
-  // Only show modules that are enabled and have a region count
   const rows = MODULE_REGISTRY.filter((m) => enabledModules.has(m.id)).map((m) => {
     const total = moduleCounts.get(m.id);
     const region = regionCounts.get(m.id);
@@ -23,77 +29,56 @@ export function RegionDetailCard({ name, onRecenter, onClose }: RegionDetailCard
   });
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Banner */}
-        <div className="relative">
-          <div
-            className="w-full h-[100px] flex flex-col items-center justify-center gap-1"
-            style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-          >
-            <MapPin size={28} style={{ color }} />
-            <span className="text-sm font-medium text-muted">
-              Region
-            </span>
-          </div>
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={onRecenter}
-              className="p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
-              onMouseEnter={(e) => (e.currentTarget.style.color = color)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-              title="Recenter"
-            >
-              <LocateFixed size={16} />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
+    <DetailCard onClose={onClose}>
+      <CardBanner onClose={onClose} onRecenter={onRecenter} accentColor={color}>
+        <div className="flex items-center justify-center h-full bg-surface">
+          <MapPin size={48} strokeWidth={1.5} className="text-white" />
         </div>
-
-        <div className="p-4 space-y-4">
-          {/* Region name */}
+      </CardBanner>
+      <CardBody>
+        <div className="flex items-center gap-2">
+          <div
+            className="shrink-0 flex items-center justify-center"
+            style={{
+              width: 24,
+              height: 24,
+              backgroundColor: color,
+              border: "1px solid rgba(255,255,255,0.8)",
+            }}
+          >
+            <MapPin size={13} className="text-white" />
+          </div>
           <button
             onClick={onRecenter}
-            className="text-lg font-semibold transition-colors"
-            style={{ color }}
+            className="min-w-0 flex-1 transition-colors hover:text-white/80"
           >
-            {name}
+            <ScrollText text={name} className="text-sm font-semibold text-white" />
           </button>
-
-          {/* Data layer counts */}
-          {rows.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-[10px] uppercase tracking-widest text-muted/60">
-                Data in Region
-              </div>
-              <div className="space-y-0.5">
-                {rows.map(({ def, total, region }) => {
-                  const Icon = def.icon;
-                  return (
-                    <div key={def.id} className="flex items-center gap-2 text-sm">
-                      <Icon size={13} className="shrink-0 text-muted/60" />
-                      <span className="text-muted">{def.name}</span>
-                      <span className="ml-auto font-mono text-foreground tabular-nums">
-                        {region != null ? region.toLocaleString() : "—"}
-                      </span>
-                      {total != null && region != null && (
-                        <span className="text-[10px] text-muted/40 tabular-nums">
-                          / {total.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    </div>
+        {rows.length > 0 && (
+          <CardSection title="Data in Region">
+            <div className="space-y-0.5">
+              {rows.map(({ def, total, region }) => {
+                const Icon = def.icon;
+                return (
+                  <div key={def.id} className="flex items-center gap-2 text-xs">
+                    <Icon size={13} className="shrink-0 text-muted/60" />
+                    <span className="text-muted">{def.name}</span>
+                    <span className="ml-auto font-mono text-foreground tabular-nums">
+                      {region != null ? region.toLocaleString() : "—"}
+                    </span>
+                    {total != null && region != null && (
+                      <span className="text-[10px] text-muted/40 tabular-nums">
+                        / {total.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardSection>
+        )}
+      </CardBody>
+    </DetailCard>
   );
 }

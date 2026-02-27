@@ -32,16 +32,19 @@ export function SatelliteSelectionProvider({
 
   const select = useCallback((position: SatellitePosition, gpRecord: GPRecord) => {
     notifySelected("satellites");
-    setSelectedId(position.id);
+    setSelectedId((prev) => {
+      if (prev !== position.id) {
+        setDetail(null);
+      }
+      return position.id;
+    });
     setGp(gpRecord);
-    setDetail(null);
     setTracking(true);
   }, [notifySelected]);
 
   const deselect = useCallback(() => {
     setSelectedId(null);
     setGp(null);
-    setDetail(null);
     setTracking(true);
   }, []);
 

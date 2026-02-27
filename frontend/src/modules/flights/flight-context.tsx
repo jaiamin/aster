@@ -33,13 +33,12 @@ export function FlightSelectionProvider({
     ? flights.find((f) => f.icao24 === selectedIcao) ?? null
     : null;
 
-  // Update fetchedAt whenever the selected flight's position changes from a poll
+  // Update fetchedAt whenever the selected flight's position changes from a poll.
+  // prevPos is intentionally NOT cleared on deselect so re-selecting the same
+  // flight won't reset the timer if the position hasn't changed.
   const prevPos = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
-    if (!currentFlight) {
-      prevPos.current = null;
-      return;
-    }
+    if (!currentFlight) return;
     const pos = { lat: currentFlight.latitude, lng: currentFlight.longitude };
     if (
       !prevPos.current ||
@@ -53,10 +52,14 @@ export function FlightSelectionProvider({
 
   const select = useCallback((flight: Flight) => {
     notifySelected("flights");
-    setSelectedIcao(flight.icao24);
-    setTrack(null);
-    setDetail(null);
-    setFetchedAt(Date.now());
+    setSelectedIcao((prev) => {
+      if (prev !== flight.icao24) {
+        setTrack(null);
+        setDetail(null);
+        prevPos.current = null;
+      }
+      return flight.icao24;
+    });
     setTracking(true);
   }, [notifySelected]);
 
@@ -64,7 +67,6 @@ export function FlightSelectionProvider({
     setSelectedIcao(null);
     setTrack(null);
     setDetail(null);
-    setFetchedAt(null);
     setTracking(true);
   }, []);
 

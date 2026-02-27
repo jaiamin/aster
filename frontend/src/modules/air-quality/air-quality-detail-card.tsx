@@ -1,8 +1,19 @@
-import { Wind, LocateFixed, X } from "lucide-react";
-import { LocationFooter } from "@/components/detail-card/location-footer";
+import { Wind } from "lucide-react";
+import {
+  DetailCard,
+  CardBanner,
+  CardHeader,
+  CardSection,
+  CardGrid,
+  CardRow,
+  CardCoordinates,
+  CardSource,
+  CardBody,
+} from "@/components/detail-card/detail-card";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useAirQualitySelection } from "./air-quality-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function aqiCategory(pm25: number): { label: string; color: string } {
   if (pm25 <= 12) return { label: "Good", color: "#00e400" };
@@ -62,87 +73,40 @@ export function AirQualityDetailCard() {
   };
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* AQI banner */}
-        <div className="relative">
-          <div
-            className="w-full h-[140px] flex flex-col items-center justify-center gap-1"
-            style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-          >
-            <span className="text-5xl font-bold" style={{ color }}>
-              {aqi}
-            </span>
-            <span className="text-sm font-medium text-muted">
-              AQI — {label}
-            </span>
-          </div>
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={recenter}
-              className="p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
-              onMouseEnter={(e) => (e.currentTarget.style.color = color)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-              title="Recenter"
-            >
-              <LocateFixed size={16} />
-            </button>
-            <button
-              onClick={deselect}
-              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
+    <DetailCard onClose={deselect}>
+      <CardBanner onClose={deselect} onRecenter={recenter} accentColor={color}>
+        <div
+          className="flex flex-col items-center justify-center h-full gap-1"
+          style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
+        >
+          <span className="text-5xl font-bold" style={{ color }}>
+            {aqi}
+          </span>
+          <span className="text-sm font-medium text-muted">
+            AQI — {label}
+          </span>
         </div>
-
-        <div className="p-4 space-y-4">
-          {/* Station name */}
-          <div>
-            <button
-              onClick={recenter}
-              className="text-lg font-semibold transition-colors"
-              style={{ color }}
-            >
-              {station.name}
-            </button>
-            <p className="text-xs text-muted mt-0.5">
-              {[station.city, station.country].filter(Boolean).join(", ") || "Unknown location"}
-              {station.lastUpdated && ` · ${timeAgo(station.lastUpdated)}`}
-            </p>
-          </div>
-
-          {/* Measurement data */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Air Quality Data
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="PM2.5" value={`${station.pm25} ${station.unit}`} />
-              <Row label="AQI" value={`${aqi}`} />
-              <Row label="Category" value={label} />
-            </div>
-          </div>
-
-          <LocationFooter latitude={station.latitude} longitude={station.longitude} />
-
-          {/* Source */}
-          <div className="flex items-center justify-between pt-1 border-t border-panel-border">
-            <span className="text-[11px] text-muted/50">
-              OpenAQ
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
-      <span className="font-mono text-foreground">{value}</span>
-    </div>
+      </CardBanner>
+      <CardBody>
+        <CardHeader
+          icon={Wind}
+          accentColor={CATEGORY_COLORS["Environment"]}
+          name={station.name}
+          latitude={station.latitude}
+          longitude={station.longitude}
+          detail={station.lastUpdated ? timeAgo(station.lastUpdated) : undefined}
+          onRecenter={recenter}
+        />
+        <CardSection title="Air Quality Data">
+          <CardGrid>
+            <CardRow label="PM2.5" value={`${station.pm25} ${station.unit}`} />
+            <CardRow label="AQI" value={`${aqi}`} />
+            <CardRow label="Category" value={label} />
+          </CardGrid>
+        </CardSection>
+        <CardCoordinates latitude={station.latitude} longitude={station.longitude} />
+        <CardSource name="OpenAQ" url="https://openaq.org" />
+      </CardBody>
+    </DetailCard>
   );
 }

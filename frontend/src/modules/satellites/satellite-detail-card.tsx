@@ -1,14 +1,24 @@
 import { useState } from "react";
-import { Satellite, LocateFixed, X, Video } from "lucide-react";
-import { LocationFooter } from "@/components/detail-card/location-footer";
+import { Satellite, Video } from "lucide-react";
+import {
+  DetailCard,
+  CardBanner,
+  CardHeader,
+  CardSection,
+  CardGrid,
+  CardRow,
+  CardCoordinates,
+  CardSource,
+  CardBody,
+} from "@/components/detail-card/detail-card";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useSatelliteSelection } from "./satellite-context";
 import { zoomForAltitude } from "./satellites-layer";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const ISS_NORAD_ID = 25544;
 const ISS_LIVE_URL = "https://www.youtube.com/embed/aB1yRz0HhdY?autoplay=1&mute=1";
 
-// CelesTrak owner code → ISO 3166-1 alpha-2 (lowercase) for flag CDN
 const OWNER_TO_ISO: Record<string, string> = {
   US: "us", CIS: "ru", PRC: "cn", JPN: "jp", IND: "in", FR: "fr",
   UK: "gb", GER: "de", IT: "it", CA: "ca", SKOR: "kr", IL: "il",
@@ -45,6 +55,28 @@ function flagUrl(owner: string): string | null {
   return `https://flagcdn.com/w640/${iso}.png`;
 }
 
+function SatelliteFlagBanner({ flag, onError }: { flag: string; onError: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative w-full h-[140px] bg-surface">
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-surface" />}
+      <img
+        src={flag}
+        alt=""
+        className="w-full h-full object-cover transition-opacity duration-500"
+        style={{ opacity: loaded ? 1 : 0 }}
+        onLoad={() => setLoaded(true)}
+        onError={onError}
+      />
+      {loaded && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
+      )}
+    </div>
+  );
+}
+
+const SAT_COLOR = "#ef4444";
+
 export function SatelliteDetailCard() {
   const { selected, tracking, deselect, resumeTracking } = useSatelliteSelection();
   const { current: mapRef } = useMap();
@@ -78,125 +110,76 @@ export function SatelliteDetailCard() {
   const showFlag = flag && !imgError;
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Flag or placeholder */}
-        <div className="relative">
-          {showFlag ? (
-            <img
-              src={flag!}
-              alt=""
-              className="w-full h-[140px] object-cover bg-surface"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="w-full h-[140px] bg-surface flex items-center justify-center">
-              <Satellite size={64} strokeWidth={1} className="text-[#ef4444]/20 rotate-12" />
-            </div>
-          )}
-          {/* Dark overlay so buttons remain visible on light flags */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={recenter}
-              className="p-1 bg-black/50 text-white/80 hover:text-[#ef4444] hover:bg-black/70 transition-colors"
-              title="Recenter on satellite"
-            >
-              <LocateFixed size={16} />
-            </button>
-            <button
-              onClick={deselect}
-              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
+    <DetailCard onClose={deselect}>
+      <CardBanner onClose={deselect} onRecenter={recenter} accentColor={SAT_COLOR}>
+        {showFlag ? (
+          <SatelliteFlagBanner flag={flag!} onError={() => setImgError(true)} />
+        ) : (
+          <div className="w-full h-[140px] bg-surface flex items-center justify-center">
+            <Satellite size={48} strokeWidth={1.5} className="text-white" />
           </div>
-        </div>
+        )}
+      </CardBanner>
+      <CardBody>
+        <CardHeader
+          icon={Satellite}
+          accentColor={CATEGORY_COLORS["Space"]}
+          name={gp.OBJECT_NAME}
+          latitude={position.latitude}
+          longitude={position.longitude}
+          detail={satcat?.owner ? (OWNER_NAMES[satcat.owner] ?? satcat.owner) : undefined}
+          onRecenter={recenter}
+          tracking={tracking}
+        />
+        <CardSection title="Orbital Data">
+          <CardGrid>
+            <CardRow label="Altitude" value={`${altitudeKm.toFixed(1)} km`} />
+            <CardRow label="Speed" value={`${speedKmS.toFixed(2)} km/s`} />
+            <CardRow label="Inclination" value={`${gp.INCLINATION.toFixed(2)}°`} />
+            <CardRow label="Period" value={`${periodMinutes.toFixed(1)} min`} />
+            <CardRow label="Eccentricity" value={gp.ECCENTRICITY.toFixed(6)} />
+            {satcat?.rcs != null && (
+              <CardRow label="RCS" value={`${satcat.rcs.toFixed(1)} m²`} />
+            )}
+          </CardGrid>
+        </CardSection>
+        <CardSection title="Metadata">
+          <CardGrid>
+            <CardRow label="NORAD ID" value={`${gp.NORAD_CAT_ID}`} />
+            <CardRow label="Intl Designator" value={gp.OBJECT_ID} />
+            <CardRow label="Epoch Age" value={`${epochAge}d ago`} />
+            {satcat?.objectType && (
+              <CardRow label="Type" value={TYPE_LABELS[satcat.objectType] ?? satcat.objectType} />
+            )}
+            {satcat?.launchDate && (
+              <CardRow label="Launch Date" value={satcat.launchDate} />
+            )}
+            {satcat?.launchSite && (
+              <CardRow label="Launch Site" value={satcat.launchSite} />
+            )}
+          </CardGrid>
+        </CardSection>
+        <CardCoordinates
+          latitude={position.latitude}
+          longitude={position.longitude}
+          altitude={Math.round(altitudeKm)}
+          altitudeLabel="Altitude"
+          altitudeUnit="km"
+        />
+        {isISS && (
+          <button
+            onClick={() => setShowLiveFeed((v) => !v)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20"
+          >
+            <Video size={14} />
+            {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}
+          </button>
+        )}
+        <CardSource name="CelesTrak" url="https://celestrak.org" />
+      </CardBody>
 
-        <div className="p-4 space-y-4">
-          {/* Header */}
-          <div>
-            <div className="flex items-baseline justify-between gap-2">
-              <button
-                onClick={recenter}
-                className={`text-lg font-semibold transition-colors ${
-                  tracking ? "text-[#ef4444]" : "text-[#ef4444]/60 hover:text-[#ef4444]"
-                }`}
-              >
-                {gp.OBJECT_NAME}
-              </button>
-              {satcat?.owner && (
-                <span className="text-xs text-muted">
-                  {OWNER_NAMES[satcat.owner] ?? satcat.owner}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted mt-0.5">
-              NORAD {gp.NORAD_CAT_ID}
-              {satcat?.objectType && (
-                <span> &middot; {TYPE_LABELS[satcat.objectType] ?? satcat.objectType}</span>
-              )}
-            </p>
-          </div>
-
-          {/* Orbital Data */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Orbital Data
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Altitude" value={`${altitudeKm.toFixed(1)} km`} />
-              <Row label="Speed" value={`${speedKmS.toFixed(2)} km/s`} />
-              <Row label="Inclination" value={`${gp.INCLINATION.toFixed(2)}°`} />
-              <Row label="Period" value={`${periodMinutes.toFixed(1)} min`} />
-              <Row label="Eccentricity" value={gp.ECCENTRICITY.toFixed(6)} />
-              {satcat?.rcs != null && (
-                <Row label="RCS" value={`${satcat.rcs.toFixed(1)} m²`} />
-              )}
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Metadata
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Intl Designator" value={gp.OBJECT_ID} />
-              <Row label="Epoch Age" value={`${epochAge}d ago`} />
-              {satcat?.launchDate && (
-                <Row label="Launch Date" value={satcat.launchDate} />
-              )}
-              {satcat?.launchSite && (
-                <Row label="Launch Site" value={satcat.launchSite} />
-              )}
-            </div>
-          </div>
-
-          <LocationFooter
-            latitude={position.latitude}
-            longitude={position.longitude}
-            altitude={Math.round(altitudeKm)}
-            altitudeLabel="Altitude"
-            altitudeUnit="km"
-          />
-
-          {/* ISS Live Feed toggle */}
-          {isISS && (
-            <button
-              onClick={() => setShowLiveFeed((v) => !v)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20"
-            >
-              <Video size={14} />
-              {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Live feed card */}
       {isISS && showLiveFeed && (
-        <div className="mt-2 border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden animate-slide-in-right">
+        <div className="mt-2 border border-panel-border bg-panel shadow-2xl overflow-hidden animate-slide-in-right">
           <div className="p-3 space-y-2">
             <div className="text-[10px] uppercase tracking-widest text-muted/60">
               ISS Live — Earth View
@@ -212,15 +195,6 @@ export function SatelliteDetailCard() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
-      <span className="font-mono text-foreground">{value}</span>
-    </div>
+    </DetailCard>
   );
 }

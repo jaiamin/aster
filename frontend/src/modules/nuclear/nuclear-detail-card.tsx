@@ -1,9 +1,20 @@
-import { Radiation, LocateFixed, X } from "lucide-react";
-import { LocationFooter } from "@/components/detail-card/location-footer";
+import { Radiation } from "lucide-react";
+import {
+  DetailCard,
+  CardBanner,
+  CardHeader,
+  CardSection,
+  CardGrid,
+  CardRow,
+  CardCoordinates,
+  CardSource,
+  CardBody,
+} from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { useNuclearSelection } from "./nuclear-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 function statusColor(status: string): string {
   switch (status) {
@@ -46,114 +57,53 @@ export function NuclearDetailCard() {
   };
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Banner */}
-        <div className="relative">
-          <SpinningAerialBanner
-            latitude={facility.latitude}
-            longitude={facility.longitude}
-            zoom={15}
-            fallback={
-              <div
-                className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-                style={{ background: `linear-gradient(135deg, ${color}18, ${color}08)` }}
-              >
-                <Radiation size={48} strokeWidth={1.5} style={{ color }} />
-                <span
-                  className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5"
-                  style={{ color, borderColor: color, border: "1px solid" }}
-                >
-                  {facility.status}
-                </span>
-              </div>
-            }
-          />
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={recenter}
-              className="p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
-              onMouseEnter={(e) => (e.currentTarget.style.color = color)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-              title="Recenter"
-            >
-              <LocateFixed size={16} />
-            </button>
-            <button
-              onClick={deselect}
-              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 space-y-4">
-          {/* Name */}
-          <div>
-            <button
-              onClick={recenter}
-              className="text-lg font-semibold transition-colors"
-              style={{ color }}
-            >
-              {facility.name}
-            </button>
-            <p className="text-xs text-muted mt-0.5">
-              {facility.country ?? "Unknown location"}
-            </p>
-          </div>
-
-          {/* Reactor data */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Reactor Details
+    <DetailCard onClose={deselect}>
+      <CardBanner onClose={deselect} onRecenter={recenter} accentColor={color}>
+        <SpinningAerialBanner
+          latitude={facility.latitude}
+          longitude={facility.longitude}
+          zoom={15}
+          fallback={
+            <div className="w-full h-[140px] flex items-center justify-center bg-surface">
+              <Radiation size={48} strokeWidth={1.5} className="text-white" />
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              {facility.reactorType && (
-                <Row label="Type" value={facility.reactorType} />
-              )}
-              {facility.reactorModel && (
-                <Row label="Model" value={facility.reactorModel} />
-              )}
-              {facility.capacity != null && (
-                <Row label="Capacity" value={`${facility.capacity} MW`} />
-              )}
-              <Row label="Status" value={facility.status} />
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              Timeline
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-              <Row label="Operational" value={formatDate(facility.operationalFrom)} />
-              {facility.operationalTo && (
-                <Row label="Shutdown" value={formatDate(facility.operationalTo)} />
-              )}
-            </div>
-          </div>
-
-          <LocationFooter latitude={facility.latitude} longitude={facility.longitude} />
-
-          {/* Source */}
-          <div className="flex items-center justify-between pt-1 border-t border-panel-border">
-            <span className="text-[11px] text-muted/50">
-              {facility.source ?? "IAEA/WNA"}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
-      <span className="font-mono text-foreground">{value}</span>
-    </div>
+          }
+        />
+      </CardBanner>
+      <CardBody>
+        <CardHeader
+          icon={Radiation}
+          accentColor={CATEGORY_COLORS["Infrastructure"]}
+          name={facility.name}
+          latitude={facility.latitude}
+          longitude={facility.longitude}
+          onRecenter={recenter}
+        />
+        <CardSection title="Reactor Details">
+          <CardGrid>
+            {facility.reactorType && (
+              <CardRow label="Type" value={facility.reactorType} />
+            )}
+            {facility.reactorModel && (
+              <CardRow label="Model" value={facility.reactorModel} />
+            )}
+            {facility.capacity != null && (
+              <CardRow label="Capacity" value={`${facility.capacity} MW`} />
+            )}
+            <CardRow label="Status" value={facility.status} />
+          </CardGrid>
+        </CardSection>
+        <CardSection title="Timeline">
+          <CardGrid>
+            <CardRow label="Operational" value={formatDate(facility.operationalFrom)} />
+            {facility.operationalTo && (
+              <CardRow label="Shutdown" value={formatDate(facility.operationalTo)} />
+            )}
+          </CardGrid>
+        </CardSection>
+        <CardCoordinates latitude={facility.latitude} longitude={facility.longitude} />
+        <CardSource name="IAEA PRIS" url="https://pris.iaea.org" />
+      </CardBody>
+    </DetailCard>
   );
 }

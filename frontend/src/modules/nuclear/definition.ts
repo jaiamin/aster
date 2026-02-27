@@ -11,4 +11,5 @@ export const nuclearModule: ModuleDefinition = {
   icon: Radiation,
   focusZoom: FOCUS_ZOOM["nuclear"],
   MapLayer: NuclearLayer,
+  source: { name: "IAEA PRIS", url: "https://pris.iaea.org" },
 };

@@ -11,4 +11,5 @@ export const portsModule: ModuleDefinition = {
   icon: Anchor,
   focusZoom: FOCUS_ZOOM["ports"],
   MapLayer: PortsLayer,
+  source: { name: "World Port Index", url: "https://msi.nga.mil/Publications/WPI" },
 };

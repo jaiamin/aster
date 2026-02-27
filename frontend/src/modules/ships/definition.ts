@@ -11,4 +11,5 @@ export const shipsModule: ModuleDefinition = {
   icon: Ship,
   focusZoom: FOCUS_ZOOM["ships"],
   MapLayer: ShipsLayer,
+  source: { name: "AIS Vessel Data", url: "https://www.marinetraffic.com" },
 };

@@ -23,7 +23,7 @@ export function SpinningAerialBanner({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const animatingRef = useRef(true);
   const rotatingRef = useRef(false);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<"loading" | "loaded" | "failed">("loading");
 
   useEffect(() => {
     const container = containerRef.current;
@@ -72,9 +72,15 @@ export function SpinningAerialBanner({
 
     map.once("idle", () => {
       if (!animatingRef.current) return;
-      setLoaded(true);
+      setStatus("loaded");
       startRotation();
     });
+
+    // If tiles fail to load, show fallback after timeout
+    const timeout = setTimeout(() => {
+      if (!animatingRef.current) return;
+      setStatus((s) => (s === "loading" ? "failed" : s));
+    }, 5000);
 
     map.on("moveend", () => {
       rotatingRef.current = false;
@@ -84,6 +90,7 @@ export function SpinningAerialBanner({
     return () => {
       animatingRef.current = false;
       rotatingRef.current = false;
+      clearTimeout(timeout);
       map.remove();
       mapRef.current = null;
     };
@@ -91,17 +98,22 @@ export function SpinningAerialBanner({
 
   return (
     <div className="relative overflow-hidden w-full h-[140px]">
-      {/* Fallback always in DOM to guarantee parent has layout height */}
+      {/* Loading shimmer — visible only while loading */}
+      <div
+        className="absolute inset-0 bg-surface animate-pulse transition-opacity duration-500"
+        style={{ opacity: status === "loading" ? 1 : 0 }}
+      />
+      {/* Fallback — shown only if map fails to load */}
       <div
         className="absolute inset-0 transition-opacity duration-700"
-        style={{ opacity: loaded ? 0 : 1 }}
+        style={{ opacity: status === "failed" ? 1 : 0 }}
       >
         {fallback}
       </div>
-      {/* Map container with explicit dimensions so MapLibre reads non-zero size */}
+      {/* Map container */}
       <div
         ref={containerRef}
-        style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0, opacity: loaded ? 1 : 0, transition: "opacity 700ms" }}
+        style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0, opacity: status === "loaded" ? 1 : 0, transition: "opacity 700ms" }}
       />
     </div>
   );

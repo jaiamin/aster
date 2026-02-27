@@ -11,4 +11,5 @@ export const earthquakesModule: ModuleDefinition = {
   icon: Activity,
   focusZoom: FOCUS_ZOOM["earthquakes"],
   MapLayer: EarthquakesLayer,
+  source: { name: "USGS", url: "https://earthquake.usgs.gov" },
 };

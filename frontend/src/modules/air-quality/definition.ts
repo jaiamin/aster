@@ -11,4 +11,5 @@ export const airQualityModule: ModuleDefinition = {
   icon: Wind,
   focusZoom: FOCUS_ZOOM["air-quality"],
   MapLayer: AirQualityLayer,
+  source: { name: "OpenAQ", url: "https://openaq.org" },
 };

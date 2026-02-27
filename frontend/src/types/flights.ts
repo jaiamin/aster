@@ -7,6 +7,8 @@ export interface Flight {
   baro_altitude: number | null;
   velocity: number | null;
   true_track: number | null;
+  vertical_rate: number | null;
+  squawk: string | null;
 }
 
 export interface FlightsResponse {
@@ -50,6 +52,7 @@ export interface FlightDetail {
     origin: Airport | null;
     destination: Airport | null;
   } | null;
+  photoUrl: string | null;
 }
 
 export interface SelectedFlight {

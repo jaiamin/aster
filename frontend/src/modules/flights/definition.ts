@@ -11,4 +11,5 @@ export const flightsModule: ModuleDefinition = {
   icon: Plane,
   focusZoom: FOCUS_ZOOM["flights"],
   MapLayer: FlightsLayer,
+  source: { name: "OpenSky Network", url: "https://opensky-network.org" },
 };

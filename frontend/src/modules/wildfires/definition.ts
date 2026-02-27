@@ -11,4 +11,5 @@ export const wildfiresModule: ModuleDefinition = {
   icon: Flame,
   focusZoom: FOCUS_ZOOM["wildfires"],
   MapLayer: WildfiresLayer,
+  source: { name: "NASA FIRMS", url: "https://firms.modaps.eosdis.nasa.gov" },
 };

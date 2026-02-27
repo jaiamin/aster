@@ -11,4 +11,5 @@ export const airportsModule: ModuleDefinition = {
   icon: PlaneTakeoff,
   focusZoom: FOCUS_ZOOM["airports"],
   MapLayer: AirportsLayer,
+  source: { name: "OurAirports", url: "https://ourairports.com" },
 };

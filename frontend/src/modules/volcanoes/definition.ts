@@ -11,4 +11,5 @@ export const volcanoesModule: ModuleDefinition = {
   icon: Mountain,
   focusZoom: FOCUS_ZOOM["volcanoes"],
   MapLayer: VolcanoesLayer,
+  source: { name: "NASA EONET", url: "https://eonet.gsfc.nasa.gov" },
 };

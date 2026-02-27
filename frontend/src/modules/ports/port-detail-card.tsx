@@ -1,9 +1,18 @@
-import { Anchor, LocateFixed, X } from "lucide-react";
-import { LocationFooter } from "@/components/detail-card/location-footer";
+import { Anchor } from "lucide-react";
+import {
+  DetailCard,
+  CardBanner,
+  CardHeader,
+  CardCoordinates,
+  CardSource,
+  CardBody,
+} from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
 import { useMap } from "@vis.gl/react-maplibre";
 import { usePortSelection } from "./port-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
+
 const PORT_COLOR = "#38bdf8";
 
 export function PortDetailCard() {
@@ -25,82 +34,31 @@ export function PortDetailCard() {
   };
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-[340px] animate-slide-in-right">
-      <div className="border border-panel-border bg-panel/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-        {/* Banner */}
-        <div className="relative">
-          <SpinningAerialBanner
-            latitude={port.latitude}
-            longitude={port.longitude}
-            zoom={16}
-            fallback={
-              <div
-                className="w-full h-[140px] flex flex-col items-center justify-center gap-2"
-                style={{ background: `linear-gradient(135deg, ${PORT_COLOR}18, ${PORT_COLOR}08)` }}
-              >
-                <Anchor size={48} strokeWidth={1.5} style={{ color: PORT_COLOR }} />
-                <span className="text-2xl font-bold tracking-wider" style={{ color: PORT_COLOR }}>
-                  {port.name}
-                </span>
-                <span className="text-xs font-medium text-muted">
-                  Maritime Port
-                </span>
-              </div>
-            }
-          />
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={recenter}
-              className="p-1 bg-black/50 text-white/80 hover:bg-black/70 transition-colors"
-              onMouseEnter={(e) => (e.currentTarget.style.color = PORT_COLOR)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-              title="Recenter"
-            >
-              <LocateFixed size={16} />
-            </button>
-            <button
-              onClick={deselect}
-              className="p-1 bg-black/50 text-white/80 hover:text-white hover:bg-black/70 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 space-y-4">
-          {/* Location */}
-          <div>
-            <button
-              onClick={recenter}
-              className="text-lg font-semibold transition-colors"
-              style={{ color: PORT_COLOR }}
-            >
-              {port.name}
-            </button>
-            <p className="text-xs text-muted mt-0.5">
-              {[port.state, port.country].filter(Boolean).join(", ")}
-            </p>
-          </div>
-
-          <LocationFooter latitude={port.latitude} longitude={port.longitude} />
-
-          {/* Source */}
-          <div className="flex items-center justify-between pt-1 border-t border-panel-border">
-            <span className="text-[11px] text-muted/50">
-              World Port Index
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
-      <span className="font-mono text-foreground">{value}</span>
-    </div>
+    <DetailCard onClose={deselect}>
+      <CardBanner onClose={deselect} onRecenter={recenter} accentColor={PORT_COLOR}>
+        <SpinningAerialBanner
+          latitude={port.latitude}
+          longitude={port.longitude}
+          zoom={16}
+          fallback={
+            <div className="w-full h-[140px] flex items-center justify-center bg-surface">
+              <Anchor size={48} strokeWidth={1.5} className="text-white" />
+            </div>
+          }
+        />
+      </CardBanner>
+      <CardBody>
+        <CardHeader
+          icon={Anchor}
+          accentColor={CATEGORY_COLORS["Transportation"]}
+          name={port.name}
+          latitude={port.latitude}
+          longitude={port.longitude}
+          onRecenter={recenter}
+        />
+        <CardCoordinates latitude={port.latitude} longitude={port.longitude} />
+        <CardSource name="World Port Index" url="https://msi.nga.mil/Publications/WPI" />
+      </CardBody>
+    </DetailCard>
   );
 }

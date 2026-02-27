@@ -100,23 +100,6 @@ function trackToGeoJSON(track: FlightTrack): GeoJSON.Feature {
   };
 }
 
-function airportsToGeoJSON(selected: SelectedFlight): GeoJSON.FeatureCollection {
-  const features: GeoJSON.Feature[] = [];
-  const route = selected.detail?.route;
-  if (!route) return { type: "FeatureCollection", features };
-
-  for (const ap of [route.origin, route.destination]) {
-    if (ap?.latitude != null && ap?.longitude != null) {
-      features.push({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [ap.longitude, ap.latitude] },
-        properties: { icao: ap.icao, name: ap.name },
-      });
-    }
-  }
-  return { type: "FeatureCollection", features };
-}
-
 function FlightsLayerInner({ flights }: { flights: Flight[] }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
@@ -227,10 +210,6 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],
   );
-  const airportGeoJSON = useMemo(
-    () => (selected ? airportsToGeoJSON(selected) : null),
-    [selected?.detail?.route],
-  );
 
   return (
     <>
@@ -249,37 +228,6 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
         </Source>
       )}
 
-      {airportGeoJSON && airportGeoJSON.features.length > 0 && (
-        <Source id="flight-airports" type="geojson" data={airportGeoJSON}>
-          <Layer
-            id="flight-airports-circle"
-            type="circle"
-            beforeId="flights-layer"
-            paint={{
-              "circle-radius": 5,
-              "circle-color": "#3d7ab5",
-              "circle-stroke-color": "#ffffff",
-              "circle-stroke-width": 1.5,
-            }}
-          />
-          <Layer
-            id="flight-airports-label"
-            type="symbol"
-            beforeId="flights-layer"
-            layout={{
-              "text-field": ["get", "icao"],
-              "text-size": 11,
-              "text-offset": [0, 1.5],
-              "text-anchor": "top",
-            }}
-            paint={{
-              "text-color": "#e2e8f0",
-              "text-halo-color": "#0f1520",
-              "text-halo-width": 1,
-            }}
-          />
-        </Source>
-      )}
 
       <Source id="flights-source" type="geojson" data={geojson}>
         <Layer

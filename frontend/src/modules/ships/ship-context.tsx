@@ -30,13 +30,12 @@ export function ShipSelectionProvider({
     ? ships.find((s) => s.mmsi === selectedMmsi) ?? null
     : null;
 
-  // Update fetchedAt whenever the selected ship's position changes from a poll
+  // Update fetchedAt whenever the selected ship's position changes from a poll.
+  // prevPos is intentionally NOT cleared on deselect so re-selecting the same
+  // ship won't reset the timer if the position hasn't changed.
   const prevPos = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
-    if (!currentShip) {
-      prevPos.current = null;
-      return;
-    }
+    if (!currentShip) return;
     const pos = { lat: currentShip.latitude, lng: currentShip.longitude };
     if (
       !prevPos.current ||
@@ -50,14 +49,17 @@ export function ShipSelectionProvider({
 
   const select = useCallback((ship: Ship) => {
     notifySelected("ships");
-    setSelectedMmsi(ship.mmsi);
-    setFetchedAt(Date.now());
+    setSelectedMmsi((prev) => {
+      if (prev !== ship.mmsi) {
+        prevPos.current = null;
+      }
+      return ship.mmsi;
+    });
     setTracking(true);
   }, [notifySelected]);
 
   const deselect = useCallback(() => {
     setSelectedMmsi(null);
-    setFetchedAt(null);
     setTracking(true);
   }, []);
 

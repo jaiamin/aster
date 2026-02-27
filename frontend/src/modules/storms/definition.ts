@@ -11,4 +11,5 @@ export const stormsModule: ModuleDefinition = {
   icon: CloudLightning,
   focusZoom: FOCUS_ZOOM["storms"],
   MapLayer: StormsLayer,
+  source: { name: "NOAA NHC", url: "https://www.nhc.noaa.gov" },
 };

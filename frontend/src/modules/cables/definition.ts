@@ -11,4 +11,5 @@ export const cablesModule: ModuleDefinition = {
   icon: Cable,
   focusZoom: FOCUS_ZOOM["cables"],
   MapLayer: CablesLayer,
+  source: { name: "TeleGeography", url: "https://www.submarinecablemap.com" },
 };

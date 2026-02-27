@@ -11,4 +11,5 @@ export const powerPlantsModule: ModuleDefinition = {
   icon: Zap,
   focusZoom: FOCUS_ZOOM["power-plants"],
   MapLayer: PowerPlantsLayer,
+  source: { name: "WRI Global Power Plant Database", url: "https://datasets.wri.org/datasets/global-power-plant-database" },
 };

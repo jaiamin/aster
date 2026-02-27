@@ -14,4 +14,5 @@ export interface ModuleDefinition {
   focusZoom: number;
   MapLayer: ComponentType;
   quickPicks?: QuickPick[];
+  source?: { name: string; url?: string };
 }
