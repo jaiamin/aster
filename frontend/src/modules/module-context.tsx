@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
 import type { TimePreset } from "@/lib/time-filter";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import { ExplorerProvider } from "@/modules/explorer-context";
 
 // ── Toggle Context ──────────────────────────────────────────────────────────
 
@@ -179,17 +180,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ToggleContext.Provider value={{ enabledModules, toggle }}>
-      <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
-        <SelectionContext.Provider value={{ registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
-          <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
-            <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
-              {children}
-            </RegionContext.Provider>
-          </FilterContext.Provider>
-        </SelectionContext.Provider>
-      </CountsContext.Provider>
-    </ToggleContext.Provider>
+    <ExplorerProvider>
+      <ToggleContext.Provider value={{ enabledModules, toggle }}>
+        <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
+          <SelectionContext.Provider value={{ registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
+            <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
+              <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
+                {children}
+              </RegionContext.Provider>
+            </FilterContext.Provider>
+          </SelectionContext.Provider>
+        </CountsContext.Provider>
+      </ToggleContext.Provider>
+    </ExplorerProvider>
   );
 }
 
