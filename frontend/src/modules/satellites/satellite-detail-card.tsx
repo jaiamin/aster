@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Satellite, Video } from "lucide-react";
+import { Satellite } from "lucide-react";
 import {
   DetailCard,
   CardBanner,
@@ -17,7 +17,7 @@ import { zoomForAltitude } from "./satellites-layer";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const ISS_NORAD_ID = 25544;
-const ISS_LIVE_URL = "https://www.youtube.com/embed/aB1yRz0HhdY?autoplay=1&mute=1";
+const ISS_LIVE_URL = "https://www.youtube.com/embed/aB1yRz0HhdY?autoplay=1&mute=1&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1";
 
 const OWNER_TO_ISO: Record<string, string> = {
   US: "us", CIS: "ru", PRC: "cn", JPN: "jp", IND: "in", FR: "fr",
@@ -48,6 +48,15 @@ const OWNER_NAMES: Record<string, string> = {
 const TYPE_LABELS: Record<string, string> = {
   PAY: "Payload", "R/B": "Rocket Body", DEB: "Debris", UNK: "Unknown",
 };
+
+function orbitType(periodMin: number, inclination: number, eccentricity: number): string {
+  if (periodMin > 1400 && periodMin < 1500 && inclination < 5) return "GEO";
+  if (eccentricity > 0.5 && periodMin > 600 && periodMin < 800) return "Molniya";
+  if (inclination > 96 && inclination < 100 && periodMin < 130) return "SSO";
+  if (periodMin < 128) return "LEO";
+  if (periodMin < 800) return "MEO";
+  return "HEO";
+}
 
 function flagUrl(owner: string): string | null {
   const iso = OWNER_TO_ISO[owner];
@@ -81,7 +90,6 @@ export function SatelliteDetailCard() {
   const { selected, tracking, deselect, resumeTracking } = useSatelliteSelection();
   const { current: mapRef } = useMap();
   const [imgError, setImgError] = useState(false);
-  const [showLiveFeed, setShowLiveFeed] = useState(false);
 
   if (!selected) return null;
 
@@ -94,6 +102,7 @@ export function SatelliteDetailCard() {
   const altitudeKm = position.altitude / 1000;
   const speedKmS = (2 * Math.PI * (6371 + altitudeKm)) / (periodMinutes * 60);
   const epochAge = Math.floor((Date.now() - new Date(gp.EPOCH).getTime()) / 86_400_000);
+  const orbit = orbitType(periodMinutes, gp.INCLINATION, gp.ECCENTRICITY);
 
   const recenter = () => {
     const map = mapRef?.getMap();
@@ -112,7 +121,24 @@ export function SatelliteDetailCard() {
   return (
     <DetailCard onClose={deselect}>
       <CardBanner onClose={deselect} onRecenter={recenter} accentColor={SAT_COLOR}>
-        {showFlag ? (
+        {isISS ? (
+          <div className="relative w-full h-[140px] bg-surface">
+            <iframe
+              src={ISS_LIVE_URL}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              allow="autoplay; encrypted-media"
+              tabIndex={-1}
+            />
+            {showFlag && (
+              <img
+                src={flag!}
+                alt=""
+                className="absolute top-2 left-2 h-5 rounded-sm shadow-md border border-white/20"
+                onError={() => setImgError(true)}
+              />
+            )}
+          </div>
+        ) : showFlag ? (
           <SatelliteFlagBanner flag={flag!} onError={() => setImgError(true)} />
         ) : (
           <div className="w-full h-[140px] bg-surface flex items-center justify-center">
@@ -133,11 +159,18 @@ export function SatelliteDetailCard() {
         />
         <CardSection title="Orbital Data">
           <CardGrid>
+            <CardRow label="Orbit" value={orbit} />
             <CardRow label="Altitude" value={`${altitudeKm.toFixed(1)} km`} />
             <CardRow label="Speed" value={`${speedKmS.toFixed(2)} km/s`} />
             <CardRow label="Inclination" value={`${gp.INCLINATION.toFixed(2)}°`} />
             <CardRow label="Period" value={`${periodMinutes.toFixed(1)} min`} />
             <CardRow label="Eccentricity" value={gp.ECCENTRICITY.toFixed(6)} />
+            {satcat?.apogee != null && (
+              <CardRow label="Apogee" value={`${satcat.apogee} km`} />
+            )}
+            {satcat?.perigee != null && (
+              <CardRow label="Perigee" value={`${satcat.perigee} km`} />
+            )}
             {satcat?.rcs != null && (
               <CardRow label="RCS" value={`${satcat.rcs.toFixed(1)} m²`} />
             )}
@@ -148,6 +181,7 @@ export function SatelliteDetailCard() {
             <CardRow label="NORAD ID" value={`${gp.NORAD_CAT_ID}`} />
             <CardRow label="Intl Designator" value={gp.OBJECT_ID} />
             <CardRow label="Epoch Age" value={`${epochAge}d ago`} />
+            <CardRow label="Revolutions" value={gp.REV_AT_EPOCH.toLocaleString()} />
             {satcat?.objectType && (
               <CardRow label="Type" value={TYPE_LABELS[satcat.objectType] ?? satcat.objectType} />
             )}
@@ -156,6 +190,9 @@ export function SatelliteDetailCard() {
             )}
             {satcat?.launchSite && (
               <CardRow label="Launch Site" value={satcat.launchSite} />
+            )}
+            {satcat?.decayDate && (
+              <CardRow label="Decay Date" value={satcat.decayDate} />
             )}
           </CardGrid>
         </CardSection>
@@ -166,35 +203,8 @@ export function SatelliteDetailCard() {
           altitudeLabel="Altitude"
           altitudeUnit="km"
         />
-        {isISS && (
-          <button
-            onClick={() => setShowLiveFeed((v) => !v)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium transition-colors bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20"
-          >
-            <Video size={14} />
-            {showLiveFeed ? "Hide Live Feed" : "View Live Feed"}
-          </button>
-        )}
         <CardSource name="CelesTrak" url="https://celestrak.org" />
       </CardBody>
-
-      {isISS && showLiveFeed && (
-        <div className="mt-2 border border-panel-border bg-panel shadow-2xl overflow-hidden animate-slide-in-right">
-          <div className="p-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-widest text-muted/60">
-              ISS Live — Earth View
-            </div>
-            <div className="relative w-full aspect-video overflow-hidden bg-surface">
-              <iframe
-                src={ISS_LIVE_URL}
-                className="absolute inset-0 w-full h-full"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </DetailCard>
   );
 }

@@ -5,15 +5,9 @@ import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 
 // ── Toggle Context ──────────────────────────────────────────────────────────
 
-export interface PendingTarget {
-  moduleId: string;
-  targetId: number;
-}
-
 interface ToggleContextValue {
   enabledModules: Set<string>;
   toggle: (id: string) => void;
-  focusTarget: (moduleId: string, targetId: number) => void;
 }
 
 const ToggleContext = createContext<ToggleContextValue | null>(null);
@@ -33,8 +27,6 @@ const CountsContext = createContext<CountsContextValue | null>(null);
 type DeselectFn = () => void;
 
 interface SelectionContextValue {
-  pendingTarget: PendingTarget | null;
-  clearPendingTarget: () => void;
   registerDeselect: (moduleId: string, deselect: DeselectFn) => void;
   unregisterDeselect: (moduleId: string) => void;
   notifySelected: (moduleId: string) => void;
@@ -92,7 +84,6 @@ const RegionContext = createContext<RegionContextValue | null>(null);
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<Set<string>>(getInitialLayers);
   const [moduleCounts, setModuleCounts] = useState<Map<string, number | null>>(new Map());
-  const [pendingTarget, setPendingTarget] = useState<PendingTarget | null>(null);
   const [searchQuery, setSearchQuery] = useState(getInitialSearchQuery);
   const [timeFilter, setTimeFilter] = useState<TimePreset>(getInitialTimeFilter);
   const deselectMap = useRef(new Map<string, DeselectFn>());
@@ -108,14 +99,6 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       else next.add(id);
       return next;
     });
-  }, []);
-
-  const focusTarget = useCallback((moduleId: string, targetId: number) => {
-    setEnabledModules((prev) => {
-      if (prev.has(moduleId)) return prev;
-      return new Set(prev).add(moduleId);
-    });
-    setPendingTarget({ moduleId, targetId });
   }, []);
 
   // Counts
@@ -138,8 +121,6 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Selection
-  const clearPendingTarget = useCallback(() => setPendingTarget(null), []);
-
   const registerDeselect = useCallback((moduleId: string, deselect: DeselectFn) => {
     deselectMap.current.set(moduleId, deselect);
   }, []);
@@ -198,9 +179,9 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ToggleContext.Provider value={{ enabledModules, toggle, focusTarget }}>
+    <ToggleContext.Provider value={{ enabledModules, toggle }}>
       <CountsContext.Provider value={{ moduleCounts, registerCount, unregisterCount }}>
-        <SelectionContext.Provider value={{ pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
+        <SelectionContext.Provider value={{ registerDeselect, unregisterDeselect, notifySelected, deselectAll }}>
           <FilterContext.Provider value={{ searchQuery, timeFilter, setSearchQuery, setTimeFilter }}>
             <RegionContext.Provider value={{ regionBoundary, regionActive, isInRegion, regionCounts, registerRegionCount, unregisterRegionCount, setRegionBoundary: handleSetRegionBoundary }}>
               {children}
@@ -246,15 +227,15 @@ export function useRegion() {
 
 /** Legacy hook — returns all fields for backward compatibility. Prefer specific hooks. */
 export function useModules() {
-  const { enabledModules, toggle, focusTarget } = useModuleToggle();
+  const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts, registerCount, unregisterCount } = useModuleCounts();
-  const { pendingTarget, clearPendingTarget, registerDeselect, unregisterDeselect, notifySelected, deselectAll } = useModuleSelection();
+  const { registerDeselect, unregisterDeselect, notifySelected, deselectAll } = useModuleSelection();
   const { searchQuery, timeFilter, setSearchQuery, setTimeFilter } = useModuleFilter();
   const region = useRegion();
 
   return {
-    enabledModules, moduleCounts, pendingTarget, searchQuery, timeFilter,
-    toggle, focusTarget, clearPendingTarget,
+    enabledModules, moduleCounts, searchQuery, timeFilter,
+    toggle,
     registerDeselect, unregisterDeselect, notifySelected, deselectAll,
     registerCount, unregisterCount,
     setSearchQuery, setTimeFilter,

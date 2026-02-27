@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { DeckGLOverlay } from "@/components/globe/deckgl-overlay";
-import { useModuleSelection, useRegion } from "@/modules/module-context";
+import { useRegion } from "@/modules/module-context";
 import { useSatellites } from "./use-satellites";
 import { useSatellitePositions } from "./use-satellite-positions";
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
@@ -37,29 +37,7 @@ function SatellitesLayerInner({
   const recordsRef = useRef(records);
   recordsRef.current = records;
   const flyingToRef = useRef(false);
-  const { pendingTarget, clearPendingTarget } = useModuleSelection();
   const { isInRegion, regionActive, regionBoundary } = useRegion();
-
-  // Handle pending target from quick picks (e.g. ISS)
-  useEffect(() => {
-    if (!pendingTarget || pendingTarget.moduleId !== "satellites") return;
-    const pos = positions.find((p) => p.id === pendingTarget.targetId);
-    const gp = records.find((r) => r.NORAD_CAT_ID === pendingTarget.targetId);
-    if (!pos || !gp) return;
-
-    clearPendingTarget();
-    select(pos, gp);
-    const map = mapRef?.getMap();
-    if (map) {
-      flyingToRef.current = true;
-      map.flyTo({
-        center: [pos.longitude, pos.latitude],
-        zoom: zoomForAltitude(pos.altitude),
-        duration: 1500,
-      });
-      map.once("moveend", () => { flyingToRef.current = false; });
-    }
-  }, [pendingTarget, positions, records, mapRef, select, clearPendingTarget]);
 
   // Deselect when clicking empty map space (deck.gl onClick only fires on layer objects)
   useEffect(() => {
@@ -162,17 +140,19 @@ function SatellitesLayerInner({
         getPosition: (d) => [d.longitude, d.latitude, d.altitude],
         getFillColor: (d) => {
           if (d.id === selectedId) return [255, 255, 255, 255];
+          if (d.id === 25544) return [255, 200, 50, 255];
           if (regionActive && !isInRegion(d.longitude, d.latitude)) return [239, 68, 68, 50];
           return [239, 68, 68, 200];
         },
         stroked: true,
         getLineColor: (d) => {
           if (d.id === selectedId) return [252, 165, 165, 255];
+          if (d.id === 25544) return [255, 220, 100, 255];
           if (regionActive && !isInRegion(d.longitude, d.latitude)) return [252, 165, 165, 50];
           return [252, 165, 165, 255];
         },
         lineWidthMinPixels: 1,
-        getRadius: (d) => (d.id === selectedId ? 7 : 5),
+        getRadius: (d) => (d.id === selectedId ? 7 : d.id === 25544 ? 6 : 5),
         radiusUnits: "pixels",
         radiusMinPixels: 3,
         radiusMaxPixels: 8,
