@@ -7,6 +7,14 @@ export interface Ship {
   course: number | null;
   heading: number | null;
   shipType: number | null;
+  navStatus: number | null;
+  imo: number | null;
+  callSign: string | null;
+  destination: string | null;
+  eta: string | null;
+  draught: number | null;
+  length: number | null;
+  beam: number | null;
 }
 
 export interface SelectedShip {

@@ -1,9 +1,11 @@
+import logging
 import time as _time
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 DATA_URL = "https://raw.githubusercontent.com/tayljordan/ports/main/ports.json"
 
@@ -11,9 +13,11 @@ _cache: list | None = None
 _cache_time: float = 0
 CACHE_TTL = 86400.0  # 24 hours — static dataset
 
+_lookup_cache: dict[str, dict | None] = {}
 
-@router.get("/ports")
-async def get_ports():
+
+async def _ensure_port_cache():
+    """Make sure the port list is loaded (reuses get_ports cache)."""
     global _cache, _cache_time
 
     now = _time.monotonic()
@@ -60,3 +64,108 @@ async def get_ports():
     _cache = results
     _cache_time = now
     return results
+
+
+@router.get("/ports")
+async def get_ports():
+    return await _ensure_port_cache()
+
+
+def _search_ports(ports: list[dict], query: str) -> dict | None:
+    """Case-insensitive substring match against port names, preferring exact."""
+    q = query.lower().strip()
+    if not q:
+        return None
+
+    # Exact match first
+    for p in ports:
+        if p["name"].lower() == q:
+            return p
+
+    # Starts-with match
+    for p in ports:
+        if p["name"].lower().startswith(q):
+            return p
+
+    # Substring match
+    for p in ports:
+        if q in p["name"].lower():
+            return p
+
+    return None
+
+
+async def _nominatim_lookup(query: str) -> dict | None:
+    """Forward geocode via Nominatim as fallback."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "q": f"{query} port",
+                    "format": "json",
+                    "limit": "1",
+                    "addressdetails": "1",
+                },
+                headers={"User-Agent": "aster-app", "Accept-Language": "en"},
+            )
+            resp.raise_for_status()
+            results = resp.json()
+            if results:
+                hit = results[0]
+                return {
+                    "name": hit.get("display_name", query).split(",")[0],
+                    "latitude": float(hit["lat"]),
+                    "longitude": float(hit["lon"]),
+                }
+    except Exception:
+        logger.debug("Nominatim lookup failed for %r", query)
+    return None
+
+
+@router.get("/ports/lookup")
+async def lookup_port(q: str = ""):
+    """Resolve an AIS destination string to a port location.
+
+    Handles dash-separated destinations (e.g. "GLRT-HEST") by trying the
+    full string first, then each segment individually (last segment first,
+    as that's typically the final destination).
+    """
+    q = q.strip().upper()
+    if not q:
+        return None
+
+    if q in _lookup_cache:
+        return _lookup_cache[q]
+
+    ports = await _ensure_port_cache()
+
+    # Build candidate list: full string, then segments (last first)
+    segments = [s.strip() for s in q.split("-") if s.strip()]
+    candidates = [q]
+    if len(segments) > 1:
+        candidates.extend(reversed(segments))
+    else:
+        candidates.extend(segments)
+
+    # Try port database first for each candidate
+    for candidate in candidates:
+        match = _search_ports(ports, candidate)
+        if match:
+            result = {
+                "name": match["name"],
+                "latitude": match["latitude"],
+                "longitude": match["longitude"],
+            }
+            _lookup_cache[q] = result
+            return result
+
+    # Fallback to Nominatim for each candidate
+    for candidate in candidates:
+        result = await _nominatim_lookup(candidate)
+        if result:
+            _lookup_cache[q] = result
+            return result
+
+    _lookup_cache[q] = None
+    return None
