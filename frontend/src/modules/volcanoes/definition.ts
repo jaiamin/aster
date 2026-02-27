@@ -12,4 +12,12 @@ export const volcanoesModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["volcanoes"],
   MapLayer: VolcanoesLayer,
   source: { name: "NASA EONET", url: "https://eonet.gsfc.nasa.gov" },
+  nameKey: "title",
+  filters: [
+    { key: "country", label: "Country", type: "enum" },
+  ],
+  listColumns: [
+    { key: "title", label: "Name" },
+    { key: "country", label: "Country" },
+  ],
 };

@@ -12,4 +12,13 @@ export const airQualityModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["air-quality"],
   MapLayer: AirQualityLayer,
   source: { name: "OpenAQ", url: "https://openaq.org" },
+  filters: [
+    { key: "pm25", label: "PM2.5", type: "range", min: 0, max: 500 },
+    { key: "country", label: "Country", type: "enum" },
+  ],
+  listColumns: [
+    { key: "name", label: "Station" },
+    { key: "pm25", label: "PM2.5", width: "56px" },
+    { key: "country", label: "Country", width: "64px" },
+  ],
 };

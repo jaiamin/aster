@@ -12,4 +12,8 @@ export const cablesModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["cables"],
   MapLayer: CablesLayer,
   source: { name: "TeleGeography", url: "https://www.submarinecablemap.com" },
+  nameKey: "name",
+  listColumns: [
+    { key: "name", label: "Name" },
+  ],
 };

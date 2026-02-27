@@ -12,4 +12,13 @@ export const satellitesModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["satellites"],
   MapLayer: SatellitesLayer,
   source: { name: "CelesTrak", url: "https://celestrak.org" },
+  filters: [
+    { key: "OBJECT_TYPE", label: "Type", type: "enum" },
+    { key: "owner", label: "Owner", type: "enum" },
+  ],
+  listColumns: [
+    { key: "name", label: "Name" },
+    { key: "owner", label: "Owner" },
+    { key: "OBJECT_TYPE", label: "Type", width: "72px" },
+  ],
 };

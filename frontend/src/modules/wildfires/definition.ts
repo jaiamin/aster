@@ -12,4 +12,16 @@ export const wildfiresModule: ModuleDefinition = {
   focusZoom: FOCUS_ZOOM["wildfires"],
   MapLayer: WildfiresLayer,
   source: { name: "NASA FIRMS", url: "https://firms.modaps.eosdis.nasa.gov" },
+  nameKey: "latitude",
+  filters: [
+    { key: "confidence", label: "Confidence", type: "enum" },
+    { key: "frp", label: "FRP", type: "range", min: 0, max: 1000, unit: "MW" },
+    { key: "daynight", label: "Day/Night", type: "enum", options: ["D", "N"] },
+    { key: "country", label: "Country", type: "enum" },
+  ],
+  listColumns: [
+    { key: "country", label: "Country" },
+    { key: "frp", label: "FRP (MW)", width: "72px" },
+    { key: "confidence", label: "Conf", width: "56px" },
+  ],
 };
