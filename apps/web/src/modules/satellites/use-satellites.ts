@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import type { GPRecord } from "@/types/satellites";
 
 const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours

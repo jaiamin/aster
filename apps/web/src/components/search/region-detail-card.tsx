@@ -1,4 +1,5 @@
 import { MapPin } from "lucide-react";
+
 import {
   DetailCard,
   CardBanner,
@@ -6,8 +7,8 @@ import {
   CardBody,
   ScrollText,
 } from "@/components/detail-card/detail-card";
-import { MODULE_REGISTRY } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useRegion } from "@/modules/module-context";
+import { MODULE_REGISTRY } from "@/modules/registry";
 
 interface RegionDetailCardProps {
   name: string;

@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
-import { useModuleSelection } from "@/modules/module-context";
+
 import { usePageVisibility } from "@/hooks/use-page-visibility";
+import { useModuleSelection } from "@/modules/module-context";
+import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
 
 interface FlightSelectionContextValue {
   selected: SelectedFlight | null;

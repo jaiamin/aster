@@ -53,7 +53,7 @@ export function usePolledData<T>({
           setIsLoading(false);
           hasFetched.current = true;
           return;
-        } catch (e) {
+        } catch {
           if (controller.signal.aborted) return;
           if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
         }

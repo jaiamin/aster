@@ -7,6 +7,7 @@ import {
   degreesLat,
   type SatRec,
 } from "satellite.js";
+
 import type { GPRecord } from "@/types/satellites";
 
 interface SatEntry {

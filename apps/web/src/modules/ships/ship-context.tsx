@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { Ship, SelectedShip } from "@/types/ships";
+
 import { useModuleSelection } from "@/modules/module-context";
+import type { Ship, SelectedShip } from "@/types/ships";
 
 interface ShipSelectionContextValue {
   selected: SelectedShip | null;

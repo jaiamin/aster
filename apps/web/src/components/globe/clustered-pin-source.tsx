@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
-import { registerLayerClick } from "@/lib/layer-click";
 import { LngLatBounds, type GeoJSONSource } from "maplibre-gl";
+import { useEffect, useMemo } from "react";
+
+import { registerLayerClick } from "@/lib/layer-click";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 

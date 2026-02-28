@@ -1,17 +1,18 @@
+import { airQualityModule } from "./air-quality/definition";
+import { airportsModule } from "./airports/definition";
+import { buoysModule } from "./buoys/definition";
+import { cablesModule } from "./cables/definition";
+import { earthquakesModule } from "./earthquakes/definition";
 import { flightsModule } from "./flights/definition";
+import { launchesModule } from "./launches/definition";
+import { portsModule } from "./ports/definition";
+import { powerPlantsModule } from "./power-plants/definition";
 import { satellitesModule } from "./satellites/definition";
 import { shipsModule } from "./ships/definition";
-import { earthquakesModule } from "./earthquakes/definition";
-import { wildfiresModule } from "./wildfires/definition";
-import { volcanoesModule } from "./volcanoes/definition";
-import { airQualityModule } from "./air-quality/definition";
-import { buoysModule } from "./buoys/definition";
-import { powerPlantsModule } from "./power-plants/definition";
-import { cablesModule } from "./cables/definition";
-import { airportsModule } from "./airports/definition";
-import { portsModule } from "./ports/definition";
-import { launchesModule } from "./launches/definition";
 import { stormsModule } from "./storms/definition";
+import { volcanoesModule } from "./volcanoes/definition";
+import { wildfiresModule } from "./wildfires/definition";
+
 import type { ModuleDefinition } from "@/types/modules";
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [

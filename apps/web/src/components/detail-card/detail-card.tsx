@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LocateFixed, X, ExternalLink, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 
 /* ── ScrollText — hover to reveal truncated text ────────────── */

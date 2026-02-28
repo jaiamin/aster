@@ -1,5 +1,5 @@
-import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
+import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import type { MapStatus } from "@/types/map";
 
 const PRESET_LABELS: Record<TimePreset, string> = {

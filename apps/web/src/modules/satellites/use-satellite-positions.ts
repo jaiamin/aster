@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { usePageVisibility } from "@/hooks/use-page-visibility";
 import type { GPRecord, SatellitePosition } from "@/types/satellites";
 

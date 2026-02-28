@@ -30,7 +30,7 @@ export function registerLayerClick(layerId: string, handler: ClickHandler): () =
 /** Attach to the map once. Returns cleanup function. */
 export function attachClickDispatcher(map: maplibregl.Map): () => void {
   const handleClick = (e: maplibregl.MapMouseEvent) => {
-    if ((e.originalEvent as any)._layerHandled) return;
+    if ((e.originalEvent as MouseEvent & { _layerHandled?: boolean })._layerHandled) return;
 
     const layerIds = Array.from(registrations.keys()).filter((id) => {
       try {
@@ -51,7 +51,7 @@ export function attachClickDispatcher(map: maplibregl.Map): () => void {
 
     const reg = registrations.get(winnerLayer);
     if (reg) {
-      (e.originalEvent as any)._layerHandled = true;
+      (e.originalEvent as MouseEvent & { _layerHandled?: boolean })._layerHandled = true;
       reg.handler(topFeature, e);
     }
   };

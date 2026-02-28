@@ -268,20 +268,18 @@ export function useExplorerFilters(moduleId: string): (item: unknown) => boolean
   const moduleDef = MODULE_REGISTRY.find((m) => m.id === moduleId);
   const schema = moduleDef?.filters;
 
-  return useMemo(() => {
-    const entries = Object.entries(active);
-    if (!schema || entries.length === 0) return () => true;
+  const entries = Object.entries(active);
+  if (!schema || entries.length === 0) return () => true;
 
-    const fieldMap = new Map(schema.map((f) => [f.key, f]));
+  const fieldMap = new Map(schema.map((f) => [f.key, f]));
 
-    return (item: unknown): boolean => {
-      const record = item as Record<string, unknown>;
-      for (const [key, value] of entries) {
-        const field = fieldMap.get(key);
-        if (!field) continue;
-        if (!matchesFilter(record, field, value)) return false;
-      }
-      return true;
-    };
-  }, [active, schema]);
+  return (item: unknown): boolean => {
+    const record = item as Record<string, unknown>;
+    for (const [key, value] of entries) {
+      const field = fieldMap.get(key);
+      if (!field) continue;
+      if (!matchesFilter(record, field, value)) return false;
+    }
+    return true;
+  };
 }

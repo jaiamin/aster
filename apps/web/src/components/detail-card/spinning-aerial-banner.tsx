@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect, type ReactNode } from "react";
 import maplibregl from "maplibre-gl";
+import { useRef, useState, useEffect, type ReactNode } from "react";
 
 interface SpinningAerialBannerProps {
   latitude: number;

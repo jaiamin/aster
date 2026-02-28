@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useState } from "react";
+
 import { registerModulePins, unregisterModulePins, type PinConfig } from "@/lib/pin-icon";
 
 export function usePinRegistration(config: PinConfig): boolean {

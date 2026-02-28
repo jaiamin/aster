@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
 import type { StyleSpecification, LayerSpecification } from "maplibre-gl";
+import { useEffect, useState, useMemo } from "react";
+
 import { MAP_STYLE_DARK } from "@/config/map";
 import type { MapStyleMode } from "@/config/map";
 import { transformDarkStyle, LABEL_MIN_ZOOM, ENGLISH_TEXT_FIELD } from "@/styles/dark-globe-style";

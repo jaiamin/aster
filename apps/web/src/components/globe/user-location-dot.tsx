@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { Layer, Source } from "@vis.gl/react-maplibre";
+import { useMemo } from "react";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 

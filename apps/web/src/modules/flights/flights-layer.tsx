@@ -1,19 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
-import { useFlights } from "./use-flights";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
 import { FlightSelectionProvider, useFlightSelection } from "./flight-context";
 import { FlightDetailCard } from "./flight-detail-card";
+import { useFlights } from "./use-flights";
+
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
+import { useMapZoom } from "@/hooks/use-map-zoom";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { useMapZoom } from "@/hooks/use-map-zoom";
-import { registerLayerClick } from "@/lib/layer-click";
-import { gridSample } from "@/lib/grid-sample";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleSelect } from "@/hooks/use-module-select";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
+import { gridSample } from "@/lib/grid-sample";
+import { registerLayerClick } from "@/lib/layer-click";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import type { Flight, FlightTrack } from "@/types/flights";
 
 const ICON_NORMAL = "plane-icon";
@@ -198,7 +200,10 @@ function FlightsLayerInner({
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) {
+      if (
+        !(e.originalEvent as MouseEvent & { _layerHandled?: boolean })._layerHandled &&
+        selectedRef.current
+      ) {
         deselect();
       }
     };

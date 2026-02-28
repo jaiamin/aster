@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
+
 import { usePolledData } from "../use-polled-data";
 
 // Mock usePageVisibility to always return true

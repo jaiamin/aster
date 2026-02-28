@@ -1,9 +1,9 @@
-import type { FilterValue } from "@/modules/explorer-context";
-import type { FilterField } from "@/types/modules";
-
 import { BooleanFilter } from "./boolean-filter";
 import { EnumFilter } from "./enum-filter";
 import { RangeFilter } from "./range-filter";
+
+import type { FilterValue } from "@/modules/explorer-context";
+import type { FilterField } from "@/types/modules";
 
 export function FilterControl({
   field,

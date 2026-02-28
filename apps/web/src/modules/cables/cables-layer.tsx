@@ -1,18 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
-import { useCables } from "./use-cables";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
 import { CableSelectionProvider, useCableSelection } from "./cable-context";
 import { CableDetailCard } from "./cable-detail-card";
-import type { CableData, CableFeature } from "@/types/cables";
+import { useCables } from "./use-cables";
+
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { useRegion } from "@/modules/module-context";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useModuleSelect } from "@/hooks/use-module-select";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { registerLayerClick } from "@/lib/layer-click";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import { useRegion } from "@/modules/module-context";
+import type { CableData, CableFeature } from "@/types/cables";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -50,13 +52,14 @@ function CablesLayerInner({
       const cable = item as CableFeature;
       select(cable);
       const map = mapRef?.getMap();
+      const cableProps = cable.properties as Record<string, unknown> | undefined;
       if (
         map &&
-        typeof (cable as any).longitude === "number" &&
-        typeof (cable as any).latitude === "number"
+        typeof cableProps?.longitude === "number" &&
+        typeof cableProps?.latitude === "number"
       ) {
         map.flyTo({
-          center: [(cable as any).longitude, (cable as any).latitude],
+          center: [cableProps.longitude as number, cableProps.latitude as number],
           zoom: FOCUS_ZOOM["cables"],
           duration: 1500,
           padding: DETAIL_CARD_PADDING,
@@ -67,9 +70,13 @@ function CablesLayerInner({
   );
   useModuleSelect("cables", selectFromExplorer);
   const dataRef = useRef(data);
-  dataRef.current = data;
+  useEffect(() => {
+    dataRef.current = data;
+  });
   const selectedRef = useRef(selected);
-  selectedRef.current = selected;
+  useEffect(() => {
+    selectedRef.current = selected;
+  });
 
   const selectedId = selected?.cable.properties.id ?? null;
   const cablesGeojson = useMemo(
@@ -112,7 +119,11 @@ function CablesLayerInner({
     if (!map) return;
 
     const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (!(e.originalEvent as any)._layerHandled && selectedRef.current) deselect();
+      if (
+        !(e.originalEvent as MouseEvent & { _layerHandled?: boolean })._layerHandled &&
+        selectedRef.current
+      )
+        deselect();
     };
 
     map.on("click", handleClick);

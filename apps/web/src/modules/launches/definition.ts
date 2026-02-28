@@ -1,7 +1,8 @@
 import { Rocket } from "lucide-react";
-import type { ModuleDefinition } from "@/types/modules";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { lazy } from "react";
+
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
+import type { ModuleDefinition } from "@/types/modules";
 const LaunchesLayer = lazy(() =>
   import("./launches-layer").then((m) => ({ default: m.LaunchesLayer })),
 );

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, type ReactNode } from "react";
 import { Map, type MapRef, useMap } from "@vis.gl/react-maplibre";
+import { useCallback, useEffect, type ReactNode } from "react";
+
 import "maplibre-gl/dist/maplibre-gl.css";
 import { THEME, MIN_ZOOM } from "@/config/map";
 import type { MapStyleMode } from "@/config/map";

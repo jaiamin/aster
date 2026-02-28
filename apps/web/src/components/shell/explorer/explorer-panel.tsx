@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronUp, ChevronDown, Filter, Search, ExternalLink } from "lucide-react";
-import { useExplorer, useExplorerFilters } from "@/modules/explorer-context";
-import { useModuleToggle } from "@/modules/module-context";
-import { MODULE_REGISTRY } from "@/modules/registry";
-import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ActiveFilterRow } from "./active-filter-row";
 import { FilterControl } from "./filter-control";
 import { VirtualizedList, formatCellValue } from "./virtualized-list";
+
+import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { useExplorer, useExplorerFilters } from "@/modules/explorer-context";
+import { useModuleToggle } from "@/modules/module-context";
+import { MODULE_REGISTRY } from "@/modules/registry";
 
 export function ExplorerPanel() {
   const {
@@ -59,7 +60,7 @@ export function ExplorerPanel() {
   const moduleId = openModuleId ?? "";
   const search = getSearch(moduleId);
   const activeFilters = getFilters(moduleId);
-  const rawData = moduleData.get(moduleId) ?? [];
+  const rawData = useMemo(() => moduleData.get(moduleId) ?? [], [moduleData, moduleId]);
 
   const [localSearch, setLocalSearch] = useState(search);
 

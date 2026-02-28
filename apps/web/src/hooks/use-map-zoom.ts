@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
+import { useEffect, useState } from "react";
 
 /** Returns the current map zoom level, updated on moveend events. */
 export function useMapZoom(): number {

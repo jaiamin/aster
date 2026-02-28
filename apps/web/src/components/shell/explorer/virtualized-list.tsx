@@ -1,5 +1,5 @@
-import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef } from "react";
 
 export function formatCellValue(val: unknown, col: { labelMap?: Record<string, string> }): string {
   const raw =

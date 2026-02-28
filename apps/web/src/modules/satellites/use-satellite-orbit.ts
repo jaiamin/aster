@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import type { GPRecord, OrbitPoint } from "@/types/satellites";
 
 export function useSatelliteOrbit(gp: GPRecord | null) {

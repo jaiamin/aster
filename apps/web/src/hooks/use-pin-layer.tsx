@@ -73,7 +73,9 @@ export function usePinLayer<TItem extends { longitude: number; latitude: number 
   useModuleSelect(moduleId, selectFromExplorer);
 
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  useEffect(() => {
+    itemsRef.current = items;
+  });
 
   const geojson = useMemo(
     () => toGeoJSON(items, selectedId, inRegionSet, regionActive),

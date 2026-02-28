@@ -1,21 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
+import type { PickingInfo } from "@deck.gl/core";
 import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
-import { DeckGLOverlay } from "@/components/globe/deckgl-overlay";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { useSatellites } from "./use-satellites";
-import { useSatellitePositions } from "./use-satellite-positions";
+import { useMap } from "@vis.gl/react-maplibre";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
 import { SatelliteDetailCard } from "./satellite-detail-card";
+import { useSatelliteOrbit } from "./use-satellite-orbit";
+import { useSatellitePositions } from "./use-satellite-positions";
+import { useSatellites } from "./use-satellites";
+
+import { DeckGLOverlay } from "@/components/globe/deckgl-overlay";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { useSatelliteOrbit } from "./use-satellite-orbit";
 import { useModuleSelect } from "@/hooks/use-module-select";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import type { SatellitePosition, GPRecord, OrbitPoint } from "@/types/satellites";
-import type { PickingInfo } from "@deck.gl/core";
 
 // Camera altitude ≈ 40 000 km / 2^zoom.  We want the camera at least 2×
 // the satellite's altitude so the dot is comfortably in view, clamped to [0, 4].
@@ -39,13 +41,20 @@ function SatellitesLayerInner({
   const { current: mapRef } = useMap();
   const { selected, tracking, select, deselect, pauseTracking } = useSatelliteSelection();
   const selectedRef = useRef(selected);
-  selectedRef.current = selected;
+  useEffect(() => {
+    selectedRef.current = selected;
+  });
   const trackingRef = useRef(tracking);
-  trackingRef.current = tracking;
+  useEffect(() => {
+    trackingRef.current = tracking;
+  });
   const recordsRef = useRef(records);
-  recordsRef.current = records;
+  useEffect(() => {
+    recordsRef.current = records;
+  });
 
   const flyingToRef = useRef(false);
+  const deckClickedRef = useRef(false);
 
   const selectFromExplorer = useCallback(
     (item: unknown) => {
@@ -84,7 +93,7 @@ function SatellitesLayerInner({
           deckClickedRef.current = false;
           return;
         }
-        if ((e.originalEvent as any)._layerHandled) return;
+        if ((e.originalEvent as MouseEvent & { _layerHandled?: boolean })._layerHandled) return;
         if (selectedRef.current) deselect();
       });
     };
@@ -123,7 +132,6 @@ function SatellitesLayerInner({
     });
   }, [selected?.position.longitude, selected?.position.latitude, mapRef, tracking]);
 
-  const deckClickedRef = useRef(false);
   const orbitSegments = useSatelliteOrbit(selected?.gp ?? null);
   const selectedId = selected?.position.id ?? null;
 

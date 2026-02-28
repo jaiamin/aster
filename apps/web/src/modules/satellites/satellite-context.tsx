@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+
+import { useModuleSelection } from "@/modules/module-context";
 import type {
   GPRecord,
   SatelliteDetail,
   SatellitePosition,
   SelectedSatellite,
 } from "@/types/satellites";
-import { useModuleSelection } from "@/modules/module-context";
 
 interface SatelliteSelectionContextValue {
   selected: SelectedSatellite | null;
@@ -82,7 +83,9 @@ export function SatelliteSelectionProvider({
 
   // Auto-deselect if satellite disappears from positions
   const selectedRef = useRef(selectedId);
-  selectedRef.current = selectedId;
+  useEffect(() => {
+    selectedRef.current = selectedId;
+  });
   useEffect(() => {
     if (selectedRef.current && !currentPosition) {
       deselect();

@@ -1,4 +1,5 @@
 import type { StyleSpecification, LayerSpecification } from "maplibre-gl";
+
 import { THEME } from "@/config/map";
 
 // English-only label expression: prefer name_en, fall back to name:latin, then name.
