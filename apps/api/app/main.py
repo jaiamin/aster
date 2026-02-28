@@ -7,7 +7,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from app import cache, scheduler
 from app.config import settings
-from app.http_client import close_client
+from app.http_client import close_client, init_client
 from app.routers import (
     air_quality,
     airports,
@@ -35,11 +35,12 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_client()
     await cache.connect(settings.redis_url)
     ships.start_ws()
     scheduler.start()
     yield
-    scheduler.stop()
+    await scheduler.stop()
     ships.stop_ws()
     await close_client()
     await cache.disconnect()
@@ -52,8 +53,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 app.include_router(health.router, prefix="/api")

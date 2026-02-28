@@ -65,7 +65,7 @@ async def refresh(
     try:
         resp = await client.get(url, timeout=request_timeout, params=params, headers=headers)
         resp.raise_for_status()
-    except Exception:
+    except (httpx.HTTPStatusError, httpx.RequestError):
         logger.warning("Background refresh failed for %s", cache_key)
         return None
 

@@ -120,11 +120,12 @@ def start():
     logger.info("Scheduler: started %d refresh tasks", len(_tasks))
 
 
-def stop():
-    """Cancel all background refresh loops."""
+async def stop():
+    """Cancel all background refresh loops and await completion."""
     global _tasks
     for task in _tasks:
         if not task.done():
             task.cancel()
+    await asyncio.gather(*_tasks, return_exceptions=True)
     _tasks.clear()
     logger.info("Scheduler: stopped")

@@ -1,16 +1,17 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { ErrorBoundary } from "@/components/error-boundary";
-import { GlobeMap } from "@/components/globe/globe-map";
 import { GlobeControls } from "@/components/globe/globe-controls";
+import { GlobeMap } from "@/components/globe/globe-map";
 import { UserLocationDot } from "@/components/globe/user-location-dot";
+import { GeoSearch } from "@/components/search/geo-search";
 import { Sidebar } from "@/components/shell/sidebar";
 import { BottomBar } from "@/components/shell/status-bar";
+import type { MapStyleMode } from "@/config/map";
 import { useMapState } from "@/hooks/use-map-state";
+import { getInitialStyle } from "@/lib/url-state";
 import { useModuleToggle, useModuleFilter } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
-import { GeoSearch } from "@/components/search/geo-search";
-import { getInitialStyle } from "@/lib/url-state";
-import type { MapStyleMode } from "@/config/map";
 
 export function AppShell() {
   const { viewState, status, onMove, syncUrl } = useMapState();
@@ -25,7 +26,10 @@ export function AppShell() {
     syncUrl(viewState, enabledModules, styleMode, searchQuery, timeFilter);
   }, [viewState, enabledModules, styleMode, searchQuery, timeFilter, syncUrl]);
 
-  const activeLayers = MODULE_REGISTRY.filter((m) => enabledModules.has(m.id));
+  const activeLayers = useMemo(
+    () => MODULE_REGISTRY.filter((m) => enabledModules.has(m.id)),
+    [enabledModules],
+  );
 
   const handleMapReady = useCallback((map: maplibregl.Map) => {
     mapInstanceRef.current = map;

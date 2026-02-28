@@ -91,8 +91,15 @@ async def get_with_ttl(key: str) -> tuple | None:
     return None
 
 
+MAX_FALLBACK_ENTRIES = 500
+
+
 def _prune_fallback() -> None:
     now = _time.monotonic()
     stale = [k for k, (exp, _) in _fallback.items() if exp <= now]
     for k in stale:
         del _fallback[k]
+    if len(_fallback) > MAX_FALLBACK_ENTRIES:
+        by_age = sorted(_fallback.items(), key=lambda kv: kv[1][0])
+        for k, _ in by_age[: len(_fallback) - MAX_FALLBACK_ENTRIES]:
+            del _fallback[k]

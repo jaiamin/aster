@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
 import { useModuleSelection } from "@/modules/module-context";
 
 export function createSelectionContext<TItem, TSelected>({
@@ -33,7 +42,8 @@ export function createSelectionContext<TItem, TSelected>({
       return () => unregisterDeselect(moduleId);
     }, [registerDeselect, unregisterDeselect, deselect]);
 
-    return <Context value={{ selected, select, deselect }}>{children}</Context>;
+    const value = useMemo(() => ({ selected, select, deselect }), [selected, select, deselect]);
+    return <Context value={value}>{children}</Context>;
   }
 
   function useSelection() {

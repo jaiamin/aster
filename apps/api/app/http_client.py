@@ -3,14 +3,17 @@ import httpx
 _client: httpx.AsyncClient | None = None
 
 
-def get_client() -> httpx.AsyncClient:
+def init_client():
     global _client
-    if _client is None or _client.is_closed:
-        _client = httpx.AsyncClient(
-            timeout=30.0,
-            limits=httpx.Limits(max_connections=100, max_keepalive_connections=50),
-            follow_redirects=True,
-        )
+    _client = httpx.AsyncClient(
+        timeout=30.0,
+        limits=httpx.Limits(max_connections=100, max_keepalive_connections=50),
+        follow_redirects=True,
+    )
+
+
+def get_client() -> httpx.AsyncClient:
+    assert _client is not None, "HTTP client not initialized"
     return _client
 
 
