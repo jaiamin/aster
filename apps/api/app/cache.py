@@ -30,6 +30,15 @@ async def disconnect() -> None:
         _redis = None
 
 
+async def ping() -> bool:
+    if _redis:
+        try:
+            return await _redis.ping()
+        except Exception:
+            return False
+    return False
+
+
 MISSING = object()
 
 

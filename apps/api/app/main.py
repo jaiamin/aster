@@ -1,5 +1,7 @@
+import json as _json
 import logging
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,10 +29,32 @@ from app.routers import (
     wildfires,
 )
 
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO),
-    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s" if settings.debug else "%(message)s",
-)
+
+class _JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        return _json.dumps(
+            {
+                "ts": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
+                "level": record.levelname,
+                "logger": record.name,
+                "msg": record.getMessage(),
+            }
+        )
+
+
+def _setup_logging() -> None:
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    handler = logging.StreamHandler()
+    if settings.debug:
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s %(name)s: %(message)s"))
+    else:
+        handler.setFormatter(_JSONFormatter())
+    root = logging.getLogger()
+    root.setLevel(level)
+    root.addHandler(handler)
+
+
+_setup_logging()
 
 
 @asynccontextmanager

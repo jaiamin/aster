@@ -120,6 +120,10 @@ def start():
     logger.info("Scheduler: started %d refresh tasks", len(_tasks))
 
 
+def task_count() -> int:
+    return len(_tasks)
+
+
 async def stop():
     """Cancel all background refresh loops and await completion."""
     global _tasks

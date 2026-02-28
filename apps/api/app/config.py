@@ -1,4 +1,16 @@
+import logging
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
+
+_OPTIONAL_KEYS = {
+    "aisstream_api_key": "AIS ship tracking",
+    "openaq_api_key": "Air quality data",
+    "opensky_client_id": "OpenSky flight tracking (authenticated)",
+    "opensky_client_secret": "OpenSky flight tracking (authenticated)",
+}
 
 
 class Settings(BaseSettings):
@@ -21,6 +33,16 @@ class Settings(BaseSettings):
     opensky_client_secret: str = ""
     aisstream_api_key: str = ""
     openaq_api_key: str = ""
+
+    @model_validator(mode="after")
+    def _warn_missing_keys(self):
+        missing = [desc for key, desc in _OPTIONAL_KEYS.items() if not getattr(self, key)]
+        if missing:
+            logger.warning(
+                "Optional API keys not set — features disabled: %s",
+                ", ".join(missing),
+            )
+        return self
 
 
 settings = Settings()
