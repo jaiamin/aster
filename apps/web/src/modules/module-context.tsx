@@ -1,3 +1,4 @@
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import {
   createContext,
   startTransition,
@@ -8,9 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
+
+import { computeBbox } from "@/lib/geo";
 import type { TimePreset } from "@/lib/time-filter";
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
 import { ExplorerProvider } from "@/modules/explorer-context";
 
 // ── Toggle Context ──────────────────────────────────────────────────────────
@@ -57,28 +59,6 @@ interface FilterContextValue {
 const FilterContext = createContext<FilterContextValue | null>(null);
 
 // ── Region Context ─────────────────────────────────────────────────────────
-
-type Bbox = [number, number, number, number]; // [west, south, east, north]
-
-function computeBbox(geometry: GeoJSON.Geometry): Bbox {
-  let west = Infinity,
-    south = Infinity,
-    east = -Infinity,
-    north = -Infinity;
-  const visit = (coords: unknown) => {
-    if (typeof (coords as number[])[0] === "number") {
-      const [lng, lat] = coords as number[];
-      if (lng < west) west = lng;
-      if (lng > east) east = lng;
-      if (lat < south) south = lat;
-      if (lat > north) north = lat;
-      return;
-    }
-    for (const c of coords as unknown[]) visit(c);
-  };
-  if ("coordinates" in geometry) visit((geometry as { coordinates: unknown }).coordinates);
-  return [west, south, east, north];
-}
 
 interface RegionContextValue {
   regionBoundary: GeoJSON.Geometry | null;

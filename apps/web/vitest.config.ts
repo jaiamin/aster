@@ -1,7 +1,10 @@
-import { defineConfig } from "vitest/config";
 import path from "path";
 
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
+
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -12,5 +15,19 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      include: ["src/lib/**", "src/hooks/**"],
+      exclude: [
+        "src/lib/pin-icon.ts",
+        "src/lib/layer-click.ts",
+        "src/lib/region-worker.ts",
+        "src/lib/utils.ts",
+        "src/lib/category-colors.ts",
+      ],
+      thresholds: {
+        "src/lib/**": { statements: 90 },
+      },
+    },
   },
 });

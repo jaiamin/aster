@@ -1,16 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { MapViewState, ProjectionMode, MapStatus } from "@/types/map";
-import { GLOBE_TRANSITION_ZOOM } from "@/config/map";
-import { getInitialViewState, writeUrlState } from "@/lib/url-state";
-import type { TimePreset } from "@/lib/time-filter";
 
-function getProjectionMode(zoom: number): ProjectionMode {
+import { GLOBE_TRANSITION_ZOOM } from "@/config/map";
+import type { TimePreset } from "@/lib/time-filter";
+import { getInitialViewState, writeUrlState } from "@/lib/url-state";
+import type { MapViewState, ProjectionMode, MapStatus } from "@/types/map";
+
+export function getProjectionMode(zoom: number): ProjectionMode {
   if (zoom < GLOBE_TRANSITION_ZOOM.start) return "globe";
   if (zoom > GLOBE_TRANSITION_ZOOM.end) return "mercator";
   return "transitioning";
 }
 
-function zoomToAltitude(zoom: number): number {
+export function zoomToAltitude(zoom: number): number {
   return Math.round(40075 / Math.pow(2, zoom));
 }
 

@@ -21,7 +21,7 @@ export interface PinConfig {
 // ---------------------------------------------------------------------------
 
 // Darken a hex color by a factor (0–1, where 1 = black)
-function darken(hex: string, amount: number): string {
+export function darken(hex: string, amount: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -36,7 +36,7 @@ function darken(hex: string, amount: number): string {
 }
 
 // camelCase → kebab-case for SVG attributes
-function toKebab(s: string): string {
+export function toKebab(s: string): string {
   return s.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 

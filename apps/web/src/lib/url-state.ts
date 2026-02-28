@@ -1,7 +1,7 @@
-import type { MapViewState } from "@/types/map";
 import { INITIAL_VIEW_STATE } from "@/config/map";
 import type { TimePreset } from "@/lib/time-filter";
 import { TIME_PRESETS } from "@/lib/time-filter";
+import type { MapViewState } from "@/types/map";
 
 interface UrlState {
   viewState: MapViewState;
@@ -57,7 +57,7 @@ export function parseUrlState(): Partial<UrlState> {
   return result;
 }
 
-function round(n: number, decimals: number): number {
+export function round(n: number, decimals: number): number {
   const f = Math.pow(10, decimals);
   return Math.round(n * f) / f;
 }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+
+import { computeBbox } from "@/lib/geo";
 import { useRegion } from "@/modules/module-context";
 
 const EMPTY_SET = new Set<string | number>();
@@ -12,28 +14,6 @@ function getWorker(): Worker {
     });
   }
   return sharedWorker;
-}
-
-type Bbox = [number, number, number, number];
-
-function computeBboxFromGeometry(geometry: GeoJSON.Geometry): Bbox {
-  let west = Infinity,
-    south = Infinity,
-    east = -Infinity,
-    north = -Infinity;
-  const visit = (coords: unknown) => {
-    if (typeof (coords as number[])[0] === "number") {
-      const [lng, lat] = coords as number[];
-      if (lng < west) west = lng;
-      if (lng > east) east = lng;
-      if (lat < south) south = lat;
-      if (lat > north) north = lat;
-      return;
-    }
-    for (const c of coords as unknown[]) visit(c);
-  };
-  if ("coordinates" in geometry) visit((geometry as { coordinates: unknown }).coordinates);
-  return [west, south, east, north];
 }
 
 export function useRegionMembership<T>(
@@ -65,7 +45,7 @@ export function useRegionMembership<T>(
       lat: getLatRef.current(item),
     }));
 
-    const bbox = computeBboxFromGeometry(regionBoundary);
+    const bbox = computeBbox(regionBoundary);
     const worker = getWorker();
 
     const handler = (e: MessageEvent) => {

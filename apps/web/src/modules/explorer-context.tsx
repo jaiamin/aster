@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import { MODULE_REGISTRY } from "@/modules/registry";
 import type { FilterField } from "@/types/modules";
 
@@ -192,7 +193,7 @@ export function useExplorer() {
 
 // ── Filter predicate hook ────────────────────────────────────────────────────
 
-function matchesFilter(
+export function matchesFilter(
   item: Record<string, unknown>,
   field: FilterField,
   value: FilterValue,
