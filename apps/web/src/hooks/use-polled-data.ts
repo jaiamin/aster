@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+
 import { usePageVisibility } from "@/hooks/use-page-visibility";
 
 interface UsePolledDataOptions<T> {
@@ -27,15 +28,26 @@ export function usePolledData<T>({
   useEffect(() => {
     if (!visible) return;
     const controller = new AbortController();
+    const isDev = import.meta.env.DEV;
 
     async function fetchData() {
       if (!hasFetched.current) setIsLoading(true);
 
+      const markPrefix = `fetch:${endpoint}`;
+
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+          if (isDev) performance.mark(`${markPrefix}:start`);
+
           const res = await fetch(endpoint, { signal: controller.signal });
           if (!res.ok) throw new Error(res.statusText);
           const raw = await res.json();
+
+          if (isDev) {
+            performance.mark(`${markPrefix}:end`);
+            performance.measure(markPrefix, `${markPrefix}:start`, `${markPrefix}:end`);
+          }
+
           setData(transform ? transform(raw) : raw);
           setError(null);
           setIsLoading(false);
