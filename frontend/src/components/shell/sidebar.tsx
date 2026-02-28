@@ -1,11 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown, Eye, EyeOff, Search, Filter } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
-import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
+import { useModuleToggle, useModuleCounts } from "@/modules/module-context";
 import { useExplorer } from "@/modules/explorer-context";
 import { ExplorerPanel } from "@/components/shell/explorer-panel";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
 import type { ModuleDefinition, FilterField } from "@/types/modules";
 import type { ActiveFilters, FilterValue } from "@/modules/explorer-context";
 
@@ -234,36 +233,11 @@ function CategoryGroup({
   );
 }
 
-const PRESET_LABELS: Record<TimePreset, string> = {
-  "1h": "1h", "6h": "6h", "24h": "24h", "3d": "3d", "7d": "7d", "30d": "30d", "all": "All",
-};
-
-function TimeFilterRow({ value, onChange }: { value: TimePreset; onChange: (p: TimePreset) => void }) {
-  return (
-    <div className="flex items-center px-3 py-2">
-      {TIME_PRESETS.map((p) => (
-        <button
-          key={p}
-          onClick={() => onChange(p)}
-          className={`flex-1 py-0.5 text-[11px] font-medium transition-colors ${
-            p === value
-              ? "bg-accent text-white"
-              : "text-white/50 hover:bg-panel-hover hover:text-white/80"
-          }`}
-        >
-          {PRESET_LABELS[p]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Sidebar() {
   const [modulesOpen, setModulesOpen] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
-  const { timeFilter, setTimeFilter } = useModuleFilter();
   const { openModuleId, openExplorer, closeExplorer, clearFilters, hasActiveFilters, getFilters, moduleData } = useExplorer();
 
   const grouped = useMemo(() => {
@@ -369,8 +343,6 @@ export function Sidebar() {
                 </button>
               </div>
             </div>
-            <div className="h-px bg-panel-border" />
-            <TimeFilterRow value={timeFilter} onChange={setTimeFilter} />
             <div className="h-px bg-panel-border" />
             <div className="p-2 space-y-0.5">
               {grouped.map(({ category, modules }) => (

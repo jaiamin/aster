@@ -3,7 +3,7 @@ import { GlobeMap } from "@/components/globe/globe-map";
 import { GlobeControls } from "@/components/globe/globe-controls";
 import { UserLocationDot } from "@/components/globe/user-location-dot";
 import { Sidebar } from "@/components/shell/sidebar";
-import { StatusBar } from "@/components/shell/status-bar";
+import { BottomBar } from "@/components/shell/status-bar";
 import { useMapState } from "@/hooks/use-map-state";
 import { useModuleToggle, useModuleFilter } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
@@ -38,28 +38,30 @@ export function AppShell() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="relative flex-1">
-        <GlobeMap viewState={viewState} onMove={onMove} styleMode={styleMode} onMapReady={handleMapReady}>
-          {activeLayers.map((m) => (
-            <Suspense key={m.id} fallback={null}>
-              <m.MapLayer />
-            </Suspense>
-          ))}
-          <GeoSearch />
-          <UserLocationDot location={userLocation} />
-        </GlobeMap>
-        <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2">
-          <GlobeControls
-            viewState={viewState}
-            onMove={onMove}
-            styleMode={styleMode}
-            onStyleChange={setStyleMode}
-            onLocate={handleLocate}
-            hasLocation={userLocation !== null}
-            map={mapReady ? mapInstanceRef.current : null}
-          />
-          <StatusBar status={status} />
+      <div className="relative flex-1 flex flex-col">
+        <div className="relative flex-1 min-h-0">
+          <GlobeMap viewState={viewState} onMove={onMove} styleMode={styleMode} onMapReady={handleMapReady}>
+            {activeLayers.map((m) => (
+              <Suspense key={m.id} fallback={null}>
+                <m.MapLayer />
+              </Suspense>
+            ))}
+            <GeoSearch />
+            <UserLocationDot location={userLocation} />
+          </GlobeMap>
+          <div className="absolute bottom-3 right-3 z-10">
+            <GlobeControls
+              viewState={viewState}
+              onMove={onMove}
+              styleMode={styleMode}
+              onStyleChange={setStyleMode}
+              onLocate={handleLocate}
+              hasLocation={userLocation !== null}
+              map={mapReady ? mapInstanceRef.current : null}
+            />
+          </div>
         </div>
+        <BottomBar status={status} />
       </div>
     </div>
   );
