@@ -1,24 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Flame } from "lucide-react";
+import { useMemo } from "react";
+
 import { useWildfires } from "./use-wildfires";
 import { WildfireSelectionProvider, useWildfireSelection } from "./wildfire-context";
-import { useModuleCount } from "@/hooks/use-module-count";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter } from "@/modules/module-context";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { filterByTime } from "@/lib/time-filter";
-import { useModuleData } from "@/hooks/use-module-data";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
 import { WildfireDetailCard } from "./wildfire-detail-card";
+
+import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { filterByTime } from "@/lib/time-filter";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { useModuleFilter } from "@/modules/module-context";
 import type { Wildfire } from "@/types/wildfires";
 
 const MODULE_ID = "wildfires";
@@ -37,7 +32,7 @@ function frpToStatusKey(frp: number): string {
 
 function toGeoJSON(
   fires: Wildfire[],
-  selectedIdx: number | null,
+  selectedIdx: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -59,6 +54,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: Wildfire[], feature: maplibregl.GeoJSONFeature): Wildfire | undefined {
+  return items[feature.properties?.idx];
+}
+
 function WildfiresLayerInner({
   fires,
   inRegionSet,
@@ -68,27 +67,7 @@ function WildfiresLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useWildfireSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const wf = item as Wildfire;
-      select(wf);
-      const map = mapRef?.getMap();
-      if (map && typeof wf.longitude === "number" && typeof wf.latitude === "number") {
-        map.flyTo({
-          center: [wf.longitude, wf.latitude],
-          zoom: FOCUS_ZOOM["wildfires"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("wildfires", selectFromExplorer);
-  const firesRef = useRef(fires);
-  firesRef.current = fires;
 
   const selectedIdx = selected
     ? fires.findIndex(
@@ -99,48 +78,22 @@ function WildfiresLayerInner({
       )
     : null;
 
-  const geojson = useMemo(
-    () => toGeoJSON(fires, selectedIdx, inRegionSet, regionActive),
-    [fires, selectedIdx, inRegionSet, regionActive],
-  );
-
-  const ready = usePinRegistration({
+  return usePinLayer<Wildfire>({
     moduleId: MODULE_ID,
+    items: fires,
+    selectedId: selectedIdx,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: Flame,
     bgColor: CATEGORY_COLORS["Events"],
     statusVariants: STATUS_VARIANTS,
+    clusterMaxZoom: 12,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const idx = feature.properties?.idx;
-      const fire = firesRef.current[idx];
-      if (fire) {
-        select(fire);
-        map.flyTo({
-          center: [fire.longitude, fire.latitude],
-          zoom: FOCUS_ZOOM["wildfires"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={12}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function WildfiresLayer() {

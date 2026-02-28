@@ -1,24 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Rocket } from "lucide-react";
-import { useLaunches } from "./use-launches";
+import { useMemo } from "react";
+
 import { LaunchSelectionProvider, useLaunchSelection } from "./launch-context";
-import { useModuleCount } from "@/hooks/use-module-count";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter } from "@/modules/module-context";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { filterByTime } from "@/lib/time-filter";
-import { useModuleData } from "@/hooks/use-module-data";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
 import { LaunchDetailCard } from "./launch-detail-card";
+import { useLaunches } from "./use-launches";
+
+import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { filterByTime } from "@/lib/time-filter";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { useModuleFilter } from "@/modules/module-context";
 import type { Launch } from "@/types/launches";
 
 const MODULE_ID = "launches";
@@ -37,11 +32,10 @@ function statusToKey(status: string): string {
 
 function toGeoJSON(
   launches: Launch[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
-  // Group launches by pad coordinates so each site = one pin
   const sites = new Map<string, Launch[]>();
   for (const l of launches) {
     const coordKey = `${l.longitude},${l.latitude}`;
@@ -69,6 +63,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: Launch[], feature: maplibregl.GeoJSONFeature): Launch | undefined {
+  return items.find((l) => l.id === feature.properties?.id);
+}
+
 function LaunchesLayerInner({
   launches,
   inRegionSet,
@@ -78,71 +76,25 @@ function LaunchesLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useLaunchSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const launch = item as Launch;
-      select(launch);
-      const map = mapRef?.getMap();
-      if (map && typeof launch.longitude === "number" && typeof launch.latitude === "number") {
-        map.flyTo({
-          center: [launch.longitude, launch.latitude],
-          zoom: FOCUS_ZOOM["launches"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("launches", selectFromExplorer);
-  const launchesRef = useRef(launches);
-  launchesRef.current = launches;
-
   const selectedId = selected?.launch.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(launches, selectedId, inRegionSet, regionActive),
-    [launches, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<Launch>({
     moduleId: MODULE_ID,
+    items: launches,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: Rocket,
     bgColor: CATEGORY_COLORS.Events,
     statusVariants: STATUS_VARIANTS,
+    clusterMaxZoom: 8,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const launch = launchesRef.current.find((l) => l.id === id);
-      if (launch) {
-        select(launch);
-        map.flyTo({
-          center: [launch.longitude, launch.latitude],
-          zoom: FOCUS_ZOOM["launches"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={8}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function LaunchesLayer() {

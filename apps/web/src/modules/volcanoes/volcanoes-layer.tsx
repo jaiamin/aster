@@ -1,31 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Mountain } from "lucide-react";
+import { useMemo } from "react";
+
 import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
-import { useModuleCount } from "@/hooks/use-module-count";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter } from "@/modules/module-context";
-import { filterByTime } from "@/lib/time-filter";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { useModuleData } from "@/hooks/use-module-data";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
 import { VolcanoDetailCard } from "./volcano-detail-card";
+
+import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { filterByTime } from "@/lib/time-filter";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { useModuleFilter } from "@/modules/module-context";
 import type { Volcano } from "@/types/volcanoes";
 
 const MODULE_ID = "volcanoes";
 
 function toGeoJSON(
   volcanoes: Volcano[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -43,6 +38,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: Volcano[], feature: maplibregl.GeoJSONFeature): Volcano | undefined {
+  return items.find((v) => v.id === feature.properties?.id);
+}
+
 function VolcanoesLayerInner({
   volcanoes,
   inRegionSet,
@@ -52,70 +51,24 @@ function VolcanoesLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useVolcanoSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const vol = item as Volcano;
-      select(vol);
-      const map = mapRef?.getMap();
-      if (map && typeof vol.longitude === "number" && typeof vol.latitude === "number") {
-        map.flyTo({
-          center: [vol.longitude, vol.latitude],
-          zoom: FOCUS_ZOOM["volcanoes"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("volcanoes", selectFromExplorer);
-  const volcanoesRef = useRef(volcanoes);
-  volcanoesRef.current = volcanoes;
-
   const selectedId = selected?.volcano.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(volcanoes, selectedId, inRegionSet, regionActive),
-    [volcanoes, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<Volcano>({
     moduleId: MODULE_ID,
+    items: volcanoes,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: Mountain,
     bgColor: CATEGORY_COLORS["Events"],
+    clusterMaxZoom: 12,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const volcano = volcanoesRef.current.find((v) => v.id === id);
-      if (volcano) {
-        select(volcano);
-        map.flyTo({
-          center: [volcano.longitude, volcano.latitude],
-          zoom: FOCUS_ZOOM["volcanoes"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={12}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function VolcanoesLayer() {

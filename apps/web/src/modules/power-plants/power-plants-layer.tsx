@@ -1,22 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Zap } from "lucide-react";
-import { usePowerPlants } from "./use-power-plants";
+import { useMemo } from "react";
+
 import { PowerPlantSelectionProvider, usePowerPlantSelection } from "./power-plant-context";
+import { PowerPlantDetailCard } from "./power-plant-detail-card";
+import { usePowerPlants } from "./use-power-plants";
+
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegionMembership } from "@/hooks/use-region-membership";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
-import { PowerPlantDetailCard } from "./power-plant-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import type { PowerPlant } from "@/types/power-plants";
 
 const MODULE_ID = "power-plants";
@@ -43,7 +38,7 @@ function fuelToStatusKey(fuel: string): string {
 
 function toGeoJSON(
   plants: PowerPlant[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -65,6 +60,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: PowerPlant[], feature: maplibregl.GeoJSONFeature): PowerPlant | undefined {
+  return items.find((p) => p.id === feature.properties?.id);
+}
+
 function PowerPlantsLayerInner({
   plants,
   inRegionSet,
@@ -74,72 +73,25 @@ function PowerPlantsLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePowerPlantSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const plant = item as PowerPlant;
-      select(plant);
-      const map = mapRef?.getMap();
-      if (map && typeof plant.longitude === "number" && typeof plant.latitude === "number") {
-        map.flyTo({
-          center: [plant.longitude, plant.latitude],
-          zoom: FOCUS_ZOOM["power-plants"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("power-plants", selectFromExplorer);
-  const plantsRef = useRef(plants);
-  plantsRef.current = plants;
-
   const selectedId = selected?.plant.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(plants, selectedId, inRegionSet, regionActive),
-    [plants, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<PowerPlant>({
     moduleId: MODULE_ID,
+    items: plants,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: Zap,
     bgColor: CATEGORY_COLORS.Infrastructure,
     statusVariants: STATUS_VARIANTS,
+    clusterMaxZoom: 12,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  // Click handler
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const plant = plantsRef.current.find((p) => p.id === id);
-      if (plant) {
-        select(plant);
-        map.flyTo({
-          center: [plant.longitude, plant.latitude],
-          zoom: FOCUS_ZOOM["power-plants"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={12}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function PowerPlantsLayer() {

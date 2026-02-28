@@ -1,29 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Anchor } from "lucide-react";
-import { usePorts } from "./use-ports";
+import { useMemo } from "react";
+
 import { PortSelectionProvider, usePortSelection } from "./port-context";
+import { PortDetailCard } from "./port-detail-card";
+import { usePorts } from "./use-ports";
+
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegionMembership } from "@/hooks/use-region-membership";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
-import { PortDetailCard } from "./port-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import type { Port } from "@/types/ports";
 
 const MODULE_ID = "ports";
 
 function toGeoJSON(
   ports: Port[],
-  selectedId: number | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -41,6 +36,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: Port[], feature: maplibregl.GeoJSONFeature) {
+  return items.find((p) => p.id === feature.properties?.id);
+}
+
 function PortsLayerInner({
   ports,
   inRegionSet,
@@ -50,70 +49,24 @@ function PortsLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = usePortSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const port = item as Port;
-      select(port);
-      const map = mapRef?.getMap();
-      if (map && typeof port.longitude === "number" && typeof port.latitude === "number") {
-        map.flyTo({
-          center: [port.longitude, port.latitude],
-          zoom: FOCUS_ZOOM["ports"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("ports", selectFromExplorer);
-  const portsRef = useRef(ports);
-  portsRef.current = ports;
-
   const selectedId = selected?.port.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(ports, selectedId, inRegionSet, regionActive),
-    [ports, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<Port>({
     moduleId: MODULE_ID,
+    items: ports,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: Anchor,
     bgColor: CATEGORY_COLORS.Infrastructure,
+    clusterMaxZoom: 13,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const port = portsRef.current.find((p) => p.id === id);
-      if (port) {
-        select(port);
-        map.flyTo({
-          center: [port.longitude, port.latitude],
-          zoom: FOCUS_ZOOM["ports"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={13}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function PortsLayer() {

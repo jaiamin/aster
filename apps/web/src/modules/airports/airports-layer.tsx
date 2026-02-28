@@ -1,29 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { PlaneTakeoff } from "lucide-react";
-import { useAirports } from "./use-airports";
+import { useMemo } from "react";
+
 import { AirportSelectionProvider, useAirportSelection } from "./airport-context";
+import { AirportDetailCard } from "./airport-detail-card";
+import { useAirports } from "./use-airports";
+
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useExplorerFilters } from "@/modules/explorer-context";
 import { useRegionMembership } from "@/hooks/use-region-membership";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
-import { AirportDetailCard } from "./airport-detail-card";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import type { Airport } from "@/types/airports";
 
 const MODULE_ID = "airports";
 
 function toGeoJSON(
   airports: Airport[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -41,6 +36,10 @@ function toGeoJSON(
   };
 }
 
+function findItem(items: Airport[], feature: maplibregl.GeoJSONFeature) {
+  return items.find((a) => a.id === feature.properties?.id);
+}
+
 function AirportsLayerInner({
   airports,
   inRegionSet,
@@ -50,70 +49,23 @@ function AirportsLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirportSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const airport = item as Airport;
-      select(airport);
-      const map = mapRef?.getMap();
-      if (map && typeof airport.longitude === "number" && typeof airport.latitude === "number") {
-        map.flyTo({
-          center: [airport.longitude, airport.latitude],
-          zoom: FOCUS_ZOOM["airports"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("airports", selectFromExplorer);
-  const airportsRef = useRef(airports);
-  airportsRef.current = airports;
-
   const selectedId = selected?.airport.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(airports, selectedId, inRegionSet, regionActive),
-    [airports, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<Airport>({
     moduleId: MODULE_ID,
+    items: airports,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
     icon: PlaneTakeoff,
     bgColor: CATEGORY_COLORS.Infrastructure,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const airport = airportsRef.current.find((a) => a.id === id);
-      if (airport) {
-        select(airport);
-        map.flyTo({
-          center: [airport.longitude, airport.latitude],
-          zoom: FOCUS_ZOOM["airports"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={12}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function AirportsLayer() {

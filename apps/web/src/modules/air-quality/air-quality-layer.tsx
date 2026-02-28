@@ -1,24 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useMap } from "@vis.gl/react-maplibre";
 import { Wind } from "lucide-react";
-import { useAirQuality } from "./use-air-quality";
+import { useMemo } from "react";
+
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
-import { useModuleCount } from "@/hooks/use-module-count";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter } from "@/modules/module-context";
-import { filterByTime } from "@/lib/time-filter";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { useModuleData } from "@/hooks/use-module-data";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
 import { AirQualityDetailCard } from "./air-quality-detail-card";
+import { useAirQuality } from "./use-air-quality";
+
+import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
+import { usePinLayer } from "@/hooks/use-pin-layer";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { filterByTime } from "@/lib/time-filter";
+import { useExplorerFilters } from "@/modules/explorer-context";
+import { useModuleFilter } from "@/modules/module-context";
 import type { AirQualityStation } from "@/types/air-quality";
 
 const MODULE_ID = "air-quality";
@@ -41,7 +36,7 @@ function pm25ToStatusKey(pm25: number): string {
 
 function toGeoJSON(
   stations: AirQualityStation[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -72,71 +67,25 @@ function AirQualityLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirQualitySelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const station = item as AirQualityStation;
-      select(station);
-      const map = mapRef?.getMap();
-      if (map && typeof station.longitude === "number" && typeof station.latitude === "number") {
-        map.flyTo({
-          center: [station.longitude, station.latitude],
-          zoom: FOCUS_ZOOM["air-quality"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("air-quality", selectFromExplorer);
-  const stationsRef = useRef(stations);
-  stationsRef.current = stations;
-
   const selectedId = selected?.station.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(stations, selectedId, inRegionSet, regionActive),
-    [stations, selectedId, inRegionSet, regionActive],
-  );
 
-  const ready = usePinRegistration({
+  return usePinLayer<AirQualityStation>({
     moduleId: MODULE_ID,
+    items: stations,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem: (items, feature) => items.find((s) => s.id === feature.properties?.id),
     icon: Wind,
     bgColor: CATEGORY_COLORS.Environment,
     statusVariants: STATUS_VARIANTS,
+    clusterMaxZoom: 12,
+    inRegionSet,
+    regionActive,
   });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const station = stationsRef.current.find((s) => s.id === id);
-      if (station) {
-        select(station);
-        map.flyTo({
-          center: [station.longitude, station.latitude],
-          zoom: FOCUS_ZOOM["air-quality"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
-
-  return (
-    <ClusteredPinSource
-      moduleId={MODULE_ID}
-      geojson={geojson}
-      clusterMaxZoom={12}
-      regionActive={regionActive}
-    />
-  );
 }
 
 export function AirQualityLayer() {

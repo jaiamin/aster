@@ -1,25 +1,19 @@
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { Layer, Source } from "@vis.gl/react-maplibre";
 import { CloudLightning } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
 import { StormDetailCard } from "./storm-detail-card";
 import { useStorms } from "./use-storms";
 
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useModuleSelect } from "@/hooks/use-module-select";
+import { usePinLayer } from "@/hooks/use-pin-layer";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { registerLayerClick } from "@/lib/layer-click";
 import { filterByTime } from "@/lib/time-filter";
 import { useExplorerFilters } from "@/modules/explorer-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { useModuleFilter } from "@/modules/module-context";
 import type { Storm } from "@/types/storms";
 
@@ -47,7 +41,7 @@ export function stormAccentColor(cat: number): string {
 
 function toGeoJSON(
   storms: Storm[],
-  selectedId: string | null,
+  selectedId: string | number | null,
   inRegionSet: Set<string | number>,
   regionActive: boolean,
 ): GeoJSON.FeatureCollection {
@@ -101,6 +95,10 @@ function buildForecastTrackGeoJSON(storm: Storm): GeoJSON.FeatureCollection {
   };
 }
 
+function findItem(items: Storm[], feature: maplibregl.GeoJSONFeature): Storm | undefined {
+  return items.find((s) => s.id === feature.properties?.id);
+}
+
 function StormsLayerInner({
   storms,
   inRegionSet,
@@ -110,33 +108,25 @@ function StormsLayerInner({
   inRegionSet: Set<string | number>;
   regionActive: boolean;
 }) {
-  const { current: mapRef } = useMap();
   const { selected, select, deselect } = useStormSelection();
-  const selectFromExplorer = useCallback(
-    (item: unknown) => {
-      const st = item as Storm;
-      select(st);
-      const map = mapRef?.getMap();
-      if (map && typeof st.longitude === "number" && typeof st.latitude === "number") {
-        map.flyTo({
-          center: [st.longitude, st.latitude],
-          zoom: FOCUS_ZOOM["storms"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    },
-    [select, mapRef],
-  );
-  useModuleSelect("storms", selectFromExplorer);
-  const stormsRef = useRef(storms);
-  stormsRef.current = storms;
-
   const selectedId = selected?.storm.id ?? null;
-  const geojson = useMemo(
-    () => toGeoJSON(storms, selectedId, inRegionSet, regionActive),
-    [storms, selectedId, inRegionSet, regionActive],
-  );
+
+  const pinLayer = usePinLayer<Storm>({
+    moduleId: MODULE_ID,
+    items: storms,
+    selectedId,
+    select,
+    deselect,
+    selected,
+    toGeoJSON,
+    findItem,
+    icon: CloudLightning,
+    bgColor: CATEGORY_COLORS["Events"],
+    statusVariants: STATUS_VARIANTS,
+    clusterMaxZoom: 4,
+    inRegionSet,
+    regionActive,
+  });
 
   const pastTrackData = useMemo(
     () => (selected ? buildPastTrackGeoJSON(selected.storm) : EMPTY_FC),
@@ -148,46 +138,12 @@ function StormsLayerInner({
   );
   const trackColor = selected ? stormAccentColor(selected.storm.category) : "#ffffff";
 
-  const ready = usePinRegistration({
-    moduleId: MODULE_ID,
-    icon: CloudLightning,
-    bgColor: CATEGORY_COLORS["Events"],
-    statusVariants: STATUS_VARIANTS,
-  });
-  useDeselectOnEmptyClick(selected, deselect);
-
-  useEffect(() => {
-    const map = mapRef?.getMap();
-    if (!map) return;
-
-    return registerLayerClick(`${MODULE_ID}-pins`, (feature) => {
-      const id = feature.properties?.id;
-      const storm = stormsRef.current.find((s) => s.id === id);
-      if (storm) {
-        select(storm);
-        map.flyTo({
-          center: [storm.longitude, storm.latitude],
-          zoom: FOCUS_ZOOM["storms"],
-          duration: 1500,
-          padding: DETAIL_CARD_PADDING,
-        });
-      }
-    });
-  }, [mapRef, select]);
-
-  if (!ready) return null;
+  if (!pinLayer) return null;
 
   return (
     <>
-      {/* Storm pins — rendered first so track layers can reference beforeId */}
-      <ClusteredPinSource
-        moduleId={MODULE_ID}
-        geojson={geojson}
-        clusterMaxZoom={4}
-        regionActive={regionActive}
-      />
+      {pinLayer}
 
-      {/* Past track — solid line, drawn below pins */}
       <Source id={`${MODULE_ID}-past-track-source`} type="geojson" data={pastTrackData}>
         <Layer
           id={`${MODULE_ID}-past-track`}
@@ -205,7 +161,6 @@ function StormsLayerInner({
         />
       </Source>
 
-      {/* Forecast track — dashed line, drawn below pins */}
       <Source id={`${MODULE_ID}-forecast-track-source`} type="geojson" data={forecastTrackData}>
         <Layer
           id={`${MODULE_ID}-forecast-track`}
