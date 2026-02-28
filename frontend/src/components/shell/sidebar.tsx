@@ -1,12 +1,49 @@
 import { useCallback, useMemo, useState } from "react";
-import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown, Eye, EyeOff, Search } from "lucide-react";
+import { Layers, ChevronLeft, ChevronRight, ChevronsUpDown, Eye, EyeOff, Search, Filter } from "lucide-react";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import { useModuleToggle, useModuleCounts, useModuleFilter } from "@/modules/module-context";
 import { useExplorer } from "@/modules/explorer-context";
 import { ExplorerPanel } from "@/components/shell/explorer-panel";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { TIME_PRESETS, type TimePreset } from "@/lib/time-filter";
-import type { ModuleDefinition } from "@/types/modules";
+import type { ModuleDefinition, FilterField } from "@/types/modules";
+import type { ActiveFilters, FilterValue } from "@/modules/explorer-context";
+
+function describeFilter(field: FilterField, value: FilterValue): React.ReactNode[] {
+  switch (value.type) {
+    case "enum": {
+      const lm = field.type === "enum" ? field.labelMap : undefined;
+      const labels = Array.from(value.selected).map((v) => lm?.[v] ?? v);
+      return [
+        <b key="l">{field.label}</b>,
+        <span key="o">{labels.length === 1 ? "is" : "is one of"}</span>,
+        ...labels.map((l) => (
+          <span key={l} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{l}</span>
+        )),
+      ];
+    }
+    case "range": {
+      const unit = field.type === "range" ? (field.unit ?? "") : "";
+      return [
+        <b key="l">{field.label}</b>,
+        <span key="o">between</span>,
+        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.min}{unit} — {value.max}{unit}</span>,
+      ];
+    }
+    case "boolean":
+      return [
+        <b key="l">{field.label}</b>,
+        <span key="o">is</span>,
+        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value ? "Yes" : "No"}</span>,
+      ];
+    case "text":
+      return [
+        <b key="l">{field.label}</b>,
+        <span key="o">contains</span>,
+        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value}</span>,
+      ];
+  }
+}
 
 function ModuleRow({
   def,
@@ -16,6 +53,8 @@ function ModuleRow({
   onExplore,
   isExploring,
   hasActiveFilters,
+  activeFilters,
+  totalCount,
 }: {
   def: ModuleDefinition;
   enabled: boolean;
@@ -24,67 +63,101 @@ function ModuleRow({
   onExplore: () => void;
   isExploring: boolean;
   hasActiveFilters: boolean;
+  activeFilters: ActiveFilters;
+  totalCount: number;
 }) {
-  const { icon: Icon, name, category } = def;
+  const { icon: Icon, name, category, filters: filterFields } = def;
   const color = CATEGORY_COLORS[category] ?? "#8892b0";
   const EyeIcon = enabled ? Eye : EyeOff;
 
+  const filterItems = useMemo(() => {
+    if (!hasActiveFilters || !filterFields) return null;
+    const fieldMap = new Map(filterFields.map((f) => [f.key, f]));
+    const items: React.ReactNode[] = [];
+    let filterIndex = 0;
+    for (const [key, value] of Object.entries(activeFilters)) {
+      const field = fieldMap.get(key);
+      if (!field) continue;
+      if (filterIndex > 0) items.push(<span key={`sep-${key}`}>,</span>);
+      for (const node of describeFilter(field, value)) {
+        items.push(node);
+      }
+      filterIndex++;
+    }
+    return items.length > 0 ? items : null;
+  }, [hasActiveFilters, filterFields, activeFilters]);
+
+  const filteredCount = typeof count === "number" ? count : 0;
+
   return (
     <div
-      className={`flex w-full items-center text-xs transition-colors ${
+      className={`flex w-full flex-col text-xs transition-colors ${
         isExploring ? "text-white" : "text-white/70"
       }`}
     >
-      <div className="flex flex-1 items-center gap-3 px-2 py-1.5 min-w-0">
-        <div
-          className={`flex shrink-0 items-center justify-center transition-opacity ${enabled ? "" : "opacity-40"}`}
-          style={{
-            width: 22,
-            height: 22,
-            backgroundColor: color,
-            border: "1px solid rgba(255,255,255,0.8)",
-          }}
-        >
-          <Icon size={12} className="text-white" />
+      <div className="flex items-center">
+        <div className="flex flex-1 items-center gap-3 px-2 py-1.5 min-w-0">
+          <div
+            className={`flex shrink-0 items-center justify-center transition-opacity ${enabled ? "" : "opacity-40"}`}
+            style={{
+              width: 22,
+              height: 22,
+              backgroundColor: color,
+              border: "1px solid rgba(255,255,255,0.8)",
+            }}
+          >
+            <Icon size={12} className="text-white" />
+          </div>
+          <span className={`text-[13px] truncate transition-opacity ${enabled ? "" : "opacity-40"}`}>
+            {name}
+            {count !== undefined && (
+              count === null ? (
+                <span className="ml-1 inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
+              ) : (
+                <span className="tabular-nums"> ({count.toLocaleString()})</span>
+              )
+            )}
+          </span>
         </div>
-        <span className={`text-[13px] truncate transition-opacity ${enabled ? "" : "opacity-40"}`}>
-          {name}
-          {count !== undefined && (
-            count === null ? (
-              <span className="ml-1 inline-block h-2.5 w-6 translate-y-px animate-pulse rounded bg-muted/20" />
-            ) : (
-              <span className="tabular-nums"> ({count.toLocaleString()})</span>
-            )
-          )}
-        </span>
+        <div className="flex shrink-0 items-center gap-1 pr-1">
+          <button
+            onClick={onToggle}
+            aria-label={enabled ? "Hide layer" : "Show layer"}
+            className={`flex h-6 w-6 items-center justify-center transition-colors ${
+              enabled
+                ? "text-white/70 hover:bg-white/10 hover:text-white"
+                : "text-muted/40 hover:bg-white/10 hover:text-white/60"
+            }`}
+          >
+            <EyeIcon size={16} />
+          </button>
+          <button
+            onClick={onExplore}
+            aria-label="Explore layer"
+            className={`flex h-6 w-6 items-center justify-center transition-colors ${
+              isExploring
+                ? "bg-accent/20 text-accent hover:bg-accent/30"
+                : "text-muted/40 hover:bg-white/10 hover:text-white/60"
+            }`}
+          >
+            <Search size={15} />
+          </button>
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1 pr-1">
-        {hasActiveFilters && (
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-        )}
-        <button
-          onClick={onToggle}
-          aria-label={enabled ? "Hide layer" : "Show layer"}
-          className={`flex h-6 w-6 items-center justify-center transition-colors ${
-            enabled
-              ? "text-white/70 hover:bg-white/10 hover:text-white"
-              : "text-muted/40 hover:bg-white/10 hover:text-white/60"
-          }`}
-        >
-          <EyeIcon size={16} />
-        </button>
-        <button
-          onClick={onExplore}
-          aria-label="Explore layer"
-          className={`flex h-6 w-6 items-center justify-center transition-colors ${
-            isExploring
-              ? "bg-accent/20 text-accent hover:bg-accent/30"
-              : "text-muted/40 hover:bg-white/10 hover:text-white/60"
-          }`}
-        >
-          <Search size={15} />
-        </button>
-      </div>
+      {filterItems && (
+        <div className="mb-1.5 ml-2 mr-1 flex items-start gap-1.5 rounded bg-accent/10 py-1.5 pl-1.5 pr-2">
+          <Filter size={14} className="mt-0.5 shrink-0 text-accent fill-accent" />
+          <div className="flex flex-1 min-w-0 flex-wrap items-baseline gap-x-1 gap-y-1 text-[11px] text-white/60 [&_b]:font-semibold [&_b]:text-white/80">
+            <span>Viewing</span>
+            <b>{filteredCount.toLocaleString()}</b>
+            <span>of</span>
+            <b>{totalCount.toLocaleString()}</b>
+            <b>{name}</b>
+            <span>where</span>
+            {filterItems}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -100,6 +173,8 @@ function CategoryGroup({
   onExplore,
   explorerModuleId,
   hasActiveFilters,
+  getFilters,
+  moduleData,
 }: {
   category: string;
   modules: ModuleDefinition[];
@@ -111,6 +186,8 @@ function CategoryGroup({
   onExplore: (moduleId: string) => void;
   explorerModuleId: string | null;
   hasActiveFilters: (moduleId: string) => boolean;
+  getFilters: (moduleId: string) => ActiveFilters;
+  moduleData: Map<string, unknown[]>;
 }) {
   const activeCount = modules.filter((m) => enabledModules.has(m.id)).length;
 
@@ -146,6 +223,8 @@ function CategoryGroup({
               onExplore={() => onExplore(def.id)}
               isExploring={explorerModuleId === def.id}
               hasActiveFilters={hasActiveFilters(def.id)}
+              activeFilters={getFilters(def.id)}
+              totalCount={moduleData.get(def.id)?.length ?? 0}
             />
           ))}
         </div>
@@ -184,7 +263,7 @@ export function Sidebar() {
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
   const { timeFilter, setTimeFilter } = useModuleFilter();
-  const { openModuleId, openExplorer, closeExplorer, clearFilters, hasActiveFilters } = useExplorer();
+  const { openModuleId, openExplorer, closeExplorer, clearFilters, hasActiveFilters, getFilters, moduleData } = useExplorer();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -306,6 +385,8 @@ export function Sidebar() {
                   onExplore={handleExplore}
                   explorerModuleId={openModuleId}
                   hasActiveFilters={hasActiveFilters}
+                  getFilters={getFilters}
+                  moduleData={moduleData}
                 />
               ))}
             </div>
