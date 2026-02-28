@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "turbo dev & cd apps/api && uv run uvicorn app.main:app --port 8000 --reload",
     "dev:api": "cd apps/api && uv run uvicorn app.main:app --port 8000 --reload",
     "dev:web": "cd apps/web && pnpm dev",
     "build": "turbo build",
