@@ -23,7 +23,7 @@ import type { Buoy } from "@/types/buoys";
 
 const MODULE_ID = "buoys";
 
-function toGeoJSON(buoys: Buoy[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(buoys: Buoy[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: buoys.map((b) => ({
@@ -32,7 +32,7 @@ function toGeoJSON(buoys: Buoy[], selectedId: string | null, inRegionSet: Set<st
       properties: {
         id: b.id,
         pinImage: b.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(b.id),
+        inRegion: !regionActive || inRegionSet.has(b.id),
       },
     })),
   };
@@ -54,7 +54,7 @@ function BuoysLayerInner({ buoys, inRegionSet, regionActive }: { buoys: Buoy[]; 
   buoysRef.current = buoys;
 
   const selectedId = selected?.buoy.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(buoys, selectedId, inRegionSet), [buoys, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(buoys, selectedId, inRegionSet, regionActive), [buoys, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Navigation, bgColor: CATEGORY_COLORS.Environment });
   useDeselectOnEmptyClick(selected, deselect);

@@ -39,7 +39,7 @@ function pm25ToStatusKey(pm25: number): string {
   return "good";
 }
 
-function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: stations.map((s) => {
@@ -51,7 +51,7 @@ function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, inR
         properties: {
           id: s.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(s.id),
+          inRegion: !regionActive || inRegionSet.has(s.id),
         },
       };
     }),
@@ -74,7 +74,7 @@ function AirQualityLayerInner({ stations, inRegionSet, regionActive }: { station
   stationsRef.current = stations;
 
   const selectedId = selected?.station.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(stations, selectedId, inRegionSet), [stations, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(stations, selectedId, inRegionSet, regionActive), [stations, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Wind, bgColor: CATEGORY_COLORS.Environment, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);

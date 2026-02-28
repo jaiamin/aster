@@ -21,7 +21,7 @@ import type { Port } from "@/types/ports";
 
 const MODULE_ID = "ports";
 
-function toGeoJSON(ports: Port[], selectedId: number | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(ports: Port[], selectedId: number | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: ports.map((p) => ({
@@ -30,7 +30,7 @@ function toGeoJSON(ports: Port[], selectedId: number | null, inRegionSet: Set<st
       properties: {
         id: p.id,
         pinImage: p.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(p.id),
+        inRegion: !regionActive || inRegionSet.has(p.id),
       },
     })),
   };
@@ -52,7 +52,7 @@ function PortsLayerInner({ ports, inRegionSet, regionActive }: { ports: Port[]; 
   portsRef.current = ports;
 
   const selectedId = selected?.port.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(ports, selectedId, inRegionSet), [ports, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(ports, selectedId, inRegionSet, regionActive), [ports, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Anchor, bgColor: CATEGORY_COLORS.Infrastructure });
   useDeselectOnEmptyClick(selected, deselect);

@@ -35,7 +35,7 @@ function statusToKey(status: string): string {
   return "go";
 }
 
-function toGeoJSON(launches: Launch[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(launches: Launch[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   // Group launches by pad coordinates so each site = one pin
   const sites = new Map<string, Launch[]>();
   for (const l of launches) {
@@ -57,7 +57,7 @@ function toGeoJSON(launches: Launch[], selectedId: string | null, inRegionSet: S
         properties: {
           id: first.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(first.id),
+          inRegion: !regionActive || inRegionSet.has(first.id),
         },
       };
     }),
@@ -80,7 +80,7 @@ function LaunchesLayerInner({ launches, inRegionSet, regionActive }: { launches:
   launchesRef.current = launches;
 
   const selectedId = selected?.launch.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(launches, selectedId, inRegionSet), [launches, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(launches, selectedId, inRegionSet, regionActive), [launches, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Rocket, bgColor: CATEGORY_COLORS.Events, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);

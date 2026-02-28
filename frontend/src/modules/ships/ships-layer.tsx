@@ -61,7 +61,7 @@ function createShipIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(ships: Ship[], selectedMmsi: number | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(ships: Ship[], selectedMmsi: number | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: ships.map((s) => ({
@@ -72,7 +72,7 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null, inRegionSet: Set<
         name: s.name,
         course: s.course ?? 0,
         selected: s.mmsi === selectedMmsi,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(s.mmsi),
+        inRegion: !regionActive || inRegionSet.has(s.mmsi),
       },
     })),
   };
@@ -219,7 +219,7 @@ function ShipsLayerInner({ ships, inRegionSet, regionActive }: { ships: Ship[]; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ships, selectedMmsi, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi, inRegionSet), [sampled, selectedMmsi, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi, inRegionSet, regionActive), [sampled, selectedMmsi, inRegionSet, regionActive]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>

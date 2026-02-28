@@ -37,7 +37,7 @@ function magToStatusKey(mag: number): string {
   return "green";
 }
 
-function toGeoJSON(quakes: Earthquake[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(quakes: Earthquake[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: quakes.map((q) => {
@@ -49,7 +49,7 @@ function toGeoJSON(quakes: Earthquake[], selectedId: string | null, inRegionSet:
         properties: {
           id: q.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(q.id),
+          inRegion: !regionActive || inRegionSet.has(q.id),
         },
       };
     }),
@@ -72,7 +72,7 @@ function EarthquakesLayerInner({ quakes, inRegionSet, regionActive }: { quakes: 
   quakesRef.current = quakes;
 
   const selectedId = selected?.quake.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(quakes, selectedId, inRegionSet), [quakes, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(quakes, selectedId, inRegionSet, regionActive), [quakes, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Activity, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);

@@ -16,14 +16,14 @@ import { useModuleSelect } from "@/hooks/use-module-select";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
-function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   if (!data) return EMPTY_FC;
   const features = data.cables.features.map((f) => ({
     ...f,
     properties: {
       ...f.properties,
       selected: f.properties.id === selectedId,
-      inRegion: inRegionSet.size === 0 || inRegionSet.has(f.properties.id),
+      inRegion: !regionActive || inRegionSet.has(f.properties.id),
     },
   }));
   return { type: "FeatureCollection", features };
@@ -47,7 +47,7 @@ function CablesLayerInner({ data, inRegionSet, regionActive }: { data: CableData
   selectedRef.current = selected;
 
   const selectedId = selected?.cable.properties.id ?? null;
-  const cablesGeojson = useMemo(() => buildCablesGeoJSON(data, selectedId, inRegionSet), [data, selectedId, inRegionSet]);
+  const cablesGeojson = useMemo(() => buildCablesGeoJSON(data, selectedId, inRegionSet, regionActive), [data, selectedId, inRegionSet, regionActive]);
   const landingPoints = data?.landingPoints ?? EMPTY_FC;
 
   // Click handler — selection via centralized dispatcher (register hit layer)

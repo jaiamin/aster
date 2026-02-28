@@ -35,7 +35,7 @@ function frpToStatusKey(frp: number): string {
   return "orange";
 }
 
-function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: fires.map((f, i) => {
@@ -47,7 +47,7 @@ function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, inRegionSet: S
         properties: {
           idx: i,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(i),
+          inRegion: !regionActive || inRegionSet.has(i),
         },
       };
     }),
@@ -78,7 +78,7 @@ function WildfiresLayerInner({ fires, inRegionSet, regionActive }: { fires: Wild
       )
     : null;
 
-  const geojson = useMemo(() => toGeoJSON(fires, selectedIdx, inRegionSet), [fires, selectedIdx, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(fires, selectedIdx, inRegionSet, regionActive), [fires, selectedIdx, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Flame, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);

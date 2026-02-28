@@ -23,7 +23,7 @@ import type { Volcano } from "@/types/volcanoes";
 
 const MODULE_ID = "volcanoes";
 
-function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: volcanoes.map((v) => ({
@@ -32,7 +32,7 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, inRegionSet:
       properties: {
         id: v.id,
         pinImage: v.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(v.id),
+        inRegion: !regionActive || inRegionSet.has(v.id),
       },
     })),
   };
@@ -54,7 +54,7 @@ function VolcanoesLayerInner({ volcanoes, inRegionSet, regionActive }: { volcano
   volcanoesRef.current = volcanoes;
 
   const selectedId = selected?.volcano.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, inRegionSet), [volcanoes, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, inRegionSet, regionActive), [volcanoes, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Events"] });
   useDeselectOnEmptyClick(selected, deselect);

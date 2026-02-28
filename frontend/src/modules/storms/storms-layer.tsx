@@ -43,7 +43,7 @@ export function stormAccentColor(cat: number): string {
   return "#22c55e";
 }
 
-function toGeoJSON(storms: Storm[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(storms: Storm[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: storms.map((s) => {
@@ -55,7 +55,7 @@ function toGeoJSON(storms: Storm[], selectedId: string | null, inRegionSet: Set<
         properties: {
           id: s.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(s.id),
+          inRegion: !regionActive || inRegionSet.has(s.id),
         },
       };
     }),
@@ -106,7 +106,7 @@ function StormsLayerInner({ storms, inRegionSet, regionActive }: { storms: Storm
   stormsRef.current = storms;
 
   const selectedId = selected?.storm.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(storms, selectedId, inRegionSet), [storms, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(storms, selectedId, inRegionSet, regionActive), [storms, selectedId, inRegionSet, regionActive]);
 
   const pastTrackData = useMemo(
     () => (selected ? buildPastTrackGeoJSON(selected.storm) : EMPTY_FC),

@@ -41,7 +41,7 @@ function fuelToStatusKey(fuel: string): string {
   return "other";
 }
 
-function toGeoJSON(plants: PowerPlant[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(plants: PowerPlant[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: plants.map((p) => {
@@ -53,7 +53,7 @@ function toGeoJSON(plants: PowerPlant[], selectedId: string | null, inRegionSet:
         properties: {
           id: p.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: inRegionSet.size === 0 || inRegionSet.has(p.id),
+          inRegion: !regionActive || inRegionSet.has(p.id),
         },
       };
     }),
@@ -76,7 +76,7 @@ function PowerPlantsLayerInner({ plants, inRegionSet, regionActive }: { plants: 
   plantsRef.current = plants;
 
   const selectedId = selected?.plant.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(plants, selectedId, inRegionSet), [plants, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(plants, selectedId, inRegionSet, regionActive), [plants, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Zap, bgColor: CATEGORY_COLORS.Infrastructure, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);

@@ -76,7 +76,7 @@ function createPlaneIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(flights: Flight[], selectedIcao: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(flights: Flight[], selectedIcao: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: flights.map((f) => ({
@@ -87,7 +87,7 @@ function toGeoJSON(flights: Flight[], selectedIcao: string | null, inRegionSet: 
         callsign: f.callsign,
         true_track: f.true_track ?? 0,
         selected: f.icao24 === selectedIcao,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(f.icao24),
+        inRegion: !regionActive || inRegionSet.has(f.icao24),
       },
     })),
   };
@@ -241,7 +241,7 @@ function FlightsLayerInner({ flights, inRegionSet, regionActive }: { flights: Fl
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [flights, selectedIcao, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao, inRegionSet), [sampled, selectedIcao, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao, inRegionSet, regionActive), [sampled, selectedIcao, inRegionSet, regionActive]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],

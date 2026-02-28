@@ -21,7 +21,7 @@ import type { Airport } from "@/types/airports";
 
 const MODULE_ID = "airports";
 
-function toGeoJSON(airports: Airport[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
+function toGeoJSON(airports: Airport[], selectedId: string | null, inRegionSet: Set<string | number>, regionActive: boolean): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: airports.map((a) => ({
@@ -30,7 +30,7 @@ function toGeoJSON(airports: Airport[], selectedId: string | null, inRegionSet: 
       properties: {
         id: a.id,
         pinImage: a.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: inRegionSet.size === 0 || inRegionSet.has(a.id),
+        inRegion: !regionActive || inRegionSet.has(a.id),
       },
     })),
   };
@@ -52,7 +52,7 @@ function AirportsLayerInner({ airports, inRegionSet, regionActive }: { airports:
   airportsRef.current = airports;
 
   const selectedId = selected?.airport.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(airports, selectedId, inRegionSet), [airports, selectedId, inRegionSet]);
+  const geojson = useMemo(() => toGeoJSON(airports, selectedId, inRegionSet, regionActive), [airports, selectedId, inRegionSet, regionActive]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Infrastructure });
   useDeselectOnEmptyClick(selected, deselect);
