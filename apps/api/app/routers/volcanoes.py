@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.geo.country_lookup import country_from_coords
 from app.services.base import fetch_and_cache
@@ -42,11 +42,14 @@ def _transform(resp: httpx.Response) -> list:
 
 @router.get("/volcanoes")
 async def get_volcanoes():
-    return await fetch_and_cache(
-        CACHE_KEY,
-        EONET_URL,
-        CACHE_TTL,
-        _transform,
-        error_source="EONET",
-        params={"category": "volcanoes", "status": "open", "limit": 365},
-    )
+    try:
+        return await fetch_and_cache(
+            CACHE_KEY,
+            EONET_URL,
+            CACHE_TTL,
+            _transform,
+            error_source="EONET",
+            params={"category": "volcanoes", "status": "open", "limit": 365},
+        )
+    except HTTPException:
+        return []
