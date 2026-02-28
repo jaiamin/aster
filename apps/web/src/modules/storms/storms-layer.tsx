@@ -1,24 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import { CloudLightning } from "lucide-react";
-import { useStorms } from "./use-storms";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
-import { useModuleCount } from "@/hooks/use-module-count";
-import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter } from "@/modules/module-context";
-import { filterByTime } from "@/lib/time-filter";
-import { useRegionMembership } from "@/hooks/use-region-membership";
-import { useModuleData } from "@/hooks/use-module-data";
-import { useExplorerFilters } from "@/modules/explorer-context";
-import { usePinRegistration } from "@/hooks/use-pin-registration";
-import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
-import { useModuleSelect } from "@/hooks/use-module-select";
 import { StormDetailCard } from "./storm-detail-card";
+import { useStorms } from "./use-storms";
+
+import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
+import { useModuleCount } from "@/hooks/use-module-count";
+import { useModuleData } from "@/hooks/use-module-data";
+import { usePinRegistration } from "@/hooks/use-pin-registration";
+import { useModuleSelect } from "@/hooks/use-module-select";
+import { useRegionCount } from "@/hooks/use-region-count";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { registerLayerClick } from "@/lib/layer-click";
+import { filterByTime } from "@/lib/time-filter";
+import { useExplorerFilters } from "@/modules/explorer-context";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
-import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { ClusteredPinSource } from "@/components/globe/clustered-pin-source";
+import { useModuleFilter } from "@/modules/module-context";
 import type { Storm } from "@/types/storms";
 
 const MODULE_ID = "storms";
@@ -177,7 +179,15 @@ function StormsLayerInner({
 
   return (
     <>
-      {/* Past track — solid line */}
+      {/* Storm pins — rendered first so track layers can reference beforeId */}
+      <ClusteredPinSource
+        moduleId={MODULE_ID}
+        geojson={geojson}
+        clusterMaxZoom={4}
+        regionActive={regionActive}
+      />
+
+      {/* Past track — solid line, drawn below pins */}
       <Source id={`${MODULE_ID}-past-track-source`} type="geojson" data={pastTrackData}>
         <Layer
           id={`${MODULE_ID}-past-track`}
@@ -195,7 +205,7 @@ function StormsLayerInner({
         />
       </Source>
 
-      {/* Forecast track — dashed line */}
+      {/* Forecast track — dashed line, drawn below pins */}
       <Source id={`${MODULE_ID}-forecast-track-source`} type="geojson" data={forecastTrackData}>
         <Layer
           id={`${MODULE_ID}-forecast-track`}
@@ -213,14 +223,6 @@ function StormsLayerInner({
           }}
         />
       </Source>
-
-      {/* Storm pins */}
-      <ClusteredPinSource
-        moduleId={MODULE_ID}
-        geojson={geojson}
-        clusterMaxZoom={4}
-        regionActive={regionActive}
-      />
     </>
   );
 }
