@@ -16,13 +16,17 @@ export function usePolledData<T>({ endpoint, interval, transform }: UsePolledDat
     const controller = new AbortController();
 
     async function fetchData() {
-      try {
-        const res = await fetch(endpoint, { signal: controller.signal });
-        if (!res.ok) return;
-        const raw = await res.json();
-        setData(transform ? transform(raw) : raw);
-      } catch {
-        // aborted or network error — ignore
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(endpoint, { signal: controller.signal });
+          if (!res.ok) throw new Error(res.statusText);
+          const raw = await res.json();
+          setData(transform ? transform(raw) : raw);
+          return;
+        } catch (e) {
+          if (controller.signal.aborted) return;
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+        }
       }
     }
 
