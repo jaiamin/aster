@@ -1,4 +1,5 @@
-import type { ComponentType, LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 
 export type FilterField =
   | { key: string; label: string; type: "range"; min: number; max: number; unit?: string }

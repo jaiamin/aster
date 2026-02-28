@@ -1,64 +1,49 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.http_client import get_client
 
 router = APIRouter()
 
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 7200.0  # 2 hours
-
 CELESTRAK_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
+CACHE_KEY = "satellites"
+CACHE_TTL = 7200
+
+SATCAT_URL = "https://celestrak.org/satcat/records.php"
+DETAIL_CACHE_TTL = 86400
 
 
 @router.get("/satellites")
 async def get_satellites():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
         resp = await client.get(CELESTRAK_URL)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(
             status_code=e.response.status_code, detail="CelesTrak API error"
         )
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(
             status_code=502, detail="Failed to reach CelesTrak API"
         )
 
     result = resp.json()
-    _cache = result
-    _cache_time = now
+    await cache.set(CACHE_KEY, result, CACHE_TTL)
     return result
-
-
-# --- Satellite detail endpoint ---
-
-SATCAT_URL = "https://celestrak.org/satcat/records.php"
-
-_detail_cache: dict[int, tuple[float, dict]] = {}
-DETAIL_CACHE_TTL = 86400.0  # 24 hours
 
 
 @router.get("/satellites/{norad_id}/detail")
 async def get_satellite_detail(norad_id: int):
-    now = _time.monotonic()
-    cached = _detail_cache.get(norad_id)
-    if cached and (now - cached[0]) < DETAIL_CACHE_TTL:
-        return cached[1]
+    detail_key = f"satellite_detail:{norad_id}"
+    cached = await cache.get(detail_key)
+    if cached is not None:
+        return cached
 
     satcat = None
 
@@ -86,5 +71,5 @@ async def get_satellite_detail(norad_id: int):
         pass
 
     result = {"satcat": satcat}
-    _detail_cache[norad_id] = (now, result)
+    await cache.set(detail_key, result, DETAIL_CACHE_TTL)
     return result

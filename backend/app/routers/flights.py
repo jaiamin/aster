@@ -1,9 +1,9 @@
 import time as _time
-from collections import OrderedDict
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.config import settings
 from app.http_client import get_client
 
@@ -21,9 +21,10 @@ FIELD_TRUE_TRACK = 10
 FIELD_VERTICAL_RATE = 11
 FIELD_SQUAWK = 14
 
-_cache: dict | None = None
-_cache_time: float = 0
-CACHE_TTL = 10.0
+CACHE_KEY = "flights"
+CACHE_TTL = 10
+TRACK_CACHE_TTL = 30
+DETAIL_CACHE_TTL = 300
 
 _token: str | None = None
 _token_time: float = 0
@@ -83,11 +84,9 @@ def _parse_states(data: dict) -> dict:
 
 @router.get("/flights")
 async def get_flights():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     url = f"{settings.opensky_base_url}/states/all"
 
@@ -98,36 +97,24 @@ async def get_flights():
         resp = await client.get(url, headers=headers, timeout=15.0)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if e.response.status_code in (401, 429) and _cache is not None:
-            if e.response.status_code == 401:
-                global _token
-                _token = None  # force token refresh on next request
-            return _cache
+        if e.response.status_code == 401:
+            global _token
+            _token = None
         raise HTTPException(status_code=e.response.status_code, detail="OpenSky API error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to reach OpenSky API")
 
     result = _parse_states(resp.json())
-    _cache = result
-    _cache_time = now
+    await cache.set(CACHE_KEY, result, CACHE_TTL)
     return result
-
-
-# --- Flight track endpoint ---
-
-_track_cache: OrderedDict[str, tuple[float, dict]] = OrderedDict()
-TRACK_CACHE_TTL = 30.0
-TRACK_CACHE_MAX = 500
 
 
 @router.get("/flights/{icao24}/track")
 async def get_flight_track(icao24: str):
-    now = _time.monotonic()
-    cached = _track_cache.get(icao24)
-    if cached and (now - cached[0]) < TRACK_CACHE_TTL:
-        return cached[1]
+    track_key = f"flight_track:{icao24}"
+    cached = await cache.get(track_key)
+    if cached is not None:
+        return cached
 
     url = f"{settings.opensky_base_url}/tracks/all"
     client = get_client()
@@ -166,28 +153,21 @@ async def get_flight_track(icao24: str):
         "endTime": data.get("endTime"),
         "path": path,
     }
-    _track_cache[icao24] = (now, result)
-    _track_cache.move_to_end(icao24)
-    while len(_track_cache) > TRACK_CACHE_MAX:
-        _track_cache.popitem(last=False)
+    await cache.set(track_key, result, TRACK_CACHE_TTL)
     return result
 
 
 # --- Flight detail endpoint (hexdb.io) ---
 
 HEXDB_BASE = "https://hexdb.io/api/v1"
-_detail_cache: OrderedDict[str, tuple[float, dict]] = OrderedDict()
-DETAIL_CACHE_TTL = 300.0
-DETAIL_CACHE_MAX = 1000
 
 
 @router.get("/flights/{icao24}/detail")
 async def get_flight_detail(icao24: str, callsign: str = ""):
-    now = _time.monotonic()
-    cache_key = f"{icao24}:{callsign}"
-    cached = _detail_cache.get(cache_key)
-    if cached and (now - cached[0]) < DETAIL_CACHE_TTL:
-        return cached[1]
+    detail_key = f"flight_detail:{icao24}:{callsign}"
+    cached = await cache.get(detail_key)
+    if cached is not None:
+        return cached
 
     client = get_client()
     aircraft_resp = await client.get(f"{HEXDB_BASE}/aircraft/{icao24}", timeout=10.0)
@@ -241,8 +221,5 @@ async def get_flight_detail(icao24: str, callsign: str = ""):
         }
 
     result = {"aircraft": aircraft, "route": route, "photoUrl": photo_url}
-    _detail_cache[cache_key] = (now, result)
-    _detail_cache.move_to_end(cache_key)
-    while len(_detail_cache) > DETAIL_CACHE_MAX:
-        _detail_cache.popitem(last=False)
+    await cache.set(detail_key, result, DETAIL_CACHE_TTL)
     return result

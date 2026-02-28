@@ -14,7 +14,7 @@ import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleSelect } from "@/hooks/use-module-select";
-import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
+import type { Flight, FlightTrack } from "@/types/flights";
 
 const ICON_NORMAL = "plane-icon";
 const ICON_SELECTED = "plane-icon-selected";
@@ -116,7 +116,8 @@ function FlightsLayerInner({ flights, inRegionSet, regionActive }: { flights: Fl
   trackingRef.current = tracking;
   const flyingToRef = useRef(false);
 
-  const selectFromExplorer = useCallback((flight: Flight) => {
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const flight = item as Flight;
     flyingToRef.current = true;
     select(flight);
     const map = mapRef?.getMap();
@@ -149,7 +150,7 @@ function FlightsLayerInner({ flights, inRegionSet, regionActive }: { flights: Fl
     const map = mapRef?.getMap();
     if (!map) return;
 
-    return registerLayerClick("flights-layer", (feature, e) => {
+    return registerLayerClick("flights-layer", (feature, _e) => {
       const icao24 = feature.properties?.icao24;
       const flight = flightsRef.current.find((f) => f.icao24 === icao24);
       if (flight) {

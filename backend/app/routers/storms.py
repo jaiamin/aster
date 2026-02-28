@@ -1,9 +1,9 @@
 import asyncio
-import time as _time
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.http_client import get_client
 
 router = APIRouter()
@@ -14,9 +14,8 @@ LAYER_FORECAST_TRACK = 6
 LAYER_PAST_TRACK = 11
 QUERY_PARAMS = {"where": "1=1", "outFields": "*", "f": "json", "returnGeometry": "true"}
 
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 300.0
+CACHE_KEY = "storms"
+CACHE_TTL = 300
 
 
 async def _fetch_layer(client: httpx.AsyncClient, layer: int) -> list:
@@ -44,11 +43,9 @@ def _category_from_wind(wind: float | None) -> int:
 
 @router.get("/storms")
 async def get_storms():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
@@ -58,12 +55,8 @@ async def get_storms():
             _fetch_layer(client, LAYER_FORECAST_TRACK),
         )
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=e.response.status_code, detail="NHC API error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to reach NHC API")
 
     # Group forecast points by storm name
@@ -116,7 +109,6 @@ async def get_storms():
             }
 
         if tau == 0:
-            # Current position — update main fields
             storms_map[name]["latitude"] = lat
             storms_map[name]["longitude"] = lon
             storms_map[name]["windSpeed"] = wind
@@ -153,6 +145,5 @@ async def get_storms():
         storm["forecastTrack"].sort(key=lambda p: p["tau"])
 
     result = list(storms_map.values())
-    _cache = result
-    _cache_time = now
+    await cache.set(CACHE_KEY, result, CACHE_TTL)
     return result

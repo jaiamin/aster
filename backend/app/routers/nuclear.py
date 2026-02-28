@@ -1,36 +1,28 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
+
+from app import cache
 
 router = APIRouter()
 
 DATA_URL = "https://raw.githubusercontent.com/cristianst85/GeoNuclearData/master/data/json/denormalized/nuclear_power_plants.json"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 86400.0  # 24 hours — data is essentially static
+CACHE_KEY = "nuclear"
+CACHE_TTL = 86400
 
 
 @router.get("/nuclear")
 async def get_nuclear():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             resp = await client.get(DATA_URL)
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
             raise HTTPException(status_code=e.response.status_code, detail="GeoNuclearData error")
         except httpx.RequestError:
-            if _cache is not None:
-                return _cache
             raise HTTPException(status_code=502, detail="Failed to fetch nuclear data")
 
     raw = resp.json()
@@ -61,6 +53,5 @@ async def get_nuclear():
             }
         )
 
-    _cache = results
-    _cache_time = now
+    await cache.set(CACHE_KEY, results, CACHE_TTL)
     return results

@@ -26,7 +26,7 @@ export function useMapState() {
 
   const rafRef = useRef(0);
   const lastFlushRef = useRef(0);
-  const pendingFlushRef = useRef<ReturnType<typeof setTimeout>>();
+  const pendingFlushRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latestVsRef = useRef(viewState);
 
   const onMove = useCallback(
@@ -62,7 +62,7 @@ export function useMapState() {
   }, []);
 
   // Debounced URL sync
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const syncUrl = useCallback((vs: MapViewState, layers: Set<string>, style: string, searchQuery?: string, timeFilter?: TimePreset) => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => writeUrlState(vs, layers, style, searchQuery, timeFilter), 300);

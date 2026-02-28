@@ -1,17 +1,14 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.http_client import get_client
 
 router = APIRouter()
 
 DATA_URL = "https://www.ndbc.noaa.gov/data/latest_obs/latest_obs.txt"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 600.0  # 10 minutes — real-time data
+CACHE_KEY = "buoys"
+CACHE_TTL = 600
 
 
 def _parse_val(raw: str) -> float | None:
@@ -25,23 +22,17 @@ def _parse_val(raw: str) -> float | None:
 
 @router.get("/buoys")
 async def get_buoys():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
         resp = await client.get(DATA_URL)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=e.response.status_code, detail="NDBC data source error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to fetch buoy data")
 
     lines = resp.text.strip().split("\n")
@@ -78,6 +69,5 @@ async def get_buoys():
             }
         )
 
-    _cache = results
-    _cache_time = now
+    await cache.set(CACHE_KEY, results, CACHE_TTL)
     return results

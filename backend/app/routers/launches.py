@@ -1,8 +1,7 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.geo.country_lookup import country_from_coords
 from app.http_client import get_client
 
@@ -10,10 +9,8 @@ router = APIRouter()
 
 UPCOMING_URL = "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=50&mode=detailed"
 PREVIOUS_URL = "https://ll.thespacedevs.com/2.3.0/launches/previous/?limit=50&mode=detailed"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 600.0  # 10 min — conservative for 15 req/hr limit
+CACHE_KEY = "launches"
+CACHE_TTL = 600
 
 
 def _parse_launch(launch: dict) -> dict | None:
@@ -60,11 +57,9 @@ def _parse_launch(launch: dict) -> dict | None:
 
 @router.get("/launches")
 async def get_launches():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     results = []
     client = get_client()
@@ -80,12 +75,8 @@ async def get_launches():
         except (httpx.HTTPStatusError, httpx.RequestError):
             pass
 
-    if not results and _cache is not None:
-        return _cache
-
     if not results:
         raise HTTPException(status_code=502, detail="Failed to fetch launch data")
 
-    _cache = results
-    _cache_time = now
+    await cache.set(CACHE_KEY, results, CACHE_TTL)
     return results

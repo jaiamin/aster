@@ -150,7 +150,7 @@ function SatellitesLayerInner({
               id: "satellite-orbit-layer",
               data: orbitSegments,
               getPath: (segment) =>
-                segment.map((p) => [p.longitude, p.latitude, p.altitude]),
+                segment.map((p) => [p.longitude, p.latitude, p.altitude]) as never,
               getColor: [239, 68, 68, 153],
               getWidth: 1.5,
               widthUnits: "pixels",

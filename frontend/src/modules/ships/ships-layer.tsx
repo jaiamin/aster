@@ -90,7 +90,8 @@ function ShipsLayerInner({ ships, inRegionSet, regionActive }: { ships: Ship[]; 
   trackingRef.current = tracking;
   const flyingToRef = useRef(false);
 
-  const selectFromExplorer = useCallback((ship: Ship) => {
+  const selectFromExplorer = useCallback((item: unknown) => {
+    const ship = item as Ship;
     flyingToRef.current = true;
     select(ship);
     const map = mapRef?.getMap();

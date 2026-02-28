@@ -41,7 +41,6 @@ export function AirportDetailCard() {
 
   const { airport } = selected;
   const color = typeColor(airport.type);
-  const codes = [airport.iata, airport.icao].filter(Boolean).join(" / ");
 
   const recenter = () => {
     const map = mapRef?.getMap();

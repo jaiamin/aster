@@ -22,8 +22,8 @@ function buildCablesGeoJSON(data: CableData | null, selectedId: string | null, i
     ...f,
     properties: {
       ...f.properties,
-      selected: f.properties.id === selectedId,
-      inRegion: !regionActive || inRegionSet.has(f.properties.id),
+      selected: f.properties?.id === selectedId,
+      inRegion: !regionActive || inRegionSet.has(f.properties?.id),
     },
   }));
   return { type: "FeatureCollection", features };
@@ -62,7 +62,7 @@ function CablesLayerInner({ data, inRegionSet, regionActive }: { data: CableData
       const d = dataRef.current;
       if (d) {
         const cable = d.cables.features.find(
-          (f) => f.properties.id === id
+          (f) => f.properties?.id === id
         ) as CableFeature | undefined;
         if (cable) select(cable);
       }
@@ -242,7 +242,7 @@ export function CablesLayer() {
       const first = firstLine[0];
       const last = lastLine[lastLine.length - 1];
       if (isInRegion(first[0], first[1]) || isInRegion(last[0], last[1])) {
-        set.add(f.properties.id);
+        set.add(f.properties!.id);
       }
     }
     return { inRegionSet: set, regionCount: set.size };

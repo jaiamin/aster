@@ -1,39 +1,30 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.geo.country_lookup import country_from_coords
 from app.http_client import get_client
 
 router = APIRouter()
 
 USGS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 60.0
+CACHE_KEY = "earthquakes"
+CACHE_TTL = 60
 
 
 @router.get("/earthquakes")
 async def get_earthquakes():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
         resp = await client.get(USGS_URL, timeout=15.0)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=e.response.status_code, detail="USGS API error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to reach USGS API")
 
     data = resp.json()
@@ -68,6 +59,5 @@ async def get_earthquakes():
             }
         )
 
-    _cache = quakes
-    _cache_time = now
+    await cache.set(CACHE_KEY, quakes, CACHE_TTL)
     return quakes

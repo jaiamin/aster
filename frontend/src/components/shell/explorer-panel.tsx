@@ -433,8 +433,8 @@ function RangeFilter({
   field,
   value,
   onChange,
-  isActive,
-  onClear,
+  isActive: _isActive,
+  onClear: _onClear,
 }: {
   field: Extract<FilterField, { type: "range" }>;
   value: FilterValue | undefined;
@@ -504,8 +504,8 @@ function EnumFilter({
   value,
   data,
   onChange,
-  isActive,
-  onClear,
+  isActive: _isActive,
+  onClear: _onClear,
 }: {
   field: Extract<FilterField, { type: "enum" }>;
   value: FilterValue | undefined;
@@ -516,7 +516,6 @@ function EnumFilter({
 }) {
   const [expanded, setExpanded] = useState(false);
   const selected = value?.type === "enum" ? value.selected : new Set<string>();
-  const hasSelection = selected.size > 0;
 
   // Derive options from data if not explicitly provided
   const options = useMemo(() => {
@@ -579,8 +578,8 @@ function BooleanFilter({
   field,
   value,
   onChange,
-  isActive,
-  onClear,
+  isActive: _isActive,
+  onClear: _onClear,
 }: {
   field: Extract<FilterField, { type: "boolean" }>;
   value: FilterValue | undefined;

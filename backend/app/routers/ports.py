@@ -1,44 +1,33 @@
 import logging
-import time as _time
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.http_client import get_client
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 DATA_URL = "https://raw.githubusercontent.com/tayljordan/ports/main/ports.json"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 86400.0  # 24 hours — static dataset
-
-_lookup_cache: dict[str, dict | None] = {}
-LOOKUP_CACHE_MAX = 5000
-LOOKUP_CACHE_EVICT = 1000
+CACHE_KEY = "ports"
+CACHE_TTL = 86400
+LOOKUP_CACHE_TTL = 86400
 
 
 async def _ensure_port_cache():
     """Make sure the port list is loaded (reuses get_ports cache)."""
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
         resp = await client.get(DATA_URL)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=e.response.status_code, detail="Port data source error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to fetch port data")
 
     raw: list[dict] = resp.json()
@@ -71,8 +60,7 @@ async def _ensure_port_cache():
             }
         )
 
-    _cache = results
-    _cache_time = now
+    await cache.set(CACHE_KEY, results, CACHE_TTL)
     return results
 
 
@@ -87,17 +75,14 @@ def _search_ports(ports: list[dict], query: str) -> dict | None:
     if not q:
         return None
 
-    # Exact match first
     for p in ports:
         if p["name"].lower() == q:
             return p
 
-    # Starts-with match
     for p in ports:
         if p["name"].lower().startswith(q):
             return p
 
-    # Substring match
     for p in ports:
         if q in p["name"].lower():
             return p
@@ -136,22 +121,15 @@ async def _nominatim_lookup(query: str) -> dict | None:
 
 @router.get("/ports/lookup")
 async def lookup_port(q: str = ""):
-    """Resolve an AIS destination string to a port location.
-
-    Handles dash-separated destinations (e.g. "GLRT-HEST") by trying the
-    full string first, then each segment individually (last segment first,
-    as that's typically the final destination).
-    """
+    """Resolve an AIS destination string to a port location."""
     q = q.strip().upper()
     if not q:
         return None
 
-    if q in _lookup_cache:
-        return _lookup_cache[q]
-
-    if len(_lookup_cache) >= LOOKUP_CACHE_MAX:
-        for key in list(_lookup_cache)[:LOOKUP_CACHE_EVICT]:
-            del _lookup_cache[key]
+    lookup_key = f"port_lookup:{q}"
+    cached = await cache.get(lookup_key, default=cache.MISSING)
+    if cached is not cache.MISSING:
+        return cached
 
     ports = await _ensure_port_cache()
 
@@ -172,15 +150,16 @@ async def lookup_port(q: str = ""):
                 "latitude": match["latitude"],
                 "longitude": match["longitude"],
             }
-            _lookup_cache[q] = result
+            await cache.set(lookup_key, result, LOOKUP_CACHE_TTL)
             return result
 
     # Fallback to Nominatim for each candidate
     for candidate in candidates:
         result = await _nominatim_lookup(candidate)
         if result:
-            _lookup_cache[q] = result
+            await cache.set(lookup_key, result, LOOKUP_CACHE_TTL)
             return result
 
-    _lookup_cache[q] = None
+    # Cache the miss too
+    await cache.set(lookup_key, None, LOOKUP_CACHE_TTL)
     return None

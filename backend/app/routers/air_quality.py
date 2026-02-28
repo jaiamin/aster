@@ -1,8 +1,7 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.config import settings
 from app.http_client import get_client
 
@@ -10,24 +9,19 @@ router = APIRouter()
 
 # OpenAQ v3: PM2.5 parameter ID is 2
 OPENAQ_LATEST_URL = "https://api.openaq.org/v3/parameters/2/latest"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 1800.0  # 30 minutes
+CACHE_KEY = "air_quality"
+CACHE_TTL = 1800
 
 
 @router.get("/air-quality")
 async def get_air_quality():
-    global _cache, _cache_time
-
     if not settings.openaq_api_key:
-        if _cache is not None:
-            return _cache
-        return []
+        cached = await cache.get(CACHE_KEY)
+        return cached if cached is not None else []
 
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     all_results: list[dict] = []
     page = 1
@@ -46,8 +40,6 @@ async def get_air_quality():
             )
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            if _cache is not None:
-                return _cache
             if all_results:
                 break
             raise HTTPException(
@@ -55,8 +47,6 @@ async def get_air_quality():
                 detail="OpenAQ API error",
             )
         except httpx.RequestError:
-            if _cache is not None:
-                return _cache
             if all_results:
                 break
             raise HTTPException(status_code=502, detail="Failed to reach OpenAQ API")
@@ -102,6 +92,5 @@ async def get_air_quality():
             break
         page += 1
 
-    _cache = all_results
-    _cache_time = now
+    await cache.set(CACHE_KEY, all_results, CACHE_TTL)
     return all_results

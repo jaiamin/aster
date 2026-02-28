@@ -6,6 +6,7 @@ import time as _time
 import websockets
 from fastapi import APIRouter
 
+from app import cache
 from app.config import settings
 
 router = APIRouter()
@@ -17,6 +18,23 @@ _ws_task: asyncio.Task | None = None
 PRUNE_INTERVAL = 50  # prune every N messages
 STALE_SECONDS = 600  # 10 minutes
 MAX_SHIPS = 50_000
+CACHE_KEY = "ships"
+CACHE_TTL = 30
+
+
+async def _sync_to_cache():
+    """Periodically sync in-memory ship data to Redis for cross-instance access."""
+    while True:
+        try:
+            if _ships:
+                snapshot = [
+                    {k: v for k, v in ship.items() if k != "timestamp"}
+                    for ship in _ships.values()
+                ]
+                await cache.set(CACHE_KEY, snapshot, CACHE_TTL)
+        except Exception:
+            logger.debug("Failed to sync ships to cache")
+        await asyncio.sleep(10)
 
 
 async def _connect_aisstream():
@@ -96,7 +114,6 @@ async def _connect_aisstream():
                         imo = static.get("ImoNumber")
                         draught = static.get("MaximumStaticDraught")
 
-                        # ETA comes as {Month, Day, Hour, Minute}
                         eta_raw = static.get("Eta", {})
                         eta = None
                         if eta_raw and eta_raw.get("Month") and eta_raw.get("Day"):
@@ -148,22 +165,34 @@ async def _connect_aisstream():
             backoff = min(backoff * 2, 60)
 
 
+_sync_task: asyncio.Task | None = None
+
+
 def start_ws():
-    global _ws_task
+    global _ws_task, _sync_task
     if _ws_task is None or _ws_task.done():
         _ws_task = asyncio.create_task(_connect_aisstream())
+    if _sync_task is None or _sync_task.done():
+        _sync_task = asyncio.create_task(_sync_to_cache())
 
 
 def stop_ws():
-    global _ws_task
+    global _ws_task, _sync_task
     if _ws_task and not _ws_task.done():
         _ws_task.cancel()
     _ws_task = None
+    if _sync_task and not _sync_task.done():
+        _sync_task.cancel()
+    _sync_task = None
 
 
 @router.get("/ships")
 async def get_ships():
-    return [
-        {k: v for k, v in ship.items() if k != "timestamp"}
-        for ship in _ships.values()
-    ]
+    if _ships:
+        return [
+            {k: v for k, v in ship.items() if k != "timestamp"}
+            for ship in _ships.values()
+        ]
+    # Fall back to Redis cache (for instances without active WebSocket)
+    cached = await cache.get(CACHE_KEY)
+    return cached or []

@@ -29,7 +29,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     satrecs = [];
     for (const gp of msg.records) {
       try {
-        const satrec = json2satrec(gp);
+        const satrec = json2satrec(gp as never);
         satrecs.push({ id: gp.NORAD_CAT_ID, name: gp.OBJECT_NAME, satrec });
       } catch {
         // invalid record — skip
@@ -51,7 +51,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     for (let i = 0; i < satrecs.length; i++) {
       const { id, satrec } = satrecs[i];
       const posVel = propagate(satrec, now);
-      if (!posVel.position || typeof posVel.position === "boolean") continue;
+      if (!posVel?.position || typeof posVel.position === "boolean") continue;
 
       const geodetic = eciToGeodetic(posVel.position, gmst);
       const offset = writeIdx * 4;
@@ -65,7 +65,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     const result = buf.buffer.slice(0, writeIdx * 4 * 8);
     self.postMessage(
       { type: "positions", count: writeIdx, buffer: result },
-      [result] as unknown as Transferable[],
+      { transfer: [result] },
     );
     return;
   }
@@ -74,7 +74,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     const gp = msg.gp;
     let satrec: SatRec;
     try {
-      satrec = json2satrec(gp);
+      satrec = json2satrec(gp as never);
     } catch {
       self.postMessage({ type: "orbit-result", segments: [] });
       return;
@@ -90,7 +90,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     for (let m = -halfPeriod; m <= halfPeriod; m += stepMinutes) {
       const time = new Date(now + m * 60_000);
       const posVel = propagate(satrec, time);
-      if (!posVel.position || typeof posVel.position === "boolean") continue;
+      if (!posVel?.position || typeof posVel.position === "boolean") continue;
 
       const gmsTime = gstime(time);
       const geodetic = eciToGeodetic(posVel.position, gmsTime);

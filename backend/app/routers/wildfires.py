@@ -1,20 +1,18 @@
 import csv
 import io
-import time as _time
 
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.geo.country_lookup import country_from_coords
 from app.http_client import get_client
 
 router = APIRouter()
 
 FIRMS_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_24h.csv"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 600.0  # 10 minutes — FIRMS updates hourly
+CACHE_KEY = "wildfires"
+CACHE_TTL = 600
 
 # Only include fires with meaningful FRP to keep payload manageable
 MIN_FRP = 15.0
@@ -22,25 +20,19 @@ MIN_FRP = 15.0
 
 @router.get("/wildfires")
 async def get_wildfires():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
         resp = await client.get(FIRMS_URL)
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(
             status_code=e.response.status_code, detail="FIRMS API error"
         )
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to reach FIRMS")
 
     reader = csv.DictReader(io.StringIO(resp.text))
@@ -75,6 +67,5 @@ async def get_wildfires():
         except (ValueError, KeyError):
             continue
 
-    _cache = fires
-    _cache_time = now
+    await cache.set(CACHE_KEY, fires, CACHE_TTL)
     return fires

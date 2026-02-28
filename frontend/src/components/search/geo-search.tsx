@@ -312,9 +312,9 @@ export function GeoSearch() {
   const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection>(EMPTY_FC);
   const activeNameRef = useRef("");
   const savedBoundsRef = useRef<{ bbox: [number, number, number, number] | null; center: [number, number] } | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const abortRef = useRef<AbortController>();
-  const labelAbortRef = useRef<AbortController>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const abortRef = useRef<AbortController>(undefined);
+  const labelAbortRef = useRef<AbortController>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced Nominatim search
@@ -514,7 +514,7 @@ export function GeoSearch() {
     const handleLabelClick = (e: maplibregl.MapMouseEvent) => {
       // Let data pin handlers run first — they set _layerHandled
       requestAnimationFrame(() => {
-        if ((e.originalEvent as Record<string, unknown>)._layerHandled) return;
+        if ((e.originalEvent as unknown as Record<string, unknown>)._layerHandled) return;
 
         // Find all symbol layers currently in the style that are place/water labels
         const styleLayers = map.getStyle()?.layers ?? [];
@@ -530,7 +530,7 @@ export function GeoSearch() {
         if (!name) return;
 
         // Mark as handled so no other handler fires
-        (e.originalEvent as Record<string, unknown>)._layerHandled = true;
+        (e.originalEvent as unknown as Record<string, unknown>)._layerHandled = true;
 
         // Search Nominatim and auto-select the closest result to the click point
         labelAbortRef.current?.abort();
@@ -602,7 +602,7 @@ export function GeoSearch() {
     const handleClick = (e: maplibregl.MapMouseEvent) => {
       // Run after rAF handlers (label click, satellite deselect) so _layerHandled is settled
       setTimeout(() => {
-        if ((e.originalEvent as Record<string, unknown>)._layerHandled) return;
+        if ((e.originalEvent as unknown as Record<string, unknown>)._layerHandled) return;
         if (!regionActiveRef.current) return;
         const { lng, lat } = e.lngLat;
         if (!isInRegionRef.current(lng, lat)) {

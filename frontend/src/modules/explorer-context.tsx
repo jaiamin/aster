@@ -173,7 +173,7 @@ function matchesFilter(item: Record<string, unknown>, field: FilterField, value:
 
   switch (value.type) {
     case "range": {
-      const num = typeof raw === "number" ? raw : parseFloat(raw);
+      const num = typeof raw === "number" ? raw : parseFloat(raw as string);
       if (Number.isNaN(num)) return false;
       return num >= value.min && num <= value.max;
     }

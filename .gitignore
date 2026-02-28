@@ -30,6 +30,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Docker
+docker-compose.override.yml
+
 # Logs
 *.log
 npm-debug.log*

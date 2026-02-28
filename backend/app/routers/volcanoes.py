@@ -1,27 +1,22 @@
-import time as _time
-
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import cache
 from app.geo.country_lookup import country_from_coords
 from app.http_client import get_client
 
 router = APIRouter()
 
 EONET_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
-
-_cache: list | None = None
-_cache_time: float = 0
-CACHE_TTL = 1800.0  # 30 minutes — volcano data changes slowly
+CACHE_KEY = "volcanoes"
+CACHE_TTL = 1800
 
 
 @router.get("/volcanoes")
 async def get_volcanoes():
-    global _cache, _cache_time
-
-    now = _time.monotonic()
-    if _cache is not None and (now - _cache_time) < CACHE_TTL:
-        return _cache
+    cached = await cache.get(CACHE_KEY)
+    if cached is not None:
+        return cached
 
     client = get_client()
     try:
@@ -31,12 +26,8 @@ async def get_volcanoes():
         )
         resp.raise_for_status()
     except httpx.HTTPStatusError as e:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=e.response.status_code, detail="EONET API error")
     except httpx.RequestError:
-        if _cache is not None:
-            return _cache
         raise HTTPException(status_code=502, detail="Failed to reach EONET API")
 
     data = resp.json()
@@ -65,6 +56,5 @@ async def get_volcanoes():
             }
         )
 
-    _cache = results
-    _cache_time = now
+    await cache.set(CACHE_KEY, results, CACHE_TTL)
     return results

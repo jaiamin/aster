@@ -120,7 +120,7 @@ export function WildfiresLayer() {
 
   useModuleCount("wildfires", filtered?.length ?? null);
   const { inRegionSet, regionCount, regionActive } = useRegionMembership(
-    filtered ?? [], (_f, i) => i, (f) => f.longitude, (f) => f.latitude,
+    filtered ?? [], (_f: Wildfire, i: number) => i, (f: Wildfire) => f.longitude, (f: Wildfire) => f.latitude,
   );
   useRegionCount("wildfires", regionCount);
   return (

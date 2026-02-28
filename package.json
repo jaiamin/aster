@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && uv run uvicorn app.main:app --port 8000 --reload",
-    "dev:frontend": "cd frontend && npm run dev"
+    "dev:frontend": "cd frontend && npm run dev",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "engines": {
     "node": ">=24"

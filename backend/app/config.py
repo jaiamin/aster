@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "Aster"
     debug: bool = False
     cors_origins: list[str] = ["http://localhost:5173"]
+    redis_url: str = "redis://localhost:6379/0"
     map_style_url: str = "https://tiles.openfreemap.org/styles/dark"
     map_initial_lat: float = 20.0
     map_initial_lng: float = 0.0
