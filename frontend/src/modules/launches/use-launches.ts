@@ -1,6 +1,0 @@
-import { usePolledData } from "@/hooks/use-polled-data";
-import type { Launch } from "@/types/launches";
-
-export function useLaunches() {
-  return usePolledData<Launch[]>({ endpoint: "/api/launches", interval: 600_000 });
-}

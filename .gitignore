@@ -36,6 +36,9 @@ docker-compose.override.yml
 # Worktrees
 .worktrees/
 
+# Turbo
+.turbo/
+
 # Logs
 *.log
 npm-debug.log*

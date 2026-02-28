@@ -2,20 +2,31 @@
   "name": "aster",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "frontend"
-  ],
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && uv run uvicorn app.main:app --port 8000 --reload",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "turbo dev",
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --port 8000 --reload",
+    "dev:web": "cd apps/web && pnpm dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
     "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@10.6.2",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.0",
+    "prettier": "^3.8.1",
+    "turbo": "^2.5.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

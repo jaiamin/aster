@@ -1,6 +1,7 @@
 services:
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     volumes:
       - redis-data:/data
     healthcheck:
@@ -10,26 +11,35 @@ services:
       retries: 5
 
   api:
-    build: ./backend
+    build: ./apps/api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - ./apps/api/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CORS_ORIGINS=["http://localhost:5173","http://localhost:3000","http://localhost"]
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   web:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   redis-data:
