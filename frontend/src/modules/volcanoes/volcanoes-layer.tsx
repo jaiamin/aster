@@ -5,8 +5,9 @@ import { useVolcanoes } from "./use-volcanoes";
 import { VolcanoSelectionProvider, useVolcanoSelection } from "./volcano-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
@@ -22,7 +23,7 @@ import type { Volcano } from "@/types/volcanoes";
 
 const MODULE_ID = "volcanoes";
 
-function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: volcanoes.map((v) => ({
@@ -31,13 +32,13 @@ function toGeoJSON(volcanoes: Volcano[], selectedId: string | null, isInRegion: 
       properties: {
         id: v.id,
         pinImage: v.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: isInRegion(v.longitude, v.latitude),
+        inRegion: inRegionSet.size === 0 || inRegionSet.has(v.id),
       },
     })),
   };
 }
 
-function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
+function VolcanoesLayerInner({ volcanoes, inRegionSet, regionActive }: { volcanoes: Volcano[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useVolcanoSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -52,9 +53,8 @@ function VolcanoesLayerInner({ volcanoes }: { volcanoes: Volcano[] }) {
   const volcanoesRef = useRef(volcanoes);
   volcanoesRef.current = volcanoes;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.volcano.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, isInRegion), [volcanoes, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(volcanoes, selectedId, inRegionSet), [volcanoes, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Mountain, bgColor: CATEGORY_COLORS["Events"] });
   useDeselectOnEmptyClick(selected, deselect);
@@ -95,15 +95,13 @@ export function VolcanoesLayer() {
   );
 
   useModuleCount("volcanoes", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((v) => isInRegion(v.longitude, v.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (v) => v.id, (v) => v.longitude, (v) => v.latitude,
+  );
   useRegionCount("volcanoes", regionCount);
   return (
     <VolcanoSelectionProvider>
-      <VolcanoesLayerInner volcanoes={filtered ?? []} />
+      <VolcanoesLayerInner volcanoes={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <VolcanoDetailCard />
     </VolcanoSelectionProvider>
   );

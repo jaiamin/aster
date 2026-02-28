@@ -7,7 +7,7 @@ import { useModuleCount } from "@/hooks/use-module-count";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useRegionCount } from "@/hooks/use-region-count";
 import { useExplorerFilters } from "@/modules/explorer-context";
-import { useRegion } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
 import { useDeselectOnEmptyClick } from "@/hooks/use-deselect-on-empty-click";
 import { useModuleSelect } from "@/hooks/use-module-select";
@@ -21,7 +21,7 @@ import type { Airport } from "@/types/airports";
 
 const MODULE_ID = "airports";
 
-function toGeoJSON(airports: Airport[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(airports: Airport[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: airports.map((a) => ({
@@ -30,13 +30,13 @@ function toGeoJSON(airports: Airport[], selectedId: string | null, isInRegion: (
       properties: {
         id: a.id,
         pinImage: a.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: isInRegion(a.longitude, a.latitude),
+        inRegion: inRegionSet.size === 0 || inRegionSet.has(a.id),
       },
     })),
   };
 }
 
-function AirportsLayerInner({ airports }: { airports: Airport[] }) {
+function AirportsLayerInner({ airports, inRegionSet, regionActive }: { airports: Airport[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirportSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -48,12 +48,11 @@ function AirportsLayerInner({ airports }: { airports: Airport[] }) {
     }
   }, [select, mapRef]);
   useModuleSelect("airports", selectFromExplorer);
-  const { isInRegion, regionActive } = useRegion();
   const airportsRef = useRef(airports);
   airportsRef.current = airports;
 
   const selectedId = selected?.airport.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(airports, selectedId, isInRegion), [airports, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(airports, selectedId, inRegionSet), [airports, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: PlaneTakeoff, bgColor: CATEGORY_COLORS.Infrastructure });
   useDeselectOnEmptyClick(selected, deselect);
@@ -89,15 +88,13 @@ export function AirportsLayer() {
   );
 
   useModuleCount("airports", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((a) => isInRegion(a.longitude, a.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (a) => a.id, (a) => a.longitude, (a) => a.latitude,
+  );
   useRegionCount("airports", regionCount);
   return (
     <AirportSelectionProvider>
-      <AirportsLayerInner airports={filtered ?? []} />
+      <AirportsLayerInner airports={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <AirportDetailCard />
     </AirportSelectionProvider>
   );

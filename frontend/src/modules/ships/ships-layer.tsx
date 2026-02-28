@@ -12,7 +12,7 @@ import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { useRegion } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Ship } from "@/types/ships";
 
@@ -61,7 +61,7 @@ function createShipIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(ships: Ship[], selectedMmsi: number | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(ships: Ship[], selectedMmsi: number | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: ships.map((s) => ({
@@ -72,17 +72,16 @@ function toGeoJSON(ships: Ship[], selectedMmsi: number | null, isInRegion: (lng:
         name: s.name,
         course: s.course ?? 0,
         selected: s.mmsi === selectedMmsi,
-        inRegion: isInRegion(s.longitude, s.latitude),
+        inRegion: inRegionSet.size === 0 || inRegionSet.has(s.mmsi),
       },
     })),
   };
 }
 
-function ShipsLayerInner({ ships }: { ships: Ship[] }) {
+function ShipsLayerInner({ ships, inRegionSet, regionActive }: { ships: Ship[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
   const { selected, tracking, select, deselect, pauseTracking } = useShipSelection();
-  const { isInRegion, regionActive } = useRegion();
   const shipsRef = useRef(ships);
   shipsRef.current = ships;
   const selectedRef = useRef(selected);
@@ -220,7 +219,7 @@ function ShipsLayerInner({ ships }: { ships: Ship[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ships, selectedMmsi, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi, isInRegion), [sampled, selectedMmsi, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedMmsi, inRegionSet), [sampled, selectedMmsi, inRegionSet]);
 
   return (
     <Source id="ships-source" type="geojson" data={geojson}>
@@ -260,17 +259,15 @@ export function ShipsLayer() {
     [ships, matchesFilters],
   );
 
-  const { isInRegion, regionActive } = useRegion();
   useModuleCount("ships", filtered?.length ?? null);
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((s) => isInRegion(s.longitude, s.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (s) => s.mmsi, (s) => s.longitude, (s) => s.latitude,
+  );
   useRegionCount("ships", regionCount);
   const resolved = filtered ?? [];
   return (
     <ShipSelectionProvider ships={resolved}>
-      <ShipsLayerInner ships={resolved} />
+      <ShipsLayerInner ships={resolved} inRegionSet={inRegionSet} regionActive={regionActive} />
       <ShipDetailCard />
     </ShipSelectionProvider>
   );

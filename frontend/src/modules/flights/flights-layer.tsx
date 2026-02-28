@@ -12,7 +12,7 @@ import { registerLayerClick } from "@/lib/layer-click";
 import { gridSample } from "@/lib/grid-sample";
 import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
-import { useRegion } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleSelect } from "@/hooks/use-module-select";
 import type { Flight, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -76,7 +76,7 @@ function createPlaneIcon(fillColor: string, strokeColor: string): ImageData {
   return data;
 }
 
-function toGeoJSON(flights: Flight[], selectedIcao: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(flights: Flight[], selectedIcao: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: flights.map((f) => ({
@@ -87,7 +87,7 @@ function toGeoJSON(flights: Flight[], selectedIcao: string | null, isInRegion: (
         callsign: f.callsign,
         true_track: f.true_track ?? 0,
         selected: f.icao24 === selectedIcao,
-        inRegion: isInRegion(f.longitude, f.latitude),
+        inRegion: inRegionSet.size === 0 || inRegionSet.has(f.icao24),
       },
     })),
   };
@@ -104,11 +104,10 @@ function trackToGeoJSON(track: FlightTrack): GeoJSON.Feature {
   };
 }
 
-function FlightsLayerInner({ flights }: { flights: Flight[] }) {
+function FlightsLayerInner({ flights, inRegionSet, regionActive }: { flights: Flight[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const zoom = useMapZoom();
   const { selected, tracking, select, deselect, pauseTracking } = useFlightSelection();
-  const { isInRegion, regionActive } = useRegion();
   const flightsRef = useRef(flights);
   flightsRef.current = flights;
   const selectedRef = useRef(selected);
@@ -242,7 +241,7 @@ function FlightsLayerInner({ flights }: { flights: Flight[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [flights, selectedIcao, zoomBand],
   );
-  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao, isInRegion), [sampled, selectedIcao, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(sampled, selectedIcao, inRegionSet), [sampled, selectedIcao, inRegionSet]);
   const trackGeoJSON = useMemo(
     () => (selected?.track ? trackToGeoJSON(selected.track) : null),
     [selected?.track],
@@ -304,17 +303,15 @@ export function FlightsLayer() {
     [flights, matchesFilters],
   );
 
-  const { isInRegion, regionActive } = useRegion();
   useModuleCount("flights", filtered?.length ?? null);
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((f) => isInRegion(f.longitude, f.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (f) => f.icao24, (f) => f.longitude, (f) => f.latitude,
+  );
   useRegionCount("flights", regionCount);
   const resolved = filtered ?? [];
   return (
     <FlightSelectionProvider flights={resolved}>
-      <FlightsLayerInner flights={resolved} />
+      <FlightsLayerInner flights={resolved} inRegionSet={inRegionSet} regionActive={regionActive} />
       <FlightDetailCard />
     </FlightSelectionProvider>
   );

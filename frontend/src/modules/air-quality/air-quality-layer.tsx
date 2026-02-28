@@ -5,8 +5,9 @@ import { useAirQuality } from "./use-air-quality";
 import { AirQualitySelectionProvider, useAirQualitySelection } from "./air-quality-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
@@ -38,7 +39,7 @@ function pm25ToStatusKey(pm25: number): string {
   return "good";
 }
 
-function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: stations.map((s) => {
@@ -50,14 +51,14 @@ function toGeoJSON(stations: AirQualityStation[], selectedId: string | null, isI
         properties: {
           id: s.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: isInRegion(s.longitude, s.latitude),
+          inRegion: inRegionSet.size === 0 || inRegionSet.has(s.id),
         },
       };
     }),
   };
 }
 
-function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
+function AirQualityLayerInner({ stations, inRegionSet, regionActive }: { stations: AirQualityStation[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useAirQualitySelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -69,12 +70,11 @@ function AirQualityLayerInner({ stations }: { stations: AirQualityStation[] }) {
     }
   }, [select, mapRef]);
   useModuleSelect("air-quality", selectFromExplorer);
-  const { isInRegion, regionActive } = useRegion();
   const stationsRef = useRef(stations);
   stationsRef.current = stations;
 
   const selectedId = selected?.station.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(stations, selectedId, isInRegion), [stations, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(stations, selectedId, inRegionSet), [stations, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Wind, bgColor: CATEGORY_COLORS.Environment, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -115,15 +115,13 @@ export function AirQualityLayer() {
   );
 
   useModuleCount("air-quality", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((s) => isInRegion(s.longitude, s.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (s) => s.id, (s) => s.longitude, (s) => s.latitude,
+  );
   useRegionCount("air-quality", regionCount);
   return (
     <AirQualitySelectionProvider>
-      <AirQualityLayerInner stations={filtered ?? []} />
+      <AirQualityLayerInner stations={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <AirQualityDetailCard />
     </AirQualitySelectionProvider>
   );

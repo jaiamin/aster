@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LocateFixed, Search, X } from "lucide-react";
 import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import simplify from "@turf/simplify";
 import { useModuleSelection, useModuleFilter, useRegion } from "@/modules/module-context";
 import { RegionDetailCard } from "./region-detail-card";
 
@@ -378,19 +379,30 @@ export function GeoSearch() {
 
       // Set boundary outline (only for real polygon/line geometries, not points)
       if (result.geojson && result.geojson.type !== "Point") {
+        // Simplify geometry for rendering — keeps visual fidelity but reduces vertex count
+        const displayGeometry = simplify(
+          { type: "Feature", geometry: result.geojson, properties: {} },
+          { tolerance: 0.01, highQuality: true },
+        ).geometry;
+
         setBoundary({
           type: "FeatureCollection",
           features: [
             {
               type: "Feature",
-              geometry: result.geojson,
+              geometry: displayGeometry,
               properties: {},
             },
           ],
         });
-        // Activate region filtering for polygon/multipolygon boundaries
+        // Activate region filtering with moderately simplified polygon for containment tests
+        // (~200m accuracy is more than sufficient for pin dimming, and ~10x fewer vertices)
         if (result.geojson.type === "Polygon" || result.geojson.type === "MultiPolygon") {
-          setRegionBoundary(result.geojson);
+          const containmentGeometry = simplify(
+            { type: "Feature", geometry: result.geojson, properties: {} },
+            { tolerance: 0.002, highQuality: true },
+          ).geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
+          setRegionBoundary(containmentGeometry);
         } else {
           setRegionBoundary(null);
         }
@@ -670,16 +682,6 @@ export function GeoSearch() {
             "line-color": "#5a9fd4",
             "line-width": 3,
             "line-opacity": 1,
-          }}
-        />
-        <Layer
-          id="geo-search-boundary-line-glow"
-          type="line"
-          paint={{
-            "line-color": "#3d7ab5",
-            "line-width": 8,
-            "line-opacity": 0.3,
-            "line-blur": 4,
           }}
         />
       </Source>

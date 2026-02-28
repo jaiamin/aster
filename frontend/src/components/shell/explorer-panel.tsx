@@ -62,6 +62,16 @@ export function ExplorerPanel() {
   const activeFilters = getFilters(moduleId);
   const rawData = moduleData.get(moduleId) ?? [];
 
+  // Debounced search: local state for instant input, synced to context after 200ms
+  const [localSearch, setLocalSearch] = useState(search);
+
+  useEffect(() => { setLocalSearch(search); }, [search]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(moduleId, localSearch), 200);
+    return () => clearTimeout(id);
+  }, [localSearch, moduleId, setSearch]);
+
   // Filter + search
   const filteredItems = useMemo(() => {
     const nameKey = def?.nameKey;
@@ -214,8 +224,8 @@ export function ExplorerPanel() {
           <Search size={12} className="shrink-0 text-muted" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(moduleId, e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             placeholder={`Search by ${def.nameKey ?? "name"}...`}
             className="w-full bg-transparent text-[11px] text-foreground placeholder:text-muted/50 outline-none"
           />

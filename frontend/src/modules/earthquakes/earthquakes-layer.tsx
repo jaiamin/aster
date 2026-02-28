@@ -5,8 +5,9 @@ import { useEarthquakes } from "./use-earthquakes";
 import { EarthquakeSelectionProvider, useEarthquakeSelection } from "./earthquake-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
@@ -36,7 +37,7 @@ function magToStatusKey(mag: number): string {
   return "green";
 }
 
-function toGeoJSON(quakes: Earthquake[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(quakes: Earthquake[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: quakes.map((q) => {
@@ -48,14 +49,14 @@ function toGeoJSON(quakes: Earthquake[], selectedId: string | null, isInRegion: 
         properties: {
           id: q.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: isInRegion(q.longitude, q.latitude),
+          inRegion: inRegionSet.size === 0 || inRegionSet.has(q.id),
         },
       };
     }),
   };
 }
 
-function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
+function EarthquakesLayerInner({ quakes, inRegionSet, regionActive }: { quakes: Earthquake[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useEarthquakeSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -70,9 +71,8 @@ function EarthquakesLayerInner({ quakes }: { quakes: Earthquake[] }) {
   const quakesRef = useRef(quakes);
   quakesRef.current = quakes;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.quake.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(quakes, selectedId, isInRegion), [quakes, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(quakes, selectedId, inRegionSet), [quakes, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Activity, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -113,15 +113,13 @@ export function EarthquakesLayer() {
   );
 
   useModuleCount("earthquakes", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((q) => isInRegion(q.longitude, q.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (q) => q.id, (q) => q.longitude, (q) => q.latitude,
+  );
   useRegionCount("earthquakes", regionCount);
   return (
     <EarthquakeSelectionProvider>
-      <EarthquakesLayerInner quakes={filtered ?? []} />
+      <EarthquakesLayerInner quakes={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <EarthquakeDetailCard />
     </EarthquakeSelectionProvider>
   );

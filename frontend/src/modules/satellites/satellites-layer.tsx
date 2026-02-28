@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMap } from "@vis.gl/react-maplibre";
 import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { DeckGLOverlay } from "@/components/globe/deckgl-overlay";
-import { useRegion } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useSatellites } from "./use-satellites";
 import { useSatellitePositions } from "./use-satellite-positions";
 import { SatelliteSelectionProvider, useSatelliteSelection } from "./satellite-context";
@@ -28,9 +28,13 @@ export function zoomForAltitude(altitudeMeters: number): number {
 function SatellitesLayerInner({
   positions,
   records,
+  inRegionSet,
+  regionActive,
 }: {
   positions: SatellitePosition[];
   records: GPRecord[];
+  inRegionSet: Set<string | number>;
+  regionActive: boolean;
 }) {
   const { current: mapRef } = useMap();
   const { selected, tracking, select, deselect, pauseTracking } = useSatelliteSelection();
@@ -57,7 +61,6 @@ function SatellitesLayerInner({
     }
   }, [select, mapRef]);
   useModuleSelect("satellites", selectFromExplorer);
-  const { isInRegion, regionActive, regionBoundary } = useRegion();
 
   // Deselect when clicking empty map space (deck.gl onClick only fires on layer objects)
   useEffect(() => {
@@ -163,14 +166,14 @@ function SatellitesLayerInner({
         getFillColor: (d) => {
           if (d.id === selectedId) return [255, 255, 255, 255];
           if (d.id === 25544) return [255, 200, 50, 255];
-          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [239, 68, 68, 50];
+          if (regionActive && !inRegionSet.has(d.id)) return [239, 68, 68, 50];
           return [239, 68, 68, 200];
         },
         stroked: true,
         getLineColor: (d) => {
           if (d.id === selectedId) return [252, 165, 165, 255];
           if (d.id === 25544) return [255, 220, 100, 255];
-          if (regionActive && !isInRegion(d.longitude, d.latitude)) return [252, 165, 165, 50];
+          if (regionActive && !inRegionSet.has(d.id)) return [252, 165, 165, 50];
           return [252, 165, 165, 255];
         },
         lineWidthMinPixels: 1,
@@ -182,13 +185,13 @@ function SatellitesLayerInner({
         pickable: true,
         onClick,
         updateTriggers: {
-          getFillColor: [selectedId, regionBoundary],
-          getLineColor: [selectedId, regionBoundary],
+          getFillColor: [selectedId, inRegionSet],
+          getLineColor: [selectedId, inRegionSet],
           getRadius: selectedId,
         },
       }),
     ],
-    [positions, onClick, orbitSegments, selectedId, regionActive, regionBoundary],
+    [positions, onClick, orbitSegments, selectedId, regionActive, inRegionSet],
   );
 
   return <DeckGLOverlay layers={layers} />;
@@ -208,16 +211,14 @@ export function SatellitesLayer() {
 
   useModuleCount("satellites", records === null ? null : filtered.length);
 
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (records === null || !regionActive) return null;
-    return filtered.filter((p) => isInRegion(p.longitude, p.latitude)).length;
-  }, [records, filtered, regionActive, isInRegion]);
-  useRegionCount("satellites", regionCount);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    records === null ? [] : filtered, (p) => p.id, (p) => p.longitude, (p) => p.latitude,
+  );
+  useRegionCount("satellites", records === null ? null : regionCount);
 
   return (
     <SatelliteSelectionProvider positions={filtered}>
-      <SatellitesLayerInner positions={filtered} records={records ?? []} />
+      <SatellitesLayerInner positions={filtered} records={records ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <SatelliteDetailCard />
     </SatelliteSelectionProvider>
   );

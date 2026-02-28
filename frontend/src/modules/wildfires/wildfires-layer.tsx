@@ -5,7 +5,8 @@ import { useWildfires } from "./use-wildfires";
 import { WildfireSelectionProvider, useWildfireSelection } from "./wildfire-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { filterByTime } from "@/lib/time-filter";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
@@ -34,7 +35,7 @@ function frpToStatusKey(frp: number): string {
   return "orange";
 }
 
-function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: fires.map((f, i) => {
@@ -46,14 +47,14 @@ function toGeoJSON(fires: Wildfire[], selectedIdx: number | null, isInRegion: (l
         properties: {
           idx: i,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: isInRegion(f.longitude, f.latitude),
+          inRegion: inRegionSet.size === 0 || inRegionSet.has(i),
         },
       };
     }),
   };
 }
 
-function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
+function WildfiresLayerInner({ fires, inRegionSet, regionActive }: { fires: Wildfire[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useWildfireSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -68,7 +69,6 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
   const firesRef = useRef(fires);
   firesRef.current = fires;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedIdx = selected
     ? fires.findIndex(
         (f) =>
@@ -78,7 +78,7 @@ function WildfiresLayerInner({ fires }: { fires: Wildfire[] }) {
       )
     : null;
 
-  const geojson = useMemo(() => toGeoJSON(fires, selectedIdx, isInRegion), [fires, selectedIdx, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(fires, selectedIdx, inRegionSet), [fires, selectedIdx, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Flame, bgColor: CATEGORY_COLORS["Events"], statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -119,15 +119,13 @@ export function WildfiresLayer() {
   );
 
   useModuleCount("wildfires", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((f) => isInRegion(f.longitude, f.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (_f, i) => i, (f) => f.longitude, (f) => f.latitude,
+  );
   useRegionCount("wildfires", regionCount);
   return (
     <WildfireSelectionProvider>
-      <WildfiresLayerInner fires={filtered ?? []} />
+      <WildfiresLayerInner fires={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <WildfireDetailCard />
     </WildfireSelectionProvider>
   );

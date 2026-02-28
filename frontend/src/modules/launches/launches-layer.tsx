@@ -5,7 +5,8 @@ import { useLaunches } from "./use-launches";
 import { LaunchSelectionProvider, useLaunchSelection } from "./launch-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { filterByTime } from "@/lib/time-filter";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
@@ -34,7 +35,7 @@ function statusToKey(status: string): string {
   return "go";
 }
 
-function toGeoJSON(launches: Launch[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(launches: Launch[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   // Group launches by pad coordinates so each site = one pin
   const sites = new Map<string, Launch[]>();
   for (const l of launches) {
@@ -56,14 +57,14 @@ function toGeoJSON(launches: Launch[], selectedId: string | null, isInRegion: (l
         properties: {
           id: first.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: isInRegion(first.longitude, first.latitude),
+          inRegion: inRegionSet.size === 0 || inRegionSet.has(first.id),
         },
       };
     }),
   };
 }
 
-function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
+function LaunchesLayerInner({ launches, inRegionSet, regionActive }: { launches: Launch[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useLaunchSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -78,9 +79,8 @@ function LaunchesLayerInner({ launches }: { launches: Launch[] }) {
   const launchesRef = useRef(launches);
   launchesRef.current = launches;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.launch.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(launches, selectedId, isInRegion), [launches, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(launches, selectedId, inRegionSet), [launches, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Rocket, bgColor: CATEGORY_COLORS.Events, statusVariants: STATUS_VARIANTS });
   useDeselectOnEmptyClick(selected, deselect);
@@ -121,15 +121,13 @@ export function LaunchesLayer() {
   );
 
   useModuleCount("launches", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((l) => isInRegion(l.longitude, l.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (l) => l.id, (l) => l.longitude, (l) => l.latitude,
+  );
   useRegionCount("launches", regionCount);
   return (
     <LaunchSelectionProvider>
-      <LaunchesLayerInner launches={filtered ?? []} />
+      <LaunchesLayerInner launches={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <LaunchDetailCard />
     </LaunchSelectionProvider>
   );

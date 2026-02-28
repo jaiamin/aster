@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, startTransition, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { getInitialLayers, getInitialSearchQuery, getInitialTimeFilter } from "@/lib/url-state";
 import type { TimePreset } from "@/lib/time-filter";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
@@ -146,9 +146,11 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const regionActive = regionBoundary !== null;
 
   const handleSetRegionBoundary = useCallback((geom: GeoJSON.Geometry | null) => {
-    setRegionBoundary(geom);
     bboxRef.current = geom ? computeBbox(geom) : null;
-    if (!geom) setRegionCounts(new Map());
+    startTransition(() => {
+      setRegionBoundary(geom);
+      if (!geom) setRegionCounts(new Map());
+    });
   }, []);
 
   const isInRegion = useCallback(

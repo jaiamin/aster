@@ -5,8 +5,9 @@ import { useBuoys } from "./use-buoys";
 import { BuoySelectionProvider, useBuoySelection } from "./buoy-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
@@ -22,7 +23,7 @@ import type { Buoy } from "@/types/buoys";
 
 const MODULE_ID = "buoys";
 
-function toGeoJSON(buoys: Buoy[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(buoys: Buoy[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: buoys.map((b) => ({
@@ -31,13 +32,13 @@ function toGeoJSON(buoys: Buoy[], selectedId: string | null, isInRegion: (lng: n
       properties: {
         id: b.id,
         pinImage: b.id === selectedId ? `${MODULE_ID}-pin-selected` : `${MODULE_ID}-pin`,
-        inRegion: isInRegion(b.longitude, b.latitude),
+        inRegion: inRegionSet.size === 0 || inRegionSet.has(b.id),
       },
     })),
   };
 }
 
-function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
+function BuoysLayerInner({ buoys, inRegionSet, regionActive }: { buoys: Buoy[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useBuoySelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -52,9 +53,8 @@ function BuoysLayerInner({ buoys }: { buoys: Buoy[] }) {
   const buoysRef = useRef(buoys);
   buoysRef.current = buoys;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.buoy.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(buoys, selectedId, isInRegion), [buoys, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(buoys, selectedId, inRegionSet), [buoys, selectedId, inRegionSet]);
 
   const ready = usePinRegistration({ moduleId: MODULE_ID, icon: Navigation, bgColor: CATEGORY_COLORS.Environment });
   useDeselectOnEmptyClick(selected, deselect);
@@ -95,15 +95,13 @@ export function BuoysLayer() {
   );
 
   useModuleCount("buoys", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((b) => isInRegion(b.longitude, b.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (b) => b.id, (b) => b.longitude, (b) => b.latitude,
+  );
   useRegionCount("buoys", regionCount);
   return (
     <BuoySelectionProvider>
-      <BuoysLayerInner buoys={filtered ?? []} />
+      <BuoysLayerInner buoys={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <BuoyDetailCard />
     </BuoySelectionProvider>
   );

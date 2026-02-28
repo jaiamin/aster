@@ -12,6 +12,8 @@ export type FilterValue =
 
 export type ActiveFilters = Record<string, FilterValue>;
 
+const EMPTY_FILTERS: ActiveFilters = {};
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 interface ExplorerContextValue {
@@ -55,7 +57,7 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
 
   // Filters
   const getFilters = useCallback(
-    (moduleId: string): ActiveFilters => filters.get(moduleId) ?? {},
+    (moduleId: string): ActiveFilters => filters.get(moduleId) ?? EMPTY_FILTERS,
     [filters],
   );
 

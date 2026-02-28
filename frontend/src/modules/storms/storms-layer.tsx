@@ -5,8 +5,9 @@ import { useStorms } from "./use-storms";
 import { StormSelectionProvider, useStormSelection } from "./storm-context";
 import { useModuleCount } from "@/hooks/use-module-count";
 import { useRegionCount } from "@/hooks/use-region-count";
-import { useModuleFilter, useRegion } from "@/modules/module-context";
+import { useModuleFilter } from "@/modules/module-context";
 import { filterByTime } from "@/lib/time-filter";
+import { useRegionMembership } from "@/hooks/use-region-membership";
 import { useModuleData } from "@/hooks/use-module-data";
 import { useExplorerFilters } from "@/modules/explorer-context";
 import { usePinRegistration } from "@/hooks/use-pin-registration";
@@ -42,7 +43,7 @@ export function stormAccentColor(cat: number): string {
   return "#22c55e";
 }
 
-function toGeoJSON(storms: Storm[], selectedId: string | null, isInRegion: (lng: number, lat: number) => boolean): GeoJSON.FeatureCollection {
+function toGeoJSON(storms: Storm[], selectedId: string | null, inRegionSet: Set<string | number>): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: storms.map((s) => {
@@ -54,7 +55,7 @@ function toGeoJSON(storms: Storm[], selectedId: string | null, isInRegion: (lng:
         properties: {
           id: s.id,
           pinImage: sel ? `${MODULE_ID}-pin-${key}-selected` : `${MODULE_ID}-pin-${key}`,
-          inRegion: isInRegion(s.longitude, s.latitude),
+          inRegion: inRegionSet.size === 0 || inRegionSet.has(s.id),
         },
       };
     }),
@@ -89,7 +90,7 @@ function buildForecastTrackGeoJSON(storm: Storm): GeoJSON.FeatureCollection {
   };
 }
 
-function StormsLayerInner({ storms }: { storms: Storm[] }) {
+function StormsLayerInner({ storms, inRegionSet, regionActive }: { storms: Storm[]; inRegionSet: Set<string | number>; regionActive: boolean }) {
   const { current: mapRef } = useMap();
   const { selected, select, deselect } = useStormSelection();
   const selectFromExplorer = useCallback((item: unknown) => {
@@ -104,9 +105,8 @@ function StormsLayerInner({ storms }: { storms: Storm[] }) {
   const stormsRef = useRef(storms);
   stormsRef.current = storms;
 
-  const { isInRegion, regionActive } = useRegion();
   const selectedId = selected?.storm.id ?? null;
-  const geojson = useMemo(() => toGeoJSON(storms, selectedId, isInRegion), [storms, selectedId, isInRegion]);
+  const geojson = useMemo(() => toGeoJSON(storms, selectedId, inRegionSet), [storms, selectedId, inRegionSet]);
 
   const pastTrackData = useMemo(
     () => (selected ? buildPastTrackGeoJSON(selected.storm) : EMPTY_FC),
@@ -199,15 +199,13 @@ export function StormsLayer() {
   );
 
   useModuleCount("storms", filtered?.length ?? null);
-  const { isInRegion, regionActive } = useRegion();
-  const regionCount = useMemo(() => {
-    if (!filtered || !regionActive) return null;
-    return filtered.filter((s) => isInRegion(s.longitude, s.latitude)).length;
-  }, [filtered, regionActive, isInRegion]);
+  const { inRegionSet, regionCount, regionActive } = useRegionMembership(
+    filtered ?? [], (s) => s.id, (s) => s.longitude, (s) => s.latitude,
+  );
   useRegionCount("storms", regionCount);
   return (
     <StormSelectionProvider>
-      <StormsLayerInner storms={filtered ?? []} />
+      <StormsLayerInner storms={filtered ?? []} inRegionSet={inRegionSet} regionActive={regionActive} />
       <StormDetailCard />
     </StormSelectionProvider>
   );
