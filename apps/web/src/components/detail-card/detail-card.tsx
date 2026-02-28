@@ -1,6 +1,8 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { LocateFixed, X, ExternalLink, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 
 /* ── ScrollText — hover to reveal truncated text ────────────── */
@@ -67,6 +69,8 @@ interface DetailCardProps {
 }
 
 export function DetailCard({ onClose, children }: DetailCardProps) {
+  const { current: mapRef } = useMap();
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -74,6 +78,18 @@ export function DetailCard({ onClose, children }: DetailCardProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  // Reset map padding when card unmounts
+  useEffect(() => {
+    return () => {
+      const map = mapRef?.getMap();
+      if (!map) return;
+      const current = map.getPadding();
+      if (current.right >= DETAIL_CARD_PADDING.right) {
+        map.easeTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 300 });
+      }
+    };
+  }, [mapRef]);
 
   return (
     <div className="absolute top-4 right-4 z-20 w-[370px] animate-slide-in-right">
