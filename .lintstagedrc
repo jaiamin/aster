@@ -1,5 +1,5 @@
 {
-  "apps/web/**/*.{ts,tsx}": ["prettier --write"],
+  "apps/web/**/*.{ts,tsx}": ["eslint --config apps/web/eslint.config.js --fix --max-warnings=999", "prettier --write"],
   "apps/web/**/*.{css,json}": ["prettier --write"],
   "apps/api/**/*.py": ["bash -c 'cd apps/api && uv run ruff check --fix \"$@\"' --", "bash -c 'cd apps/api && uv run ruff format \"$@\"' --"]
 }
