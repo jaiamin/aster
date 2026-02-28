@@ -105,6 +105,21 @@ export function ExplorerPanel() {
     });
   }, [filteredItems, sort]);
 
+  // Compute column widths from content
+  const colWidths = useMemo(() => {
+    const cols = def?.listColumns;
+    if (!cols) return [];
+    const sample = sortedItems.slice(0, 200) as Record<string, unknown>[];
+    return cols.map((col) => {
+      let maxLen = col.label.length;
+      for (const item of sample) {
+        const display = formatCellValue(item[col.key], col);
+        if (display.length > maxLen) maxLen = display.length;
+      }
+      return Math.max(maxLen * 7 + 16, 40);
+    });
+  }, [sortedItems, def?.listColumns]);
+
   const toggleSort = useCallback((key: string) => {
     setSort((prev) => {
       if (prev?.key === key) {
@@ -134,7 +149,7 @@ export function ExplorerPanel() {
   return (
     <div className="flex h-full w-[420px] flex-col border-r border-panel-border bg-panel">
       {/* Header */}
-      <div className="flex h-12 shrink-0 items-center gap-2 px-3 bg-accent">
+      <div className="flex h-12 shrink-0 items-center gap-2 pl-3 pr-2 bg-accent">
         <div
           className="flex shrink-0 items-center justify-center"
           style={{
@@ -157,7 +172,7 @@ export function ExplorerPanel() {
         <button
           onClick={closeExplorer}
           aria-label="Close explorer"
-          className="ml-auto flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
+          className="ml-auto flex h-6 w-6 items-center justify-center text-white/70 transition-colors hover:text-white"
         >
           <ChevronLeft size={14} />
         </button>
@@ -252,12 +267,12 @@ export function ExplorerPanel() {
       <div className="flex-1 min-h-0 flex flex-col">
         {def.listColumns && def.listColumns.length > 0 && (
           <div className="flex shrink-0 items-center border-b border-panel-border px-3 py-1.5">
-            {def.listColumns.map((col) => (
+            {def.listColumns.map((col, ci) => (
               <button
                 key={col.key}
                 onClick={() => toggleSort(col.key)}
                 className={`flex items-center gap-0.5 text-[10px] uppercase tracking-wider text-muted/60 hover:text-muted transition-colors ${col.align === "right" ? "justify-end" : ""}`}
-                style={{ width: col.width ?? undefined, flex: col.width ? undefined : 1 }}
+                style={{ width: ci === 0 ? undefined : `${colWidths[ci]}px`, flex: ci === 0 ? 1 : undefined }}
               >
                 {col.label}
                 {sort?.key === col.key && (
@@ -278,6 +293,7 @@ export function ExplorerPanel() {
           <VirtualizedList
             items={sortedItems}
             columns={def.listColumns ?? []}
+            colWidths={colWidths}
             selectedIndex={selectedIndex}
             onRowClick={handleRowClick}
           />
@@ -308,14 +324,26 @@ export function ExplorerPanel() {
 
 // ── Virtualized List ──────────────────────────────────────────────────────────
 
+function formatCellValue(val: unknown, col: { labelMap?: Record<string, string> }): string {
+  const raw =
+    val === null || val === undefined
+      ? "\u2014"
+      : typeof val === "number"
+        ? val.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : String(val);
+  return col.labelMap?.[String(val)] ?? raw;
+}
+
 function VirtualizedList({
   items,
   columns,
+  colWidths,
   selectedIndex,
   onRowClick,
 }: {
   items: unknown[];
   columns: { key: string; label: string; width?: string; align?: "left" | "right"; labelMap?: Record<string, string> }[];
+  colWidths: number[];
   selectedIndex: number | null;
   onRowClick: (item: unknown, index: number) => void;
 }) {
@@ -350,22 +378,15 @@ function VirtualizedList({
                 top: `${vRow.start}px`,
               }}
             >
-              {columns.map((col) => {
-                const val = item[col.key];
-                const raw =
-                  val === null || val === undefined
-                    ? "\u2014"
-                    : typeof val === "number"
-                      ? val.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                      : String(val);
-                const display = col.labelMap?.[String(val)] ?? raw;
+              {columns.map((col, ci) => {
+                const display = formatCellValue(item[col.key], col);
                 return (
                   <span
                     key={col.key}
                     className={`truncate tabular-nums ${col.align === "right" ? "text-right" : "text-left"}`}
                     style={{
-                      width: col.width ?? undefined,
-                      flex: col.width ? undefined : 1,
+                      width: ci === 0 ? undefined : `${colWidths[ci]}px`,
+                      flex: ci === 0 ? 1 : undefined,
                     }}
                   >
                     {display}
@@ -428,15 +449,11 @@ function RangeFilter({
   const range = field.max - field.min;
   const minPct = ((min - field.min) / range) * 100;
   const maxPct = ((max - field.min) / range) * 100;
+  const midPct = (minPct + maxPct) / 2;
 
   return (
     <div>
-      <div className="flex items-baseline justify-between">
-        <label className="text-[11px] font-semibold text-white">{field.label}</label>
-        <span className="text-[10px] tabular-nums text-white/50">
-          {min}{unit} — {max}{unit}
-        </span>
-      </div>
+      <label className="text-[11px] font-semibold text-white">{field.label}</label>
       <div className="relative mt-2 h-4">
         {/* Track background */}
         <div className="absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 rounded-full bg-panel-border" />
@@ -456,8 +473,8 @@ function RangeFilter({
             const v = parseFloat(e.target.value);
             onChange({ type: "range", min: Math.min(v, max), max });
           }}
-          className="range-thumb absolute inset-0 w-full cursor-pointer appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
-          style={{ zIndex: min > field.min + range * 0.9 ? 4 : 3 }}
+          className="range-thumb absolute inset-0 w-full cursor-ew-resize appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
+          style={{ zIndex: 3, clipPath: `inset(0 ${100 - midPct}% 0 0)` }}
         />
         {/* Max thumb input */}
         <input
@@ -470,9 +487,13 @@ function RangeFilter({
             const v = parseFloat(e.target.value);
             onChange({ type: "range", min, max: Math.max(v, min) });
           }}
-          className="range-thumb absolute inset-0 w-full cursor-pointer appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
-          style={{ zIndex: 3 }}
+          className="range-thumb absolute inset-0 w-full cursor-ew-resize appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-1.5 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_0_1px_rgba(0,0,0,0.3)] [&::-webkit-slider-thumb]:cursor-ew-resize"
+          style={{ zIndex: 4, clipPath: `inset(0 0 0 ${midPct}%)` }}
         />
+      </div>
+      <div className="relative mt-0.5 h-4">
+        <span className="absolute text-[10px] tabular-nums text-white/50" style={{ left: `${minPct}%`, transform: `translateX(-${minPct}%)` }}>{min}{unit}</span>
+        <span className="absolute text-[10px] tabular-nums text-white/50" style={{ left: `${maxPct}%`, transform: `translateX(-${maxPct}%)` }}>{max}{unit}</span>
       </div>
     </div>
   );
@@ -507,8 +528,12 @@ function EnumFilter({
         unique.add(String(val));
       }
     }
+    // If no data-derived options yet but labelMap exists, use its keys
+    if (unique.size === 0 && field.labelMap) {
+      return Object.keys(field.labelMap);
+    }
     return Array.from(unique).sort();
-  }, [field.options, field.key, data]);
+  }, [field.options, field.key, field.labelMap, data]);
 
   const visible = expanded ? options : options.slice(0, 8);
   const remaining = options.length - 8;

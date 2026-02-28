@@ -15,13 +15,12 @@ export const shipsModule: ModuleDefinition = {
   source: { name: "AIS Vessel Data", url: "https://www.marinetraffic.com" },
   nameKey: "name",
   filters: [
-    { key: "shipType", label: "Ship Type", type: "enum", labelMap: SHIP_TYPE_LABELS },
-    { key: "speed", label: "Speed", type: "range", min: 0, max: 30, unit: "kts" },
     { key: "navStatus", label: "Status", type: "enum", labelMap: NAV_STATUS_LABELS },
+    { key: "speed", label: "Speed", type: "range", min: 0, max: 30, unit: "kts" },
   ],
   listColumns: [
     { key: "name", label: "Name" },
-    { key: "shipType", label: "Type", width: "64px", labelMap: SHIP_TYPE_LABELS },
+    { key: "navStatus", label: "Status", width: "64px", labelMap: NAV_STATUS_LABELS },
     { key: "speed", label: "Speed", width: "56px", align: "right" },
   ],
 };

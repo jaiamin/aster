@@ -10,37 +10,38 @@ import type { ModuleDefinition, FilterField } from "@/types/modules";
 import type { ActiveFilters, FilterValue } from "@/modules/explorer-context";
 
 function describeFilter(field: FilterField, value: FilterValue): React.ReactNode[] {
+  const k = field.key;
   switch (value.type) {
     case "enum": {
       const lm = field.type === "enum" ? field.labelMap : undefined;
       const labels = Array.from(value.selected).map((v) => lm?.[v] ?? v);
       return [
-        <b key="l">{field.label}</b>,
-        <span key="o">{labels.length === 1 ? "is" : "is one of"}</span>,
+        <b key={`${k}-l`}>{field.label}</b>,
+        <span key={`${k}-o`}>{labels.length === 1 ? "is" : "is one of"}</span>,
         ...labels.map((l) => (
-          <span key={l} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{l}</span>
+          <span key={`${k}-${l}`} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{l}</span>
         )),
       ];
     }
     case "range": {
       const unit = field.type === "range" ? (field.unit ?? "") : "";
       return [
-        <b key="l">{field.label}</b>,
-        <span key="o">between</span>,
-        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.min}{unit} — {value.max}{unit}</span>,
+        <b key={`${k}-l`}>{field.label}</b>,
+        <span key={`${k}-o`}>between</span>,
+        <span key={`${k}-v`} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.min}{unit} — {value.max}{unit}</span>,
       ];
     }
     case "boolean":
       return [
-        <b key="l">{field.label}</b>,
-        <span key="o">is</span>,
-        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value ? "Yes" : "No"}</span>,
+        <b key={`${k}-l`}>{field.label}</b>,
+        <span key={`${k}-o`}>is</span>,
+        <span key={`${k}-v`} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value ? "Yes" : "No"}</span>,
       ];
     case "text":
       return [
-        <b key="l">{field.label}</b>,
-        <span key="o">contains</span>,
-        <span key="v" className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value}</span>,
+        <b key={`${k}-l`}>{field.label}</b>,
+        <span key={`${k}-o`}>contains</span>,
+        <span key={`${k}-v`} className="whitespace-nowrap rounded bg-accent/15 px-1 py-px text-accent">{value.value}</span>,
       ];
   }
 }
@@ -195,7 +196,7 @@ function CategoryGroup({
     <div>
       <button
         onClick={onToggleOpen}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-panel-hover"
+        className="flex w-full items-center gap-2 pl-0.5 pr-1.5 py-2 text-xs transition-colors"
       >
         <ChevronRight
           size={12}
@@ -212,7 +213,7 @@ function CategoryGroup({
       </button>
 
       {open && (
-        <div className="relative ml-[17px] border-l border-panel-border pl-[7px] mb-1">
+        <div className="relative ml-[7px] border-l border-panel-border pl-[7px] mb-1">
           {modules.map((def) => (
             <ModuleRow
               key={def.id}
@@ -346,7 +347,7 @@ export function Sidebar() {
       {modulesOpen && (
         <>
           <div className="h-full w-72 border-r border-panel-border bg-panel">
-            <div className="flex h-12 items-center gap-2 px-4 bg-accent">
+            <div className="flex h-12 items-center gap-2 pl-4 pr-2 bg-accent">
               <Layers size={16} className="text-white" />
               <span className="text-[14px] font-medium text-white translate-y-px">
                 Data Layers
@@ -355,14 +356,14 @@ export function Sidebar() {
                 <button
                   onClick={toggleAll}
                   aria-label={allExpanded ? "Collapse all" : "Expand all"}
-                  className="flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
+                  className="flex h-6 w-6 items-center justify-center text-white/70 transition-colors hover:text-white"
                 >
                   <ChevronsUpDown size={14} />
                 </button>
                 <button
                   onClick={() => setModulesOpen(false)}
                   aria-label="Close modules"
-                  className="flex h-6 w-6 items-center justify-center text-white transition-colors hover:bg-white/10"
+                  className="flex h-6 w-6 items-center justify-center text-white/70 transition-colors hover:text-white"
                 >
                   <ChevronLeft size={14} />
                 </button>

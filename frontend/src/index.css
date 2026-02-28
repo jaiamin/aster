@@ -27,6 +27,18 @@ body {
   overflow: hidden;
 }
 
+button, [role="button"] {
+  cursor: pointer;
+}
+
+a {
+  cursor: pointer;
+}
+
+label {
+  cursor: pointer;
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }

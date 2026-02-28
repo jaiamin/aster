@@ -562,18 +562,26 @@ export function GeoSearch() {
     refreshLabelLayerIds();
     map.on("styledata", refreshLabelLayerIds);
 
+    let labelCursorActive = false;
+
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       const now = performance.now();
       if (now - lastMoveTime < THROTTLE_MS) return;
       lastMoveTime = now;
 
       if (!cachedLabelLayerIds || cachedLabelLayerIds.length === 0) return;
-      // Don't override cursor if a data pin layer already set it
       const canvas = map.getCanvas();
-      if (canvas.style.cursor === "pointer") return;
 
       const features = map.queryRenderedFeatures(e.point, { layers: cachedLabelLayerIds });
-      canvas.style.cursor = features.length > 0 ? "pointer" : "";
+      if (features.length > 0) {
+        // Don't override cursor if a data pin layer already set it
+        if (!labelCursorActive && canvas.style.cursor === "pointer") return;
+        canvas.style.cursor = "pointer";
+        labelCursorActive = true;
+      } else if (labelCursorActive) {
+        canvas.style.cursor = "";
+        labelCursorActive = false;
+      }
     };
 
     map.on("click", handleLabelClick);
