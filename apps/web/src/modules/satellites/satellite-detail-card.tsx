@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Satellite } from "lucide-react";
+import { memo, useState } from "react";
+
+import { useSatelliteSelection } from "./satellite-context";
+import { zoomForAltitude } from "./satellites-layer";
+
 import {
   DetailCard,
   CardBanner,
@@ -11,11 +16,8 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useSatelliteSelection } from "./satellite-context";
-import { zoomForAltitude } from "./satellites-layer";
-import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
 
 const ISS_NORAD_ID = 25544;
 const ISS_LIVE_URL =
@@ -163,10 +165,11 @@ function SatelliteFlagBanner({ flag, onError }: { flag: string; onError: () => v
 
 const SAT_COLOR = "#ef4444";
 
-export function SatelliteDetailCard() {
+export const SatelliteDetailCard = memo(function SatelliteDetailCard() {
   const { selected, tracking, deselect, resumeTracking } = useSatelliteSelection();
   const { current: mapRef } = useMap();
   const [imgError, setImgError] = useState(false);
+  const [now] = useState(() => Date.now());
 
   if (!selected) return null;
 
@@ -178,7 +181,7 @@ export function SatelliteDetailCard() {
   const periodMinutes = 1440 / gp.MEAN_MOTION;
   const altitudeKm = position.altitude / 1000;
   const speedKmS = (2 * Math.PI * (6371 + altitudeKm)) / (periodMinutes * 60);
-  const epochAge = Math.floor((Date.now() - new Date(gp.EPOCH).getTime()) / 86_400_000);
+  const epochAge = Math.floor((now - new Date(gp.EPOCH).getTime()) / 86_400_000);
   const orbit = orbitType(periodMinutes, gp.INCLINATION, gp.ECCENTRICITY);
 
   const recenter = () => {
@@ -203,6 +206,7 @@ export function SatelliteDetailCard() {
           <div className="relative w-full h-[140px] bg-surface">
             <iframe
               src={ISS_LIVE_URL}
+              title="ISS Live Stream"
               className="absolute inset-0 w-full h-full pointer-events-none"
               allow="autoplay; encrypted-media"
               tabIndex={-1}
@@ -273,4 +277,4 @@ export function SatelliteDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

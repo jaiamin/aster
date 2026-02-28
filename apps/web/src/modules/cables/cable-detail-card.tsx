@@ -1,4 +1,8 @@
 import { Cable } from "lucide-react";
+import { memo } from "react";
+
+import { useCableSelection } from "./cable-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -6,9 +10,8 @@ import {
   CardBody,
   ScrollText,
 } from "@/components/detail-card/detail-card";
-import { useCableSelection } from "./cable-context";
 
-export function CableDetailCard() {
+export const CableDetailCard = memo(function CableDetailCard() {
   const { selected, deselect } = useCableSelection();
 
   if (!selected) return null;
@@ -29,4 +32,4 @@ export function CableDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

@@ -12,11 +12,20 @@ import { useCallback, useMemo, useState } from "react";
 
 import { ExplorerPanel } from "@/components/shell/explorer";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { useExplorer } from "@/modules/explorer-context";
+import {
+  useExplorerNav,
+  useExplorerFiltersCtx,
+  useModuleDataMap,
+} from "@/modules/explorer-context";
 import type { ActiveFilters, FilterValue } from "@/modules/explorer-context";
 import { useModuleToggle, useModuleCounts } from "@/modules/module-context";
 import { MODULE_REGISTRY, CATEGORY_ORDER } from "@/modules/registry";
 import type { ModuleDefinition, FilterField } from "@/types/modules";
+
+function FilterSummaryCount({ moduleId }: { moduleId: string }) {
+  const moduleData = useModuleDataMap();
+  return <b>{(moduleData.get(moduleId)?.length ?? 0).toLocaleString()}</b>;
+}
 
 function describeFilter(field: FilterField, value: FilterValue): React.ReactNode[] {
   const k = field.key;
@@ -86,7 +95,6 @@ function ModuleRow({
   isExploring,
   hasActiveFilters,
   activeFilters,
-  totalCount,
 }: {
   def: ModuleDefinition;
   enabled: boolean;
@@ -96,7 +104,6 @@ function ModuleRow({
   isExploring: boolean;
   hasActiveFilters: boolean;
   activeFilters: ActiveFilters;
-  totalCount: number;
 }) {
   const { icon: Icon, name, category, filters: filterFields } = def;
   const color = CATEGORY_COLORS[category] ?? "#8892b0";
@@ -184,7 +191,7 @@ function ModuleRow({
             <span>Viewing</span>
             <b>{filteredCount.toLocaleString()}</b>
             <span>of</span>
-            <b>{totalCount.toLocaleString()}</b>
+            <FilterSummaryCount moduleId={def.id} />
             <b>{name}</b>
             <span>where</span>
             {filterItems}
@@ -207,7 +214,6 @@ function CategoryGroup({
   explorerModuleId,
   hasActiveFilters,
   getFilters,
-  moduleData,
 }: {
   category: string;
   modules: ModuleDefinition[];
@@ -220,7 +226,6 @@ function CategoryGroup({
   explorerModuleId: string | null;
   hasActiveFilters: (moduleId: string) => boolean;
   getFilters: (moduleId: string) => ActiveFilters;
-  moduleData: Map<string, unknown[]>;
 }) {
   const activeCount = modules.filter((m) => enabledModules.has(m.id)).length;
 
@@ -253,7 +258,6 @@ function CategoryGroup({
               isExploring={explorerModuleId === def.id}
               hasActiveFilters={hasActiveFilters(def.id)}
               activeFilters={getFilters(def.id)}
-              totalCount={moduleData.get(def.id)?.length ?? 0}
             />
           ))}
         </div>
@@ -267,15 +271,8 @@ export function Sidebar() {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
   const { enabledModules, toggle } = useModuleToggle();
   const { moduleCounts } = useModuleCounts();
-  const {
-    openModuleId,
-    openExplorer,
-    closeExplorer,
-    clearFilters,
-    hasActiveFilters,
-    getFilters,
-    moduleData,
-  } = useExplorer();
+  const { openModuleId, openExplorer, closeExplorer } = useExplorerNav();
+  const { clearFilters, hasActiveFilters, getFilters } = useExplorerFiltersCtx();
 
   const grouped = useMemo(() => {
     const map = new Map<string, ModuleDefinition[]>();
@@ -407,7 +404,6 @@ export function Sidebar() {
                   explorerModuleId={openModuleId}
                   hasActiveFilters={hasActiveFilters}
                   getFilters={getFilters}
-                  moduleData={moduleData}
                 />
               ))}
             </div>
@@ -416,7 +412,12 @@ export function Sidebar() {
           {openModuleId && <ExplorerPanel />}
 
           {/* Click-away backdrop */}
-          <div className="fixed inset-0 z-[-1]" onClick={() => setModulesOpen(false)} />
+          <div
+            className="fixed inset-0 z-[-1]"
+            onClick={() => setModulesOpen(false)}
+            onKeyDown={() => setModulesOpen(false)}
+            role="presentation"
+          />
         </>
       )}
 

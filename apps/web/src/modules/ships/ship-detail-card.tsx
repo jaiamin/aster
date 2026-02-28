@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Ship as ShipIcon, LocateFixed } from "lucide-react";
+import { memo, useEffect, useState } from "react";
+
+import { useShipSelection } from "./ship-context";
+import { SHIP_TYPE_LABELS, NAV_STATUS_LABELS } from "./ship-labels";
+
 import {
   DetailCard,
   CardBanner,
@@ -12,12 +17,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useShipSelection } from "./ship-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { SHIP_TYPE_LABELS, NAV_STATUS_LABELS } from "./ship-labels";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 interface PortLocation {
   name: string;
@@ -88,7 +90,7 @@ function usePortLookup(destination: string | null): PortLocation | null {
   return port;
 }
 
-export function ShipDetailCard() {
+export const ShipDetailCard = memo(function ShipDetailCard() {
   const { selected, deselect, fetchedAt, tracking, pauseTracking, resumeTracking } =
     useShipSelection();
   const { current: mapRef } = useMap();
@@ -221,4 +223,4 @@ export function ShipDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

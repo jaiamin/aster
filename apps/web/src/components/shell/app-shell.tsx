@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { GlobeControls } from "@/components/globe/globe-controls";
@@ -13,13 +13,13 @@ import { getInitialStyle } from "@/lib/url-state";
 import { useModuleToggle, useModuleFilter } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
 
-export function AppShell() {
+const MemoBottomBar = memo(BottomBar);
+
+function MapSection({ enabledModules }: { enabledModules: Set<string> }) {
   const { viewState, status, onMove, syncUrl } = useMapState();
   const [styleMode, setStyleMode] = useState<MapStyleMode>(getInitialStyle);
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
-  const mapInstanceRef = useRef<maplibregl.Map | null>(null);
-  const [mapReady, setMapReady] = useState(false);
-  const { enabledModules } = useModuleToggle();
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const { searchQuery, timeFilter } = useModuleFilter();
 
   useEffect(() => {
@@ -32,49 +32,67 @@ export function AppShell() {
   );
 
   const handleMapReady = useCallback((map: maplibregl.Map) => {
-    mapInstanceRef.current = map;
-    setMapReady(true);
+    setMapInstance(map);
   }, []);
 
   const handleLocate = useCallback((coords: { lng: number; lat: number }) => {
     setUserLocation(coords);
   }, []);
 
+  const mapChildren = useMemo(
+    () => (
+      <>
+        {activeLayers.map((m) => (
+          <ErrorBoundary key={m.id} fallback={null}>
+            <Suspense fallback={null}>
+              <m.MapLayer />
+            </Suspense>
+          </ErrorBoundary>
+        ))}
+        <GeoSearch />
+        <UserLocationDot location={userLocation} />
+      </>
+    ),
+    [activeLayers, userLocation],
+  );
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
-      <Sidebar />
-      <div className="relative flex-1 flex flex-col">
-        <div className="relative flex-1 min-h-0">
-          <GlobeMap
+    <div className="relative flex-1 flex flex-col">
+      <div className="relative flex-1 min-h-0">
+        <GlobeMap
+          viewState={viewState}
+          onMove={onMove}
+          styleMode={styleMode}
+          onMapReady={handleMapReady}
+        >
+          {mapChildren}
+        </GlobeMap>
+        <div className="absolute bottom-3 right-3 z-10">
+          <GlobeControls
             viewState={viewState}
             onMove={onMove}
             styleMode={styleMode}
-            onMapReady={handleMapReady}
-          >
-            {activeLayers.map((m) => (
-              <ErrorBoundary key={m.id} fallback={null}>
-                <Suspense fallback={null}>
-                  <m.MapLayer />
-                </Suspense>
-              </ErrorBoundary>
-            ))}
-            <GeoSearch />
-            <UserLocationDot location={userLocation} />
-          </GlobeMap>
-          <div className="absolute bottom-3 right-3 z-10">
-            <GlobeControls
-              viewState={viewState}
-              onMove={onMove}
-              styleMode={styleMode}
-              onStyleChange={setStyleMode}
-              onLocate={handleLocate}
-              hasLocation={userLocation !== null}
-              map={mapReady ? mapInstanceRef.current : null}
-            />
-          </div>
+            onStyleChange={setStyleMode}
+            onLocate={handleLocate}
+            hasLocation={userLocation !== null}
+            map={mapInstance}
+          />
         </div>
-        <BottomBar status={status} />
       </div>
+      <MemoBottomBar status={status} />
+    </div>
+  );
+}
+
+const MemoSidebar = memo(Sidebar);
+
+export function AppShell() {
+  const { enabledModules } = useModuleToggle();
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
+      <MemoSidebar />
+      <MapSection enabledModules={enabledModules} />
     </div>
   );
 }

@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Rocket } from "lucide-react";
+import { memo, useState } from "react";
+
+import { useLaunchSelection } from "./launch-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -12,11 +16,9 @@ import {
   CardBody,
 } from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useLaunchSelection } from "./launch-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function LaunchImage({ src, alt }: { src: string; alt: string }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
@@ -72,7 +74,7 @@ function formatLaunchTime(net: string): string {
   });
 }
 
-export function LaunchDetailCard() {
+export const LaunchDetailCard = memo(function LaunchDetailCard() {
   const { selected, deselect } = useLaunchSelection();
   const { current: mapRef } = useMap();
 
@@ -158,4 +160,4 @@ export function LaunchDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

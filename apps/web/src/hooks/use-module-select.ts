@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { useExplorer } from "@/modules/explorer-context";
+
+import { useExplorerData } from "@/modules/explorer-context";
 
 export function useModuleSelect(moduleId: string, handler: (item: unknown) => void) {
-  const { registerSelect } = useExplorer();
+  const { registerSelect } = useExplorerData();
 
   useEffect(() => {
     return registerSelect(moduleId, handler);

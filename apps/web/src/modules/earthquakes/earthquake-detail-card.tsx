@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Activity, AlertTriangle } from "lucide-react";
+import { memo } from "react";
+
+import { useEarthquakeSelection } from "./earthquake-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -10,11 +15,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useEarthquakeSelection } from "./earthquake-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function magColor(mag: number): string {
   if (mag >= 7) return "#ef4444";
@@ -43,7 +46,7 @@ function timeAgo(timestamp: number): string {
   return `${days}d ago`;
 }
 
-export function EarthquakeDetailCard() {
+export const EarthquakeDetailCard = memo(function EarthquakeDetailCard() {
   const { selected, deselect } = useEarthquakeSelection();
   const { current: mapRef } = useMap();
 
@@ -119,4 +122,4 @@ export function EarthquakeDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

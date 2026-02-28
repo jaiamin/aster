@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Navigation, Wind as WindIcon, Waves, Thermometer, Gauge } from "lucide-react";
+import { memo } from "react";
+
+import { useBuoySelection } from "./buoy-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -10,11 +15,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useBuoySelection } from "./buoy-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 const BUOY_COLOR = "#22d3ee";
 
@@ -59,7 +62,7 @@ function formatTime(iso: string): string {
   }
 }
 
-export function BuoyDetailCard() {
+export const BuoyDetailCard = memo(function BuoyDetailCard() {
   const { selected, deselect } = useBuoySelection();
   const { current: mapRef } = useMap();
 
@@ -166,4 +169,4 @@ export function BuoyDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

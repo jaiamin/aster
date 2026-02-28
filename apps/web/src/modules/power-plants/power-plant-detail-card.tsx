@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Zap } from "lucide-react";
+import { memo } from "react";
+
+import { usePowerPlantSelection } from "./power-plant-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -11,11 +16,9 @@ import {
   CardBody,
 } from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
-import { useMap } from "@vis.gl/react-maplibre";
-import { usePowerPlantSelection } from "./power-plant-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function fuelColor(fuel: string): string {
   switch (fuel) {
@@ -44,7 +47,7 @@ function fuelColor(fuel: string): string {
   }
 }
 
-export function PowerPlantDetailCard() {
+export const PowerPlantDetailCard = memo(function PowerPlantDetailCard() {
   const { selected, deselect } = usePowerPlantSelection();
   const { current: mapRef } = useMap();
 
@@ -105,4 +108,4 @@ export function PowerPlantDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

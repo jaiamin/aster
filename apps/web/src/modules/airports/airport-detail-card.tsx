@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { PlaneTakeoff } from "lucide-react";
+import { memo } from "react";
+
+import { useAirportSelection } from "./airport-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -11,11 +16,9 @@ import {
   CardBody,
 } from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useAirportSelection } from "./airport-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function typeLabel(type: string): string {
   switch (type) {
@@ -39,7 +42,7 @@ function typeColor(type: string): string {
   }
 }
 
-export function AirportDetailCard() {
+export const AirportDetailCard = memo(function AirportDetailCard() {
   const { selected, deselect } = useAirportSelection();
   const { current: mapRef } = useMap();
 
@@ -102,4 +105,4 @@ export function AirportDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

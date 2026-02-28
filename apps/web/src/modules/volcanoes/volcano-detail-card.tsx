@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Mountain } from "lucide-react";
+import { memo } from "react";
+
+import { useVolcanoSelection } from "./volcano-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -8,11 +13,9 @@ import {
   CardBody,
 } from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useVolcanoSelection } from "./volcano-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 const VOLCANO_COLOR = "#e85d04";
 
@@ -29,7 +32,7 @@ function timeAgo(dateStr: string): string {
   return `${months}mo ago`;
 }
 
-export function VolcanoDetailCard() {
+export const VolcanoDetailCard = memo(function VolcanoDetailCard() {
   const { selected, deselect } = useVolcanoSelection();
   const { current: mapRef } = useMap();
 
@@ -77,4 +80,4 @@ export function VolcanoDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Wind } from "lucide-react";
+import { memo } from "react";
+
+import { useAirQualitySelection } from "./air-quality-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -10,11 +15,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useAirQualitySelection } from "./air-quality-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function aqiCategory(pm25: number): { label: string; color: string } {
   if (pm25 <= 12) return { label: "Good", color: "#00e400" };
@@ -53,7 +56,7 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-export function AirQualityDetailCard() {
+export const AirQualityDetailCard = memo(function AirQualityDetailCard() {
   const { selected, deselect } = useAirQualitySelection();
   const { current: mapRef } = useMap();
 
@@ -109,4 +112,4 @@ export function AirQualityDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

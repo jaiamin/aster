@@ -1,4 +1,10 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { CloudLightning } from "lucide-react";
+import { memo } from "react";
+
+import { useStormSelection } from "./storm-context";
+import { stormAccentColor } from "./storms-layer";
+
 import {
   DetailCard,
   CardBanner,
@@ -10,12 +16,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useStormSelection } from "./storm-context";
-import { stormAccentColor } from "./storms-layer";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function categoryLabel(category: number, stormType: string): string {
   if (category >= 1) return `Category ${category} Hurricane`;
@@ -46,7 +49,7 @@ function formatDirection(deg: number | null): string {
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
-export function StormDetailCard() {
+export const StormDetailCard = memo(function StormDetailCard() {
   const { selected, deselect } = useStormSelection();
   const { current: mapRef } = useMap();
 
@@ -128,4 +131,4 @@ export function StormDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

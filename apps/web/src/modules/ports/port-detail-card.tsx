@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Anchor } from "lucide-react";
+import { memo } from "react";
+
+import { usePortSelection } from "./port-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -11,15 +16,13 @@ import {
   CardBody,
 } from "@/components/detail-card/detail-card";
 import { SpinningAerialBanner } from "@/components/detail-card/spinning-aerial-banner";
-import { useMap } from "@vis.gl/react-maplibre";
-import { usePortSelection } from "./port-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 const PORT_COLOR = "#38bdf8";
 
-export function PortDetailCard() {
+export const PortDetailCard = memo(function PortDetailCard() {
   const { selected, deselect } = usePortSelection();
   const { current: mapRef } = useMap();
 
@@ -74,4 +77,4 @@ export function PortDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

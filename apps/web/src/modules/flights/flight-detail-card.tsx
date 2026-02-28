@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useMap } from "@vis.gl/react-maplibre";
 import { Plane, LocateFixed } from "lucide-react";
+import { memo, useEffect, useState } from "react";
+
+import { useFlightSelection } from "./flight-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -12,11 +16,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useFlightSelection } from "./flight-context";
-import type { Airport, Flight, FlightTrack } from "@/types/flights";
-import { CATEGORY_COLORS } from "@/lib/category-colors";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
+import { CATEGORY_COLORS } from "@/lib/category-colors";
+import type { Airport, Flight, FlightTrack } from "@/types/flights";
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -273,7 +275,7 @@ function AltitudeChart({ track }: { track: FlightTrack }) {
   );
 }
 
-export function FlightDetailCard() {
+export const FlightDetailCard = memo(function FlightDetailCard() {
   const { selected, deselect, fetchedAt, tracking, pauseTracking, resumeTracking } =
     useFlightSelection();
   const { current: mapRef } = useMap();
@@ -419,7 +421,7 @@ export function FlightDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});
 
 function RouteProgress({
   flight,

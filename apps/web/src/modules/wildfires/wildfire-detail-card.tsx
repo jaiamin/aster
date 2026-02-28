@@ -1,4 +1,9 @@
+import { useMap } from "@vis.gl/react-maplibre";
 import { Flame } from "lucide-react";
+import { memo } from "react";
+
+import { useWildfireSelection } from "./wildfire-context";
+
 import {
   DetailCard,
   CardBanner,
@@ -10,11 +15,9 @@ import {
   CardSource,
   CardBody,
 } from "@/components/detail-card/detail-card";
-import { useMap } from "@vis.gl/react-maplibre";
-import { useWildfireSelection } from "./wildfire-context";
-import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 import { DETAIL_CARD_PADDING } from "@/hooks/use-map-padding";
 import { CATEGORY_COLORS } from "@/lib/category-colors";
+import { FOCUS_ZOOM } from "@/modules/focus-zoom";
 
 function frpColor(frp: number): string {
   if (frp >= 200) return "#f44336";
@@ -44,7 +47,7 @@ function formatAcqTime(date: string, time: string): string {
   return `${date} ${padded.slice(0, 2)}:${padded.slice(2)} UTC`;
 }
 
-export function WildfireDetailCard() {
+export const WildfireDetailCard = memo(function WildfireDetailCard() {
   const { selected, deselect } = useWildfireSelection();
   const { current: mapRef } = useMap();
 
@@ -101,4 +104,4 @@ export function WildfireDetailCard() {
       </CardBody>
     </DetailCard>
   );
-}
+});

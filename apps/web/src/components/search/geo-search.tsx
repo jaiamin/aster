@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { LocateFixed, Search, X } from "lucide-react";
-import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
 import simplify from "@turf/simplify";
-import { useModuleSelection, useModuleFilter, useRegion } from "@/modules/module-context";
+import { Layer, Source, useMap } from "@vis.gl/react-maplibre";
+import { LocateFixed, Search, X } from "lucide-react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+
 import { RegionDetailCard } from "./region-detail-card";
+
+import { useModuleSelection, useModuleFilter, useRegion } from "@/modules/module-context";
 
 interface NominatimResult {
   place_id: number;
@@ -340,7 +342,7 @@ async function searchNominatim(
 
 const GEO_SEARCH_ID = "geo-search";
 
-export function GeoSearch() {
+export const GeoSearch = memo(function GeoSearch() {
   const { current: mapRef } = useMap();
   const { registerDeselect, unregisterDeselect, notifySelected, deselectAll } =
     useModuleSelection();
@@ -755,4 +757,4 @@ export function GeoSearch() {
       )}
     </>
   );
-}
+});
