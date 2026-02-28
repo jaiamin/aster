@@ -27,6 +27,26 @@ export function zoomForAltitude(altitudeMeters: number): number {
   return Math.max(0, Math.min(4, Math.floor(zoom)));
 }
 
+function useUnwrappedPositions(positions: SatellitePosition[]): SatellitePosition[] {
+  const prevRef = useRef(new Map<number, number>());
+  return useMemo(() => {
+    const prev = prevRef.current;
+    const next = new Map<number, number>();
+    const result = positions.map((p) => {
+      const prevLng = prev.get(p.id);
+      let lng = p.longitude;
+      if (prevLng != null) {
+        while (lng - prevLng > 180) lng -= 360;
+        while (lng - prevLng < -180) lng += 360;
+      }
+      next.set(p.id, lng);
+      return lng === p.longitude ? p : { ...p, longitude: lng };
+    });
+    prevRef.current = next;
+    return result;
+  }, [positions]);
+}
+
 function SatellitesLayerInner({
   positions,
   records,
@@ -135,6 +155,11 @@ function SatellitesLayerInner({
   const orbitSegments = useSatelliteOrbit(selected?.gp ?? null);
   const selectedId = selected?.position.id ?? null;
 
+  // Unwrap longitudes so they're continuous between frames.
+  // Without this, satellites crossing the antimeridian (180° → -180°)
+  // get interpolated the long way around (358° sweep) by deck.gl transitions.
+  const smoothPositions = useUnwrappedPositions(positions);
+
   const onClick = useCallback(
     (info: PickingInfo) => {
       if (info.object) {
@@ -181,7 +206,7 @@ function SatellitesLayerInner({
         : []),
       new ScatterplotLayer<SatellitePosition>({
         id: "satellites-layer",
-        data: positions,
+        data: smoothPositions,
         getPosition: (d) => [d.longitude, d.latitude, d.altitude],
         getFillColor: (d) => {
           if (d.id === selectedId) return [255, 255, 255, 255];
@@ -204,6 +229,7 @@ function SatellitesLayerInner({
         antialiasing: true,
         pickable: true,
         onClick,
+        transitions: { getPosition: { duration: 2000, type: "interpolation" } },
         updateTriggers: {
           getFillColor: [selectedId, inRegionSet],
           getLineColor: [selectedId, inRegionSet],
@@ -211,7 +237,7 @@ function SatellitesLayerInner({
         },
       }),
     ],
-    [positions, onClick, orbitSegments, selectedId, regionActive, inRegionSet],
+    [smoothPositions, onClick, orbitSegments, selectedId, regionActive, inRegionSet],
   );
 
   return <DeckGLOverlay layers={layers} />;
