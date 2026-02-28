@@ -54,6 +54,10 @@ interface DataContextValue {
   unregisterData: (moduleId: string) => void;
   registerSelect: (moduleId: string, handler: (item: unknown) => void) => () => void;
   selectItem: (moduleId: string, item: unknown) => void;
+  notifyItemSelected: (moduleId: string, item: unknown) => void;
+  notifyItemDeselected: (moduleId: string) => void;
+  getSelectedItem: (moduleId: string) => unknown | undefined;
+  subscribeSelection: (cb: () => void) => () => void;
   subscribeData: (cb: () => void) => () => void;
   getModuleData: () => Map<string, unknown[]>;
 }
@@ -165,6 +169,31 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
     selectHandlers.current.get(moduleId)?.(item);
   }, []);
 
+  // Selection notification (lets explorer panel sync its highlight)
+  const selectedItemMap = useRef(new Map<string, unknown>());
+  const selectionListeners = useRef(new Set<() => void>());
+
+  const subscribeSelection = useCallback((cb: () => void) => {
+    selectionListeners.current.add(cb);
+    return () => {
+      selectionListeners.current.delete(cb);
+    };
+  }, []);
+
+  const notifyItemSelected = useCallback((moduleId: string, item: unknown) => {
+    selectedItemMap.current.set(moduleId, item);
+    for (const cb of selectionListeners.current) cb();
+  }, []);
+
+  const notifyItemDeselected = useCallback((moduleId: string) => {
+    selectedItemMap.current.delete(moduleId);
+    for (const cb of selectionListeners.current) cb();
+  }, []);
+
+  const getSelectedItem = useCallback((moduleId: string) => {
+    return selectedItemMap.current.get(moduleId);
+  }, []);
+
   const navValue = useMemo(
     () => ({ openModuleId, openExplorer, closeExplorer }),
     [openModuleId, openExplorer, closeExplorer],
@@ -181,10 +210,25 @@ export function ExplorerProvider({ children }: { children: ReactNode }) {
       unregisterData,
       registerSelect,
       selectItem,
+      notifyItemSelected,
+      notifyItemDeselected,
+      getSelectedItem,
+      subscribeSelection,
       subscribeData,
       getModuleData,
     }),
-    [registerData, unregisterData, registerSelect, selectItem, subscribeData, getModuleData],
+    [
+      registerData,
+      unregisterData,
+      registerSelect,
+      selectItem,
+      notifyItemSelected,
+      notifyItemDeselected,
+      getSelectedItem,
+      subscribeSelection,
+      subscribeData,
+      getModuleData,
+    ],
   );
 
   return (

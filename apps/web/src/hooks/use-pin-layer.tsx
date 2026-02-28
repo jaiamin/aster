@@ -30,6 +30,8 @@ export interface PinLayerConfig<TItem> {
   clusterMaxZoom?: number;
   inRegionSet: Set<string | number>;
   regionActive: boolean;
+  /** Custom zoom level per item. Falls back to FOCUS_ZOOM[moduleId]. */
+  getFocusZoom?: (item: TItem) => number;
 }
 
 export function usePinLayer<TItem extends { longitude: number; latitude: number }>(
@@ -50,6 +52,7 @@ export function usePinLayer<TItem extends { longitude: number; latitude: number 
     clusterMaxZoom = 12,
     inRegionSet,
     regionActive,
+    getFocusZoom,
   } = config;
 
   const { current: mapRef } = useMap();
@@ -62,13 +65,13 @@ export function usePinLayer<TItem extends { longitude: number; latitude: number 
       if (map && typeof typed.longitude === "number" && typeof typed.latitude === "number") {
         map.flyTo({
           center: [typed.longitude, typed.latitude],
-          zoom: FOCUS_ZOOM[moduleId],
+          zoom: getFocusZoom ? getFocusZoom(typed) : FOCUS_ZOOM[moduleId],
           duration: 1500,
           padding: DETAIL_CARD_PADDING,
         });
       }
     },
-    [select, mapRef, moduleId],
+    [select, mapRef, moduleId, getFocusZoom],
   );
   useModuleSelect(moduleId, selectFromExplorer);
 
@@ -100,13 +103,13 @@ export function usePinLayer<TItem extends { longitude: number; latitude: number 
         select(item);
         map.flyTo({
           center: [item.longitude, item.latitude],
-          zoom: FOCUS_ZOOM[moduleId],
+          zoom: getFocusZoom ? getFocusZoom(item) : FOCUS_ZOOM[moduleId],
           duration: 1500,
           padding: DETAIL_CARD_PADDING,
         });
       }
     });
-  }, [mapRef, select, moduleId, findItem]);
+  }, [mapRef, select, moduleId, findItem, getFocusZoom]);
 
   if (!ready) return null;
 

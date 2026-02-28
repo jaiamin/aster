@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
+import { useExplorerData } from "@/modules/explorer-context";
 import { useModuleSelection } from "@/modules/module-context";
 import type {
   GPRecord,
@@ -27,6 +28,7 @@ export function SatelliteSelectionProvider({
   children: React.ReactNode;
 }) {
   const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { notifyItemSelected, notifyItemDeselected } = useExplorerData();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [gp, setGp] = useState<GPRecord | null>(null);
   const [detail, setDetail] = useState<SatelliteDetail | null>(null);
@@ -37,6 +39,7 @@ export function SatelliteSelectionProvider({
   const select = useCallback(
     (position: SatellitePosition, gpRecord: GPRecord) => {
       notifySelected("satellites");
+      notifyItemSelected("satellites", position);
       setSelectedId((prev) => {
         if (prev !== position.id) {
           setDetail(null);
@@ -46,14 +49,15 @@ export function SatelliteSelectionProvider({
       setGp(gpRecord);
       setTracking(true);
     },
-    [notifySelected],
+    [notifySelected, notifyItemSelected],
   );
 
   const deselect = useCallback(() => {
     setSelectedId(null);
     setGp(null);
     setTracking(true);
-  }, []);
+    notifyItemDeselected("satellites");
+  }, [notifyItemDeselected]);
 
   useEffect(() => {
     registerDeselect("satellites", deselect);

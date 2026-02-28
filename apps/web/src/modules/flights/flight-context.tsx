@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { usePageVisibility } from "@/hooks/use-page-visibility";
+import { useExplorerData } from "@/modules/explorer-context";
 import { useModuleSelection } from "@/modules/module-context";
 import type { Flight, FlightDetail, FlightTrack, SelectedFlight } from "@/types/flights";
 
@@ -24,6 +25,7 @@ export function FlightSelectionProvider({
   children: React.ReactNode;
 }) {
   const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { notifyItemSelected, notifyItemDeselected } = useExplorerData();
   const [selectedIcao, setSelectedIcao] = useState<string | null>(null);
   const [track, setTrack] = useState<FlightTrack | null>(null);
   const [detail, setDetail] = useState<FlightDetail | null>(null);
@@ -50,6 +52,7 @@ export function FlightSelectionProvider({
   const select = useCallback(
     (flight: Flight) => {
       notifySelected("flights");
+      notifyItemSelected("flights", flight);
       setSelectedIcao((prev) => {
         if (prev !== flight.icao24) {
           setTrack(null);
@@ -60,7 +63,7 @@ export function FlightSelectionProvider({
       });
       setTracking(true);
     },
-    [notifySelected],
+    [notifySelected, notifyItemSelected],
   );
 
   const deselect = useCallback(() => {
@@ -68,7 +71,8 @@ export function FlightSelectionProvider({
     setTrack(null);
     setDetail(null);
     setTracking(true);
-  }, []);
+    notifyItemDeselected("flights");
+  }, [notifyItemDeselected]);
 
   useEffect(() => {
     registerDeselect("flights", deselect);

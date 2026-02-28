@@ -1,12 +1,12 @@
 import { ChevronLeft, ChevronUp, ChevronDown, Filter, Search, ExternalLink } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ActiveFilterRow } from "./active-filter-row";
 import { FilterControl } from "./filter-control";
 import { VirtualizedList, formatCellValue } from "./virtualized-list";
 
 import { CATEGORY_COLORS } from "@/lib/category-colors";
-import { useExplorer, useExplorerFilters } from "@/modules/explorer-context";
+import { useExplorer, useExplorerData, useExplorerFilters } from "@/modules/explorer-context";
 import { useModuleToggle } from "@/modules/module-context";
 import { MODULE_REGISTRY } from "@/modules/registry";
 
@@ -24,6 +24,7 @@ export function ExplorerPanel() {
     selectItem,
   } = useExplorer();
 
+  const { subscribeSelection, getSelectedItem } = useExplorerData();
   const { enabledModules, toggle } = useModuleToggle();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
@@ -103,6 +104,36 @@ export function ExplorerPanel() {
       return dir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
     });
   }, [filteredItems, sort]);
+
+  // Sync selectedIndex with module selection (map clicks, detail card close, etc.)
+  const sortedItemsRef = useRef(sortedItems);
+  useEffect(() => {
+    sortedItemsRef.current = sortedItems;
+  });
+  const moduleIdRef = useRef(openModuleId);
+  useEffect(() => {
+    moduleIdRef.current = openModuleId;
+  });
+
+  const syncSelection = useCallback(() => {
+    const mid = moduleIdRef.current;
+    if (!mid) return;
+    const item = getSelectedItem(mid);
+    if (!item) {
+      setSelectedIndex(null);
+      return;
+    }
+    const idx = sortedItemsRef.current.indexOf(item);
+    setSelectedIndex(idx >= 0 ? idx : null);
+  }, [getSelectedItem]);
+
+  // Sync when panel opens or module changes (item may already be selected from map)
+  useEffect(() => {
+    if (openModuleId) syncSelection();
+  }, [openModuleId, syncSelection]);
+
+  // Sync on live selection/deselection events
+  useEffect(() => subscribeSelection(syncSelection), [subscribeSelection, syncSelection]);
 
   const colWidths = useMemo(() => {
     const cols = def?.listColumns;

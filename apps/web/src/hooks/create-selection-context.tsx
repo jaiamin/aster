@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { useExplorerData } from "@/modules/explorer-context";
 import { useModuleSelection } from "@/modules/module-context";
 
 export function createSelectionContext<TItem, TSelected>({
@@ -25,17 +26,22 @@ export function createSelectionContext<TItem, TSelected>({
 
   function Provider({ children }: { children: ReactNode }) {
     const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+    const { notifyItemSelected, notifyItemDeselected } = useExplorerData();
     const [selected, setSelected] = useState<TSelected | null>(null);
 
     const select = useCallback(
       (item: TItem) => {
         notifySelected(moduleId);
+        notifyItemSelected(moduleId, item);
         setSelected(wrap(item));
       },
-      [notifySelected],
+      [notifySelected, notifyItemSelected],
     );
 
-    const deselect = useCallback(() => setSelected(null), []);
+    const deselect = useCallback(() => {
+      setSelected(null);
+      notifyItemDeselected(moduleId);
+    }, [notifyItemDeselected]);
 
     useEffect(() => {
       registerDeselect(moduleId, deselect);

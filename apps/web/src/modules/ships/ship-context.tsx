@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
+import { useExplorerData } from "@/modules/explorer-context";
 import { useModuleSelection } from "@/modules/module-context";
 import type { Ship, SelectedShip } from "@/types/ships";
 
@@ -23,6 +24,7 @@ export function ShipSelectionProvider({
   children: React.ReactNode;
 }) {
   const { registerDeselect, unregisterDeselect, notifySelected } = useModuleSelection();
+  const { notifyItemSelected, notifyItemDeselected } = useExplorerData();
   const [selectedMmsi, setSelectedMmsi] = useState<number | null>(null);
   const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [tracking, setTracking] = useState(true);
@@ -45,6 +47,7 @@ export function ShipSelectionProvider({
   const select = useCallback(
     (ship: Ship) => {
       notifySelected("ships");
+      notifyItemSelected("ships", ship);
       setSelectedMmsi((prev) => {
         if (prev !== ship.mmsi) {
           prevPos.current = null;
@@ -53,13 +56,14 @@ export function ShipSelectionProvider({
       });
       setTracking(true);
     },
-    [notifySelected],
+    [notifySelected, notifyItemSelected],
   );
 
   const deselect = useCallback(() => {
     setSelectedMmsi(null);
     setTracking(true);
-  }, []);
+    notifyItemDeselected("ships");
+  }, [notifyItemDeselected]);
 
   useEffect(() => {
     registerDeselect("ships", deselect);
