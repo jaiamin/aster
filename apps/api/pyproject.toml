@@ -9,7 +9,7 @@ dependencies = [
     "pydantic-settings>=2.7.0",
     "httpx>=0.28.0",
     "websockets>=14.0",
-    "redis>=5.0.0",
+    "redis>=7.4.0",
 ]
 
 [tool.hatch.build.targets.wheel]
